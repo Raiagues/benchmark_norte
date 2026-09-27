@@ -13,6 +13,14 @@ export const statusLabel = (v) =>
     RUNNING: L("Em execução", "Running"),
     STOPPING: L("Encerrando", "Stopping"),
     COMPLETED: L("Concluída", "Completed"),
+    COMPLETED_WITH_ANSWER_ERRORS: L(
+      "Concluída · respostas com erros",
+      "Finished · answer errors",
+    ),
+    "Completed with answer errors": L(
+      "Concluído · respostas com erros",
+      "Finished · answer errors",
+    ),
     COMPLETED_WITH_ERRORS: L(
       "Concluída com erros técnicos",
       "Completed with technical errors",
@@ -52,6 +60,7 @@ export const stageLabel = (v) =>
   })[v] || statusLabel(v);
 export const eventLabel = (v) =>
   ({
+    RUN_RESUMED: L("Pendentes retomados", "Pending work resumed"),
     RUN_CREATED: L("Avaliação registrada", "Run created"),
     RUN_STARTED: L("Avaliação iniciada", "Run started"),
     EXECUTION_QUEUED: L("Execução adicionada à fila", "Execution queued"),
@@ -132,6 +141,7 @@ export const metricLabel = (v) =>
     value_accuracy: L("Valores corretos", "Value accuracy"),
     unit_accuracy: L("Unidades corretas", "Unit accuracy"),
     consistency: L("Consistência", "Consistency"),
+    schema_compliance_rate: L("Estrutura válida", "Schema compliance"),
   })[v] || v;
 export const percent = (v) =>
   v == null
@@ -152,7 +162,10 @@ export const tone = (state) =>
     : [
           "TECHNICAL_ERROR",
           "COMPLETED_INCORRECT",
+          "COMPLETED_WITH_ANSWER_ERRORS",
+          "Completed with answer errors",
           "COMPLETED_WITH_ERRORS",
+          "Completed with errors",
           "Provider error",
           "Quota error",
           "Rate limited",

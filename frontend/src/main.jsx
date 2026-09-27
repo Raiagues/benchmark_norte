@@ -1,5 +1,5 @@
 import RunPage from "./RunPage";
-import LiveExecution, { RunHistory } from "./LiveExecution";
+import LiveExecution, { RunHistory, ExecutionDetail } from "./LiveExecution";
 import InputExplorer from "./InputExplorer";
 import ImpactPage from "./ImpactPage";
 import { Overview, Learning, Settings } from "./ProductPages";
@@ -1054,74 +1054,47 @@ function MetricChart({ title, hint, rows, metric, field, seconds = false }) {
 
 function RunInspector({ run }) {
   const [index, setIndex] = useState(0),
-    [tab, setTab] = useState("raw_response");
+    [detail, setDetail] = useState(null),
+    [scenario, setScenario] = useState(""),
+    [error, setError] = useState("");
   const result = run.results[index];
-  const costs = run.results.map((r) => r.cost_usd);
-  const total = costs.every((c) => c != null)
-    ? costs.reduce((a, b) => a + b, 0)
-    : null;
+  useEffect(() => {
+    let active = true;
+    setDetail(null);
+    setError("");
+    if (result)
+      api(`/live-results/${result.id}`)
+        .then((d) => active && setDetail(d))
+        .catch((e) => active && setError(e.message));
+    return () => {
+      active = false;
+    };
+  }, [result?.id]);
   return (
     <div className="run-details">
-      <div className="toolbar">
-        <label>
-          {tr("Tarefa da resposta")}
-          <select
-            aria-label={tr("Tarefa da resposta")}
-            value={index}
-            onChange={(e) => setIndex(Number(e.target.value))}
-          >
-            {run.results.map((r, i) => (
-              <option key={r.id} value={i}>
-                {tr(tasks[r.task])} · {tr(levels[r.difficulty])}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {tr("Conteúdo")}
-          <select
-            aria-label={tr("Conteúdo")}
-            value={tab}
-            onChange={(e) => setTab(e.target.value)}
-          >
-            {Object.entries({
-              trace: "Versões e rastreabilidade",
-              raw_response: "Resposta original da API",
-              parsed_output: "Dados extraídos",
-              metrics: "Métricas",
-              prompt: "Entrada enviada ao modelo",
-              feedback_metrics: "Efeito das correções",
-              feedback_transfer_metrics: "Generalização das correções",
-            }).map(([k, v]) => (
-              <option key={k} value={k}>
-                {tr(v)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="muted">
-          {tr("Custo desta execução: ")}
-          {tr(usd(total))}
-        </span>
-      </div>
-      {result && (
-        <PagedText
-          text={
-            tab === "prompt"
-              ? result.prompt
-              : JSON.stringify(
-                  tab === "trace"
-                    ? {
-                        run_id: run.id,
-                        metadata: run.metadata,
-                        prompt_hash: result.prompt_hash,
-                        dataset_hash: result.dataset_hash,
-                      }
-                    : (result[tab] ?? L("Não disponível", "Unavailable")),
-                  null,
-                  2,
-                )
-          }
+      <label>
+        {tr("Tarefa da resposta")}
+        <select
+          aria-label={tr("Tarefa da resposta")}
+          value={index}
+          onChange={(e) => setIndex(Number(e.target.value))}
+        >
+          {run.results.map((r, i) => (
+            <option key={r.id} value={i}>
+              {tr(tasks[r.task])} · {tr(levels[r.difficulty])}
+            </option>
+          ))}
+        </select>
+      </label>
+      {error && <p role="alert">{error}</p>}
+      {detail && (
+        <ExecutionDetail
+          key={detail.id}
+          detail={detail}
+          embedded
+          scenario={scenario}
+          onScenario={setScenario}
+          renderGraph={(d) => <LiveGraph detail={d} />}
         />
       )}
     </div>

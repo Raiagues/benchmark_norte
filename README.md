@@ -101,9 +101,15 @@ Os destaques iniciais são GPT-6 Astra, Claude Fable 5.1 e Gemini 3.1 Pro Previe
 
 O cartão de cada modelo reúne repetições, atividade atual, acertos integrais/parciais, erros técnicos, interrupções, tokens informados, latência e custo quando calculável. A comparação cumulativa mantém L1/L2 e tarefas separados. Clique numa métrica para abrir numerador, denominador e respostas participantes. A matriz alterna tarefas ou cenários sem paginação. O registro de eventos tem filtros e fica em segundo plano.
 
+Respostas parcialmente corretas aparecem como **respostas com erros**, em vermelho, no cartão, no resumo e no histórico. Concluir uma chamada não significa acertar o teste. Um recall de 100% não elimina erros de evidência ou justificativa. Clique no aviso para inspecionar a resposta: a primeira tela separa **o que entrou → o que o modelo respondeu → o que a avaliação concluiu**. Documentos, relações, parâmetros e impactos têm leitores e tabelas; o JSON original continua disponível em **Downloads técnicos**. Categoria, repetição e cenário ficam dentro do mesmo inspetor do modelo.
+
 **Interromper avaliação** exige confirmação. Respostas já salvas permanecem intactas; tarefas na fila não começam. A chamada em andamento pode terminar e ser salva. Interrupções e falhas técnicas não reduzem precisão/recall/F1. Respostas válidas mas incorretas continuam contribuindo para essas métricas.
 
 **Histórico** inclui avaliações parciais, com planejadas, avaliadas, erros e interrupções. Recarregar ou sair da página não para o backend. Já `./stop` encerra o servidor: use o botão do site primeiro se quiser aguardar a resposta em andamento. Após uma queda ou reinício, o estado incompleto é identificado como interrupção, sem retomar chamadas pagas automaticamente.
+
+Para continuar, abra a avaliação interrompida e clique em **Retomar pendentes**. A confirmação mostra somente tarefas que comprovadamente não foram enviadas. Respostas já concluídas, inclusive incorretas, e chamadas já enviadas não são repetidas. Registros antigos sem confirmação de envio ficam excluídos para evitar cobrança duplicada. As conexões de todos os modelos necessários precisam estar confirmadas antes de iniciar qualquer chamada.
+
+A retomada cria uma **continuação vinculada**, sem alterar os registros originais. Ela usa os documentos e prompts atuais: se o protocolo mudou, isso aparece na confirmação e os resultados ficam em outro grupo de comparação. Não se reutilizam as pistas dos prompts antigos. Depois, **Abrir continuação** permite acompanhar o trabalho; uma segunda confirmação não agenda novamente as mesmas tarefas. Chamadas retomadas consomem créditos normalmente.
 
 A atualização de banco é aditiva. As tabelas antigas e os arquivos de respostas não são apagados ou reescritos. Registros antigos que ainda dizem `running` ou `pending` recebem uma anotação separada de recuperação. Eventos históricos ausentes não são inventados. Detalhes da migração, contagens, fórmulas e eventos estão em [docs/live_execution.md](docs/live_execution.md).
 

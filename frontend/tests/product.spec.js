@@ -7,6 +7,10 @@ async function liveRoutes(page, initial) {
     stops = 0;
   await page.route("**/api/live**", async (route) => {
     const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/resume"))
+      return route.fulfill({
+        json: { eligible: 0, uncertain: 0, children: [] },
+      });
     if (path.endsWith("/stop")) {
       stops++;
       state.status = "INTERRUPTED_BY_USER";
@@ -419,6 +423,7 @@ test("one model explorer groups categories and repetitions and explains a red an
     .getByLabel("Categoria de teste", { exact: true })
     .selectOption("impact_explanation|L1_DIRECT");
   await expect(dialog.locator(".detail-meta .state-pill")).toHaveClass(/bad/);
+  await dialog.getByRole("button", { name: "Comparação", exact: true }).click();
   await expect(dialog.locator(".evaluation-errors")).toContainText(
     "Recall 100%",
   );
@@ -428,14 +433,11 @@ test("one model explorer groups categories and repetitions and explains a red an
   await expect(dialog.locator(".requirement-results tbody > tr")).toHaveCount(
     5,
   );
-  const bounds = await dialog
-    .locator(".requirement-results")
-    .evaluate((t) => ({
-      table: t.getBoundingClientRect().right,
-      last: t.querySelector("thead th:last-child").getBoundingClientRect()
-        .right,
-      container: t.parentElement.getBoundingClientRect().right,
-    }));
+  const bounds = await dialog.locator(".requirement-results").evaluate((t) => ({
+    table: t.getBoundingClientRect().right,
+    last: t.querySelector("thead th:last-child").getBoundingClientRect().right,
+    container: t.parentElement.getBoundingClientRect().right,
+  }));
   expect(bounds.last).toBeLessThanOrEqual(bounds.container + 1);
   await dialog.getByRole("button", { name: /REQ-001/ }).click();
   await expect(dialog.locator(".requirement-verdict-detail")).toContainText(
@@ -450,6 +452,7 @@ test("one model explorer groups categories and repetitions and explains a red an
   await expect(
     page.getByLabel("Repetição do resultado", { exact: true }),
   ).toHaveValue("3");
+  await dialog.getByRole("button", { name: "Comparação", exact: true }).click();
   await page
     .getByLabel("Cenário de mudança", { exact: true })
     .selectOption("CHG-008");

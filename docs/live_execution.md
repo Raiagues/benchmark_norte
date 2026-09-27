@@ -16,7 +16,7 @@ Operational metrics are separate: planned, started, evaluated, technical errors,
 
 ## Persistence and migration
 
-The forward migration only creates four tables: `live_batches`, `live_calls`, `live_events`, `execution_recovery`, plus indexes. It never resets SQLite or rewrites original `runs`, `executions`, `task_results`, feedback, reference edits or connection confirmations.
+The original forward migration created four tables: `live_batches`, `live_calls`, `live_events`, `execution_recovery`, plus indexes. The continuation upgrade adds `live_continuations`. Neither migration resets SQLite or rewrites original `runs`, `executions`, `task_results`, feedback, reference edits or connection confirmations.
 
 Legacy task plans are read from their saved repetition snapshots. Saved task results remain the source of evaluated results. Unfinished legacy work is annotated separately. The original `running`/`pending` values remain in SQLite; the API exposes `original_status` and a recovery annotation alongside the displayed interrupted state. Historical event timelines are not fabricated. A request that ended without a persisted response remains unknown; it is not silently counted as successful and its token use cannot be recovered.
 
@@ -37,6 +37,7 @@ The previous application process was already absent before this work started. Si
 Events include:
 
 - `RUN_CREATED`, `RUN_STARTED`, `RUN_COMPLETED`, `RUN_STOP_REQUESTED`, `RUN_CANCELLED`, `RUN_RECOVERED`.
+- `RUN_RESUMED` links a newly created continuation to the original batch after pending work is reserved.
 - `EXECUTION_QUEUED`, `EXECUTION_STARTED`, `EXECUTION_COMPLETED`, `EXECUTION_FAILED`, `EXECUTION_INTERRUPTED`.
 - `INPUT_PREPARED`, `REQUEST_PREPARED`, `API_REQUEST_SENT`, `API_RESPONSE_RECEIVED`, `API_ATTEMPT_FINISHED`.
 - `VALIDATION_STARTED`, `OUTPUT_PARSED`, `EVALUATION_STARTED`, `EVALUATION_COMPLETED`, `SAVING_STARTED`, `METRICS_UPDATED`.
@@ -50,6 +51,26 @@ A received response, prompt/input, parsed output, reference, comparison, metrics
 The stop endpoint requires `confirmed: true` and the existing local mutation header. A transactional stop flag prevents new tasks and new retry attempts. Queued work is marked `INTERRUPTED`; a dispatched request is allowed to finish, and its response/evaluation is saved. Already completed responses are immutable. The final batch becomes `INTERRUPTED_BY_USER`. Technical failures can produce `COMPLETED_WITH_ERRORS` or `PARTIALLY_COMPLETED` when dependent scheduling stopped.
 
 Browser refresh does not stop execution. Stopping the server with `./stop`, a crash or an operating-system restart can interrupt an in-flight request. At next startup its persisted checkpoint is retained and uncompleted work is explicitly marked interrupted with `unknown_after_restart`. Paid calls are never resumed automatically. For a graceful stop that lets an in-flight response finish, use **Stop benchmark** on the site before closing the server.
+
+## Explicit continuation
+
+`GET /api/live/<batch>/resume` previews eligible work without calling a provider. Only interrupted task/level calls with no persisted dispatch, attempt, checkpoint or result are eligible. For older recovered runs without a per-call journal, the original repetition must still be `pending`; old `running` repetitions are uncertain and excluded. Completed answers, including incorrect ones, and technical failures are never rerun by this action.
+
+`POST /api/live/<batch>/resume` requires the local mutation header, explicit confirmation and the preview token. It uses the existing benchmark lock and all-or-nothing model/key validation. Pending calls are copied into new repetition/batch records under the current document/prompt protocol, with the original repetition numbers and only the remaining task/level pairs. Source records remain unchanged. A changed protocol is disclosed and retained as a separate comparison cohort; obsolete prompts containing answer hints are never replayed.
+
+An SQLite `BEGIN IMMEDIATE` transaction rechecks eligible calls and inserts both new plans and their links. `live_continuations.source_call_id` is unique, so competing requests cannot schedule the same original call twice. A continuation that stops before dispatch can itself be continued. Its parent links to the existing child rather than reserving those calls again. There is no automatic retry of uncertain historical API requests.
+
+## Visual inspection and answer errors
+
+The read-only model summary exposes `answer_errors` separately from technical errors and labels a fully processed model with incorrect answers as `Completed with answer errors`. Original historical statuses and metrics are not rewritten. Partial answers count as answer errors and still contribute their real TP/FP/FN to quality metrics. The run header and history expose the same count.
+
+The inspector opens with input, model output and evaluation panels. Original saved inputs are readable by document and page/passage. Output uses parameter tables, relationship paths, and per-scenario requirement answers. Expected answers remain in a separate reference view; comparison identifies failures per requirement. Exact prompt, raw response, structured output and complete metrics remain downloadable. No new model response or reevaluation is created by inspection.
+
+### Continuation upgrade verification on 2026-09-27
+
+A second private backup was saved under ignored `.runtime/resume-inspector-preservation/` before this change. After startup migration, all rows of all 12 pre-existing tables were compared field by field against that backup. Counts remained **3 published runs, 9 repetition records, 18 evaluated task results, 1 live batch, 54 planned task calls, 6 recovery annotations, 3 connection confirmations**. Their original statuses and contents remain identical. The seven recorded result and ground-truth files also have identical SHA-256 hashes. The new continuation table is empty: no real benchmark was resumed during development.
+
+For this existing interrupted batch, the read-only preview identifies 30 calls in five never-started repetitions as eligible. The six calls belonging to the previously running legacy repetition remain uncertain and excluded. All 18 existing evaluated responses are preserved. The visible model summary now identifies 10 partially correct answers as answers with errors, without modifying their saved evaluation.
 
 ## Validation
 

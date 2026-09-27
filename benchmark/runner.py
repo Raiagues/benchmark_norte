@@ -64,6 +64,7 @@ def prepare_runs(
     experiment="first_pass",
     baseline_run_id=None,
     db=None,
+    continuation=None,
 ):
     if input_mode != "pdf_text":
         raise ValueError("New runs require original PDF documents (pdf_text)")
@@ -166,8 +167,26 @@ def prepare_runs(
             )
     batch = uuid.uuid4().hex
     result = []
+    records = []
     for model in models:
         for repetition in range(1, repetitions + 1):
+            work = (
+                [
+                    c
+                    for c in continuation["work"]
+                    if c["snapshot"]["model_config"] == model
+                    and c["repetition"] == repetition
+                ]
+                if continuation
+                else []
+            )
+            if continuation and not work:
+                continue
+            selected_plan = (
+                [(c["task"], c["difficulty"]) for c in work]
+                if continuation
+                else task_plan(tasks)
+            )
             rid = uuid.uuid4().hex
             metadata = {
                 "provider": model["provider"],
@@ -175,7 +194,7 @@ def prepare_runs(
                 "depth": model.get(depth_field(model)),
                 "repetition": repetition,
                 "batch_id": batch,
-                "tasks": tasks,
+                "tasks": list(dict.fromkeys(t for t, _ in selected_plan)),
                 "input_mode": input_mode,
                 "experiment": experiment,
                 "baseline_run_id": baseline_run_id,
@@ -186,8 +205,14 @@ def prepare_runs(
                 "prompt_hashes": {k: digest(v) for k, v in prompts.items()},
                 "feedback_hash": digest(feedback),
                 "completed_calls": 0,
-                "total_calls": len(task_plan(tasks)),
+                "total_calls": len(selected_plan),
             }
+            if continuation:
+                metadata.update(
+                    task_plan=selected_plan,
+                    resumed_from=continuation["batch_id"],
+                    source_call_ids=[c["id"] for c in work],
+                )
             run = {
                 "id": rid,
                 "created_at": utcnow(),
@@ -206,9 +231,16 @@ def prepare_runs(
                     "evaluation_code_hash": source_code_hash(),
                 },
             }
-            storage.save_execution(run, db)
+            records.append(run)
             result.append(rid)
-    live.register_batch(result, db)
+    if continuation:
+        from .resume import persist
+
+        persist(records, continuation, db)
+    else:
+        for run in records:
+            storage.save_execution(run, db)
+        live.register_batch(result, db)
     return result
 
 

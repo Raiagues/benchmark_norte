@@ -193,9 +193,30 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
     fullPage: true,
   });
   await page.getByRole("button", { name: "Respostas", exact: true }).click();
-  await expect(page.locator(".run-details pre").first()).toContainText(
-    "browser-test-only",
-  );
+  await expect(
+    page.locator(".run-details .inspector-story-grid > button"),
+  ).toHaveCount(3);
+  await page
+    .locator(".run-details")
+    .getByRole("button", { name: "Resposta", exact: true })
+    .click();
+  await expect(
+    page.locator(".run-details .inspector-table").first(),
+  ).toBeVisible();
+  await expect(page.locator(".run-details pre")).toHaveCount(0);
+  await page
+    .locator(".run-details")
+    .getByRole("button", { name: "Downloads técnicos", exact: true })
+    .click();
+  const downloadPending = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "↓ Resposta original da API", exact: true })
+    .click();
+  const download = await downloadPending;
+  const stream = await download.createReadStream();
+  let raw = "";
+  for await (const chunk of stream) raw += chunk.toString();
+  expect(raw).toContain("browser-test-only");
   await expect(
     page.getByRole("link", { name: "Baixar resposta completa" }),
   ).toHaveAttribute("href", /download$/);

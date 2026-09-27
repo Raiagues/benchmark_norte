@@ -7,6 +7,7 @@ A live call is one existing task/level request (which may contain several scenar
 import json
 import uuid
 from collections import defaultdict
+from contextlib import nullcontext
 from statistics import mean, median
 
 from . import storage
@@ -48,12 +49,18 @@ def _event(con, batch, kind, call_id=None, data=None):
     )
 
 
-def register_batch(ids, db=None, legacy=False):
-    runs = [storage.get_execution(r, db) for r in ids]
+def register_batch(ids, db=None, legacy=False, records=None, connection=None):
+    runs = (
+        records if records is not None else [storage.get_execution(r, db) for r in ids]
+    )
     if not runs:
         return
     bid = runs[0]["metadata"]["batch_id"]
-    with storage.connect(db) as con:
+    with (
+        nullcontext(connection)
+        if connection is not None
+        else storage.connect(db) as con
+    ):
         if con.execute("SELECT 1 FROM live_batches WHERE id=?", (bid,)).fetchone():
             return bid
         data = {
@@ -61,6 +68,7 @@ def register_batch(ids, db=None, legacy=False):
             "legacy": legacy,
             "started_at": None,
             "finished_at": None,
+            "resumed_from": runs[0]["metadata"].get("resumed_from"),
         }
         con.execute(
             "INSERT INTO live_batches VALUES (?,?,?,?,?)",
@@ -82,7 +90,9 @@ def register_batch(ids, db=None, legacy=False):
                 (r["task"], r["difficulty"]): r
                 for r in (json.loads(x[0]) for x in published)
             }
-            for ordinal, (task, level) in enumerate(task_plan(m["tasks"])):
+            for ordinal, (task, level) in enumerate(
+                m.get("task_plan") or task_plan(m["tasks"])
+            ):
                 result = results.get((task, level))
                 status = (
                     (
@@ -159,9 +169,7 @@ def register_batch(ids, db=None, legacy=False):
                 con,
                 bid,
                 "RUN_CREATED",
-                data={
-                    "planned": sum(len(task_plan(r["metadata"]["tasks"])) for r in runs)
-                },
+                data={"planned": sum(r["metadata"]["total_calls"] for r in runs)},
             )
             for row in con.execute(
                 "SELECT id FROM live_calls WHERE batch_id=? ORDER BY rowid", (bid,)
@@ -612,6 +620,7 @@ def operational(calls):
         "correct": sum(c.get("quality") == "correct" for c in evaluated),
         "partial": sum(c.get("quality") == "partial" for c in evaluated),
         "incorrect": sum(c.get("quality") == "incorrect" for c in evaluated),
+        "answer_errors": sum(c["status"] == "COMPLETED_INCORRECT" for c in evaluated),
         "technical_errors": errors,
         "interrupted": states.count("INTERRUPTED"),
         "running": states.count("RUNNING"),
@@ -717,6 +726,8 @@ def snapshot(batch_id, db=None):
             if ops["interrupted"]
             else "Completed with errors"
             if ops["technical_errors"]
+            else "Completed with answer errors"
+            if ops["answer_errors"]
             else "Completed"
         )
         active_error = next(

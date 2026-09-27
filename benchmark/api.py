@@ -255,6 +255,43 @@ def stop_live(batch_id: str, body: StopRequest):
     return live.snapshot(batch_id)
 
 
+@app.get("/api/live/{batch_id}/resume")
+def resume_preview(batch_id: str):
+    from .resume import public_plan
+
+    try:
+        return public_plan(batch_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+
+
+class ResumeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirmed: Literal[True]
+    token: str = Field(min_length=64, max_length=64)
+
+
+@app.post("/api/live/{batch_id}/resume", status_code=202)
+def resume_live(batch_id: str, body: ResumeRequest, background: BackgroundTasks):
+    from .resume import prepare
+
+    if not RUN_LOCK.acquire(blocking=False):
+        raise HTTPException(409, "An operation is already running")
+    try:
+        ids = prepare(batch_id, body.token)
+    except ValueError as exc:
+        RUN_LOCK.release()
+        raise HTTPException(400, str(exc)) from None
+    except Exception:
+        RUN_LOCK.release()
+        raise
+    background.add_task(execute_batch, ids)
+    return {
+        "run_ids": ids,
+        "batch_id": storage.get_execution(ids[0])["metadata"]["batch_id"],
+    }
+
+
 @app.get("/api/live-results/{call_id}")
 def live_result(call_id: str):
     result = live.call_detail(call_id)

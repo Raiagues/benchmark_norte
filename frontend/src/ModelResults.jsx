@@ -11,8 +11,18 @@ export default function ModelResults({
   renderDetail,
 }) {
   const choices = [...new Set(calls.map((c) => `${c.task}|${c.difficulty}`))];
-  const [task, setTask] = useState(selection.task || choices[0]);
-  const [rep, setRep] = useState(selection.rep || 1);
+  const initialTask = choices.includes(selection.task)
+    ? selection.task
+    : choices[0];
+  const initialCalls = calls.filter(
+    (c) => `${c.task}|${c.difficulty}` === initialTask,
+  );
+  const [task, setTask] = useState(initialTask);
+  const [rep, setRep] = useState(
+    initialCalls.some((c) => c.repetition === selection.rep)
+      ? selection.rep
+      : initialCalls[0]?.repetition,
+  );
   const [scenario, setScenario] = useState(selection.scenario || "");
   const [detail, setDetail] = useState(null),
     [error, setError] = useState("");
@@ -42,7 +52,21 @@ export default function ModelResults({
           <select
             aria-label={L("Categoria de teste", "Test category")}
             value={task}
-            onChange={(e) => setTask(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setTask(next);
+              if (
+                !calls.some(
+                  (c) =>
+                    `${c.task}|${c.difficulty}` === next &&
+                    c.repetition === rep,
+                )
+              )
+                setRep(
+                  calls.find((c) => `${c.task}|${c.difficulty}` === next)
+                    .repetition,
+                );
+            }}
           >
             {choices.map((k) => (
               <option key={k} value={k}>
@@ -58,7 +82,13 @@ export default function ModelResults({
             value={rep}
             onChange={(e) => setRep(Number(e.target.value))}
           >
-            {[...new Set(calls.map((c) => c.repetition))]
+            {[
+              ...new Set(
+                calls
+                  .filter((c) => `${c.task}|${c.difficulty}` === task)
+                  .map((c) => c.repetition),
+              ),
+            ]
               .sort((a, b) => a - b)
               .map((r) => {
                 const c = calls.find(

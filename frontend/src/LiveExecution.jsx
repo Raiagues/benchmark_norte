@@ -3,6 +3,16 @@ import { L, t } from "./i18n";
 import { Modal, Tabs } from "./ScreenUI";
 import ModelResults from "./ModelResults";
 import ScenarioResults from "./ScenarioResults";
+import ResumeControl from "./ResumeControl";
+import {
+  InputView,
+  PromptView,
+  OutputView,
+  TruthView,
+  MetricsView,
+  InspectionStory,
+  TechnicalView,
+} from "./InspectionViews";
 import {
   issueLabel,
   taskPurpose,
@@ -24,14 +34,23 @@ export function State({ value }) {
     <span className={`state-pill ${tone(value)}`}>{statusLabel(value)}</span>
   );
 }
-function Stat({ label, value, detail }) {
+function Stat({ label, value, detail, bad = false }) {
   return (
-    <div className="live-stat" title={detail}>
+    <div
+      className={`live-stat ${bad ? "answer-error-stat" : ""}`}
+      title={detail}
+    >
       <span>{label}</span>
       <strong>{value ?? "—"}</strong>
     </div>
   );
 }
+const answerErrors = (ops) =>
+  ops.answer_errors ?? (ops.partial || 0) + (ops.incorrect || 0);
+const runStatus = (run) =>
+  run.status === "COMPLETED" && answerErrors(run.operations)
+    ? "COMPLETED_WITH_ANSWER_ERRORS"
+    : run.status;
 function Metric({ name, value, onClick }) {
   return (
     <button
@@ -108,6 +127,7 @@ export function RunHistory({ api, onOpen }) {
                   L("Estado", "Status"),
                   L("Planejadas", "Planned"),
                   L("Avaliadas", "Evaluated"),
+                  L("Erros na resposta", "Answer errors"),
                   L("Erros técnicos", "Technical errors"),
                   L("Interrompidas", "Interrupted"),
                   L("Início / duração", "Start / duration"),
@@ -129,12 +149,17 @@ export function RunHistory({ api, onOpen }) {
                   </td>
                   <td>{r.models.map((m) => m.model).join(" · ")}</td>
                   <td>
-                    <State value={r.status} />
+                    <State value={runStatus(r)} />
                   </td>
                   <td>{r.operations.planned}</td>
                   <td>
                     {r.operations.evaluated}
                     <small>n={r.operations.evaluated}</small>
+                  </td>
+                  <td
+                    className={answerErrors(r.operations) ? "answer-bad" : ""}
+                  >
+                    {answerErrors(r.operations)}
                   </td>
                   <td>{r.operations.technical_errors}</td>
                   <td>{r.operations.interrupted}</td>
@@ -298,6 +323,7 @@ export default function LiveExecution({ api, renderGraph }) {
       </p>
     );
   const ops = run.operations,
+    repetitionCounts = run.models.map((m) => m.repetitions.length),
     current = run.calls.filter((c) => c.status === "RUNNING"),
     choices = [...new Set(run.calls.map(taskKey))],
     selected = choices.includes(selectedTask) ? selectedTask : choices[0];
@@ -332,7 +358,7 @@ export default function LiveExecution({ api, renderGraph }) {
               {L("AVALIAÇÃO", "BENCHMARK RUN")} · {run.id.slice(0, 8)}
             </span>
             <h2>
-              <State value={run.status} />
+              <State value={runStatus(run)} />
             </h2>
           </div>
           <div className="inline-actions">
@@ -356,6 +382,18 @@ export default function LiveExecution({ api, renderGraph }) {
             )}
           </div>
         </div>
+        {run.resumed_from && (
+          <a className="continuation-link" href={`#live/${run.resumed_from}`}>
+            {L(
+              "Continuação · abrir histórico original",
+              "Continuation · open original history",
+            )}{" "}
+            →
+          </a>
+        )}
+        {!activeStates.includes(run.status) && (
+          <ResumeControl key={run.id} api={api} run={run} />
+        )}
         <div className="run-context">
           <span>
             {run.models.length} {L("modelos", "models")}
@@ -366,7 +404,9 @@ export default function LiveExecution({ api, renderGraph }) {
             {run.scenario_ids.length} {L("cenários", "scenarios")}
           </span>
           <span>
-            {Math.max(...run.models.map((m) => m.repetitions.length))}{" "}
+            {Math.min(...repetitionCounts) === Math.max(...repetitionCounts)
+              ? Math.max(...repetitionCounts)
+              : `${Math.min(...repetitionCounts)}–${Math.max(...repetitionCounts)}`}{" "}
             {L("repetições / modelo", "repetitions / model")}
           </span>
         </div>
@@ -392,8 +432,15 @@ export default function LiveExecution({ api, renderGraph }) {
         <div className="ops-strip">
           <Stat label={L("Avaliadas", "Evaluated")} value={ops.evaluated} />
           <Stat
+            label={L("Respostas com erros", "Answers with errors")}
+            value={answerErrors(ops)}
+            bad={answerErrors(ops) > 0}
+          />
+
+          <Stat
             label={L("Erros técnicos", "Technical errors")}
             value={ops.technical_errors}
+            bad={ops.technical_errors > 0}
           />
           <Stat
             label={L("Interrompidas", "Interrupted")}
@@ -477,7 +524,9 @@ export default function LiveExecution({ api, renderGraph }) {
           const o = m.operations,
             active = current.find((c) => groupKey(c) === groupKey(m)),
             quality = selectedQuality(m),
-            repsDone = m.repetitions.filter((r) => !r.remaining).length;
+            repsDone = m.repetitions.filter(
+              (r) => r.evaluated === r.planned,
+            ).length;
           return (
             <article
               className="product-panel model-lane"
@@ -537,7 +586,7 @@ export default function LiveExecution({ api, renderGraph }) {
               </div>
               <div className="rep-heading">
                 <span>
-                  {L("Repetições encerradas", "Finished repetitions")}
+                  {L("Repetições avaliadas", "Evaluated repetitions")}
                 </span>
                 <strong>
                   {repsDone} / {m.repetitions.length}
@@ -583,16 +632,47 @@ export default function LiveExecution({ api, renderGraph }) {
                   </button>
                 ))}
               </div>
+              {answerErrors(o) > 0 && (
+                <button
+                  className="model-answer-errors"
+                  onClick={() => {
+                    const first = run.calls.find(
+                      (c) =>
+                        groupKey(c) === groupKey(m) &&
+                        c.status === "COMPLETED_INCORRECT",
+                    );
+                    if (first) inspect(first.id);
+                  }}
+                >
+                  <strong>
+                    ! {answerErrors(o)}{" "}
+                    {L("respostas com erros", "answers with errors")}
+                  </strong>
+                  <span>
+                    {L(
+                      "Inclui respostas parcialmente corretas · ver motivos",
+                      "Includes partially correct answers · inspect reasons",
+                    )}{" "}
+                    →
+                  </span>
+                </button>
+              )}
               <div className="lane-counts">
                 <Stat label={L("Corretas", "Correct")} value={o.correct} />
-                <Stat label={L("Parciais", "Partial")} value={o.partial} />
+                <Stat
+                  label={L("Parciais · com erros", "Partial · with errors")}
+                  value={o.partial}
+                  bad={o.partial > 0}
+                />
                 <Stat
                   label={L("Incorretas", "Incorrect")}
                   value={o.incorrect}
+                  bad={o.incorrect > 0}
                 />
                 <Stat
                   label={L("Erros técnicos", "Technical errors")}
                   value={o.technical_errors}
+                  bad={o.technical_errors > 0}
                 />
                 <Stat
                   label={L("Interrompidas", "Interrupted")}
@@ -1318,7 +1398,7 @@ export function ExecutionDetail({
   scenario = "",
   onScenario = () => {},
 }) {
-  const [tab, setTab] = useState(d.result ? "comparison" : "input");
+  const [tab, setTab] = useState("story");
   const result = d.result;
   const output = result?.parsed_output;
   const Wrapper = embedded ? React.Fragment : Modal;
@@ -1350,8 +1430,10 @@ export function ExecutionDetail({
             {number(result?.latency_seconds || d.call?.latency_seconds)} s
           </span>
         </div>
-        <p className="task-purpose">{taskPurpose(d.task)}</p>
-        {Object.keys(d.failure_counts || {}).length > 0 && (
+        {tab !== "story" && (
+          <p className="task-purpose">{taskPurpose(d.task)}</p>
+        )}
+        {tab !== "story" && Object.keys(d.failure_counts || {}).length > 0 && (
           <aside className="evaluation-errors">
             <strong>
               {L("O que falhou nesta resposta", "What failed in this answer")}
@@ -1416,115 +1498,27 @@ export function ExecutionDetail({
           value={tab}
           onChange={setTab}
           items={[
+            ["story", L("Visão da execução", "Execution overview")],
             ["input", L("Entrada", "Input")],
             ["prompt", L("Prompt", "Prompt")],
             ["output", L("Resposta", "Output")],
             ["comparison", L("Comparação", "Comparison")],
             ["truth", L("Gabarito", "Ground truth")],
             ["metrics", L("Métricas", "Metrics")],
-            ["raw", L("API original", "Raw API")],
+            ["raw", L("Downloads técnicos", "Technical downloads")],
           ]}
         />
-        {tab === "input" && (
-          <div>
-            <p className="inline-note">
-              {L(
-                "Conteúdo exato da entrada. O gabarito é separado e não integra esta mensagem.",
-                "Exact input content. Ground truth is separate and is not part of this message.",
-              )}
-            </p>
-            <pre className="exact-text">{JSON.stringify(d.input, null, 2)}</pre>
-          </div>
-        )}
-        {tab === "prompt" && (
-          <>
-            <small>SHA-256 {d.prompt_hash}</small>
-            <pre className="exact-text" lang="en">
-              {d.prompt}
-            </pre>
-          </>
-        )}
-        {tab === "output" &&
-          (output ? (
-            <pre className="exact-text">{JSON.stringify(output, null, 2)}</pre>
-          ) : (
-            <p>
-              {L(
-                "Nenhuma resposta estruturada avaliada.",
-                "No evaluated structured output.",
-              )}
-            </p>
-          ))}
-        {tab === "raw" && (
-          <pre className="exact-text">
-            {JSON.stringify(
-              result
-                ? {
-                    response: result.raw_response,
-                    attempts: result.attempts,
-                    tokens: result.tokens,
-                    cost_usd: result.cost_usd,
-                  }
-                : d.call ||
-                    d.response_checkpoint ||
-                    L("Nenhuma resposta recebida.", "No response received."),
-              null,
-              2,
-            )}
-          </pre>
+        {tab === "story" && <InspectionStory detail={d} onTab={setTab} />}
+        {tab === "input" && <InputView detail={d} />}
+        {tab === "prompt" && <PromptView detail={d} />}
+        {tab === "output" && (
+          <OutputView detail={d} scenario={scenario} onScenario={onScenario} />
         )}
         {tab === "truth" && (
-          <>
-            <p className="inline-note">
-              {L(
-                "Referência de avaliação desta execução · não é saída do modelo.",
-                "Evaluation reference for this execution · not model output.",
-              )}
-            </p>
-            <pre className="exact-text">
-              {JSON.stringify(
-                d.task === "relationship_extraction"
-                  ? d.ground_truth.relationships
-                  : d.task === "entity_extraction"
-                    ? d.ground_truth.entities
-                    : d.ground_truth.change_scenarios.filter((s) =>
-                        d.scenario_ids.includes(s.id),
-                      ),
-                null,
-                2,
-              )}
-            </pre>
-          </>
+          <TruthView detail={d} scenario={scenario} onScenario={onScenario} />
         )}
-        {tab === "metrics" &&
-          (result ? (
-            <>
-              <div className="ops-strip">
-                <Stat
-                  label={L("Entrada", "Input tokens")}
-                  value={number(result.tokens.input)}
-                />
-                <Stat
-                  label={L("Saída", "Output tokens")}
-                  value={number(result.tokens.output)}
-                />
-                <Stat
-                  label={L("Custo", "Cost")}
-                  value={money(result.cost_usd)}
-                />
-              </div>
-              <pre className="exact-text">
-                {JSON.stringify(result.metrics, null, 2)}
-              </pre>
-            </>
-          ) : (
-            <p>
-              {L(
-                "Métricas de qualidade indisponíveis.",
-                "Quality metrics unavailable.",
-              )}
-            </p>
-          ))}
+        {tab === "metrics" && <MetricsView detail={d} />}
+        {tab === "raw" && <TechnicalView detail={d} />}
         {tab === "comparison" &&
           (!result ? (
             <p>

@@ -462,7 +462,33 @@ export async function interceptApi(
     else if (path === "/executions") response = executions;
     else if (path === "/sources")
       response = sources.map((s) => ({ ...s, available: false, pages: null }));
-    else if (path === "/live") response = liveRun ? [liveRun] : [];
+    else if (path.startsWith("/live-results/")) {
+      const id = path.split("/").at(-1);
+      const run = records.runs.find((r) => r.results.some((x) => x.id === id));
+      const result = run?.results.find((r) => r.id === id);
+      if (result)
+        response = {
+          ...run.metadata,
+          id,
+          run_id: run.id,
+          task: result.task,
+          difficulty: result.difficulty,
+          status: "COMPLETED_CORRECT",
+          stage: "COMPLETED",
+          scenario_ids: [],
+          result,
+          ground_truth,
+          input: { documents, system_config: dataset.system_config },
+          prompt: result.prompt,
+          prompt_hash: result.prompt_hash,
+          input_policy: "source_documents_v2",
+          snapshot_metadata: { dataset_hash: "isolated-ui-hash" },
+          comparison:
+            result.task === "relationship_extraction"
+              ? records.graph.comparison
+              : null,
+        };
+    } else if (path === "/live") response = liveRun ? [liveRun] : [];
     else if (path.startsWith("/live/")) {
       if (path.endsWith("/stream")) {
         await route.fulfill({

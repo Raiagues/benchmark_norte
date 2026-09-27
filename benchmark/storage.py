@@ -37,6 +37,8 @@ def init_db(db=None):
         CREATE TABLE IF NOT EXISTS live_calls (id TEXT PRIMARY KEY, batch_id TEXT NOT NULL, run_id TEXT NOT NULL, ordinal INTEGER NOT NULL, status TEXT NOT NULL, stage TEXT NOT NULL, data TEXT NOT NULL, result TEXT, UNIQUE(run_id, ordinal));
         CREATE TABLE IF NOT EXISTS live_events (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT NOT NULL, call_id TEXT, created_at TEXT NOT NULL, type TEXT NOT NULL, data TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS execution_recovery (run_id TEXT PRIMARY KEY, recovered_at TEXT NOT NULL, reason TEXT NOT NULL);
+        -- Each never-sent source call can be continued only once. Original rows stay intact.
+        CREATE TABLE IF NOT EXISTS live_continuations (source_call_id TEXT PRIMARY KEY, target_call_id TEXT NOT NULL UNIQUE, source_batch_id TEXT NOT NULL, target_batch_id TEXT NOT NULL, created_at TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS live_calls_batch ON live_calls(batch_id);
         CREATE INDEX IF NOT EXISTS live_events_batch ON live_events(batch_id, id);
         """)

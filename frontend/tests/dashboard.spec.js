@@ -5,7 +5,7 @@ test("fresh app is empty; no placeholder scores, graphs, or runnable demo", asyn
   page,
 }) => {
   const { writes } = await interceptApi(page);
-  await page.goto("/");
+  await page.goto("/#results");
   await expect(
     page.getByRole("heading", { name: "Nenhum resultado ainda" }),
   ).toBeVisible();
@@ -193,11 +193,15 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
   await page.getByLabel("Tipo de alteração").selectOption("no_impact");
   await expect(page.locator(".scenario")).toHaveCount(2);
   await expect(page.locator(".scenario").first()).toContainText("Nenhum");
-  await page.getByRole("link", { name: "Documentos", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Entradas e saídas", exact: true })
+    .click();
   await expect(
     page.getByRole("link", { name: "Datasheet oficial" }),
-  ).toHaveCount(3);
-  await page.getByRole("button", { name: "Requisitos", exact: true }).click();
+  ).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Requisitos do projeto", exact: true })
+    .click();
   await expect(
     page.getByText("Não são medições de hardware", { exact: false }),
   ).toBeVisible();

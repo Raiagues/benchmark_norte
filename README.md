@@ -50,6 +50,23 @@ O navegador abre em **http://127.0.0.1:8000**. Se ele não abrir automaticamente
 
 Instalar, abrir e fechar não chamam modelos nem criam resultados. Você pode começar com `.env` vazio: o site lista exatamente o que falta. Alterações nas chaves são reconhecidas ao clicar em **Atualizar status**, sem reiniciar. As tabelas e resultados ficam salvos entre reinícios.
 
+## Entender e editar o benchmark pelo site
+
+A página inicial agora é **O benchmark**, com um diagrama clicável: **entrada → modelo → saída → avaliação**. Os componentes têm ícones, fatos do fabricante e links para as fontes. Esses fatos são dados fornecidos ao modelo, não respostas geradas por ele.
+
+- **Entradas e saídas**: selecione uma tarefa para ver exatamente seus documentos, requisitos, configuração, cenários e vocabulário. Os requisitos são regras de projeto dadas ao modelo. A aba **Instruções do modelo** mostra o prompt geral e o da tarefa. **O que deve devolver** explica o contrato da resposta, sem inventar uma resposta de exemplo. **Mensagem completa** permite inspecionar e baixar o pedido exato, construído pela mesma função do executor. A prévia não chama APIs. Em L2 ela já exclui as pistas PROJECT-05/06.
+- **Gabarito revisável**: entidades, valores, relações e impactos esperados usados pela avaliação. Esses arquivos de respostas esperadas não são enviados ao modelo. Em L1, os documentos de entrada já descrevem relações explícitas para extrair. Cada item tem ações **Confirmar**, **Recusar**, **Editar** e, quando aplicável, **Evidências**. A porcentagem desta tela mede revisão humana, não desempenho de modelo.
+- **Critérios de avaliação**: cartões explicam as condições de publicação, acertos, falsos positivos, faltantes, evidência inválida e fórmulas. Uma resposta tecnicamente errada mas válida recebe pontuação; uma chamada que falhou não vira resultado. Não há nota mínima global nem vencedor automático.
+- **Português / English**: troca o idioma da interface inteira e salva a preferência no navegador. Documentos, prompts, evidências e respostas originais permanecem no idioma original para preservar exatamente o conteúdo do teste. A interface identifica esse conteúdo literal.
+
+Para editar uma entrada, abra seu trecho e clique em **Editar entrada**; configurações, descrições de alterações e prompts também têm editores. Para corrigir uma resposta esperada, use **Editar** no gabarito. Os editores têm campos legíveis; não exigem editar JSON. Explique a alteração e clique em **Salvar nova versão**.
+
+Cada edição é uma ação humana explícita e cria uma revisão local, como `1.1.0+local.1`. Ela fica em `benchmark_revisions` no SQLite, sem sobrescrever os arquivos originais do Git nem resultados antigos. A versão local passa a ser usada pelas novas avaliações, tanto no site quanto no CLI. As confirmações antigas não valem automaticamente para conteúdo alterado. Editar uma entrada não recalcula a resposta esperada: revise o gabarito correspondente. Alterar a criticidade de um requisito atualiza sua classificação em todos os cenários.
+
+Confirmações e recusas ficam em `benchmark_reviews`, com data, item, observação e hash do dataset. Recusar exige explicar o problema e bloqueia novas avaliações daquela versão até corrigir ou confirmar a referência. A versão inicial continua provisória; não há aprovação humana inventada. Evidências inexistentes não podem ser confirmadas. Duas edições concorrentes não sobrescrevem uma à outra silenciosamente.
+
+Esta primeira versão permite editar os itens existentes, mantendo IDs e tipos do vocabulário fixos. Para ampliar o vocabulário ou adicionar um cenário, siga a seção **Adicionar um modelo ou cenário**. Se houver uma versão local, ela é a configuração ativa; alterações nos arquivos de origem não sobrescrevem essa revisão. Preserve `data/benchmark.sqlite3` ao fazer backup do trabalho local.
+
 ## Conferir as conexões e avaliar
 
 1. Abra **Nova avaliação**. Os três modelos em destaque começam selecionados, um por provedor. Use **Todos os modelos**, **Destaques** ou marque somente os que quiser.

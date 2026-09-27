@@ -203,6 +203,31 @@ export async function interceptApi(
   const feedback = [];
   const writes = [];
   let executions = [];
+  const bench = {
+    dataset: structuredClone(dataset),
+    edit_hash: "browser-edit-hash",
+    prompts: Object.fromEntries(
+      ["common", ...allTasks].map((key) => [
+        key,
+        fs.readFileSync(`${root}prompts/${key}.txt`, "utf8"),
+      ]),
+    ),
+    review: {
+      items: {},
+      accepted: 0,
+      rejected: 0,
+      pending: 58,
+      total: 58,
+      dataset_hash: "browser-dataset-hash",
+    },
+    history: { revisions: [], reviews: [] },
+  };
+  const updateReview = () => {
+    const r = Object.values(bench.review.items);
+    bench.review.accepted = r.filter((r) => r.verdict === "accepted").length;
+    bench.review.rejected = r.filter((r) => r.verdict === "rejected").length;
+    bench.review.pending = 58 - r.length;
+  };
   const connections = config.models.map((m, i) => ({
     provider: m.provider,
     model: m.model,
@@ -278,8 +303,104 @@ export async function interceptApi(
           ? "Faltam chaves no .env. Nenhuma chamada foi enviada."
           : "Verificação concluída.",
       };
-    } else if (path === "/documents") response = dataset;
-    else if (path === "/runs" && request.method() === "POST") {
+    } else if (path === "/documents") response = bench.dataset;
+    else if (path === "/benchmark") response = bench;
+    else if (path === "/benchmark/preview") {
+      const query = new URL(request.url()).searchParams;
+      const task = query.get("task"),
+        level = query.get("difficulty");
+      const documents = structuredClone(bench.dataset.documents);
+      if (level === "L2_ONE_HOP") {
+        delete documents.PROJECT["PROJECT-05"];
+        delete documents.PROJECT["PROJECT-06"];
+      }
+      const input = {
+        documents,
+        system_config: bench.dataset.system_config,
+        scope: bench.dataset.scope,
+        sources: bench.dataset.sources.map((s) =>
+          Object.fromEntries(
+            Object.entries(s).filter(
+              ([k]) => k !== "parameters" || s.document_id.startsWith("ALT-"),
+            ),
+          ),
+        ),
+        scenarios: ["entity_extraction", "relationship_extraction"].includes(
+          task,
+        )
+          ? []
+          : bench.dataset.ground_truth.change_scenarios
+              .filter((s) => s.difficulty === level)
+              .map((s) =>
+                Object.fromEntries(
+                  [
+                    "id",
+                    "change_type",
+                    "difficulty",
+                    "split",
+                    "description",
+                    "changed_entity",
+                  ].map((k) => [k, s[k]]),
+                ),
+              ),
+        confirmed_feedback: [],
+      };
+      const instructions = {
+        common: bench.prompts.common,
+        task: bench.prompts[task],
+      };
+      response = {
+        task,
+        difficulty: level,
+        input_mode: query.get("input_mode"),
+        instructions,
+        input,
+        output_schema: {},
+        prompt_hash: "browser-preview-hash",
+        prompt:
+          instructions.common +
+          "\n" +
+          instructions.task +
+          "\nINPUT\n" +
+          JSON.stringify(input),
+      };
+    } else if (path === "/benchmark/review") {
+      response = {
+        ...request.postDataJSON(),
+        created_at: "2026-09-27T12:00:00Z",
+      };
+      bench.review.items[response.item_key] = response;
+      bench.history.reviews.push(response);
+      updateReview();
+    } else if (path === "/benchmark/edit") {
+      const edit = request.postDataJSON();
+      if (edit.kind === "relationship")
+        Object.assign(
+          bench.dataset.ground_truth.relationships.find(
+            (e) => key(e) === edit.item_id,
+          ),
+          edit.value,
+        );
+      if (edit.kind === "document") {
+        const [id, loc] = edit.item_id.split(":");
+        bench.dataset.documents[id][loc] = edit.value;
+      }
+      if (edit.kind === "prompt") bench.prompts[edit.item_id] = edit.value;
+      if (edit.kind === "configuration")
+        bench.dataset.system_config[edit.item_id] = edit.value;
+      bench.dataset.manifest.dataset_version = `1.1.0+local.${bench.history.revisions.length + 1}`;
+      bench.review.items = {};
+      updateReview();
+      response = {
+        id: bench.history.revisions.length + 1,
+        kind: edit.kind,
+        item_id: edit.item_id,
+        note: edit.note,
+        created_at: "2026-09-27T12:00:00Z",
+        dataset_version: bench.dataset.manifest.dataset_version,
+      };
+      bench.history.revisions.push(response);
+    } else if (path === "/runs" && request.method() === "POST") {
       executions = [
         {
           id: "test-failed-attempt",

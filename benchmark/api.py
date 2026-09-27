@@ -82,6 +82,79 @@ def documents():
     return load_dataset()
 
 
+@app.get("/api/benchmark")
+def benchmark_overview():
+    from .workbench import overview
+
+    return overview()
+
+
+@app.get("/api/benchmark/preview")
+def benchmark_preview(
+    task: str = "relationship_extraction",
+    difficulty: str = "L1_DIRECT",
+    input_mode: str = "controlled_text",
+):
+    from .workbench import preview
+
+    try:
+        return preview(task, difficulty, input_mode)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+
+
+class BenchmarkEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    kind: str
+    item_id: str
+    value: str | float | dict
+    note: str = Field(min_length=1, max_length=2000)
+    expected_hash: str
+
+
+class ReferenceReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    item_key: str
+    verdict: Literal["accepted", "rejected"]
+    comment: str = Field(default="", max_length=2000)
+    expected_hash: str
+
+
+@app.post("/api/benchmark/edit")
+def benchmark_edit(body: BenchmarkEdit):
+    from .workbench import save_edit
+
+    if not RUN_LOCK.acquire(blocking=False):
+        raise HTTPException(409, "operation_in_progress")
+    try:
+        return save_edit(**body.model_dump())
+    except ValueError as exc:
+        from pydantic import ValidationError
+
+        raise HTTPException(
+            400,
+            "invalid_reference_fields"
+            if isinstance(exc, ValidationError)
+            else str(exc),
+        ) from None
+    finally:
+        RUN_LOCK.release()
+
+
+@app.post("/api/benchmark/review")
+def benchmark_review(body: ReferenceReview):
+    from .workbench import record_review
+
+    if not RUN_LOCK.acquire(blocking=False):
+        raise HTTPException(409, "operation_in_progress")
+    try:
+        return record_review(**body.model_dump())
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+    finally:
+        RUN_LOCK.release()
+
+
 @app.get("/api/runs")
 def runs():
     return storage.list_runs()

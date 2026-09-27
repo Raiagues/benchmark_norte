@@ -1,0 +1,94 @@
+{
+  "benchmark_changed": {
+    "pt": "O benchmark mudou em outra aba. Atualize a página antes de salvar.",
+    "en": "The benchmark changed in another tab. Refresh before saving."
+  },
+  "invalid_reference_review": {
+    "pt": "Item ou decisão de revisão inválidos.",
+    "en": "Invalid reference item or review decision."
+  },
+  "review_comment_required": {
+    "pt": "Explique o que precisa ser corrigido antes de recusar.",
+    "en": "Explain what needs correction before rejecting."
+  },
+  "invalid_task_level": {
+    "pt": "A tarefa e o nível selecionados não são compatíveis.",
+    "en": "The selected task and level are incompatible."
+  },
+  "duplicate_reference_id": {
+    "pt": "A referência contém IDs ou relações duplicadas.",
+    "en": "The reference contains duplicate IDs or relationships."
+  },
+  "reference_outside_scope": {
+    "pt": "Os IDs precisam corresponder ao vocabulário fornecido aos modelos.",
+    "en": "IDs must match the vocabulary supplied to the models."
+  },
+  "unknown_reference_node": {
+    "pt": "A relação precisa conectar dois nós existentes.",
+    "en": "A relationship must connect two existing nodes."
+  },
+  "invalid_scenario_requirements": {
+    "pt": "Revise os requisitos afetados, não afetados e críticos. Cada dependência deve pertencer a um requisito afetado.",
+    "en": "Review affected, unaffected and critical requirements. Every dependency must belong to an affected requirement."
+  },
+  "scenario_dependency_missing": {
+    "pt": "Cada requisito afetado precisa de uma dependência existente no gabarito.",
+    "en": "Each affected requirement needs a dependency present in the reference."
+  },
+  "invalid_document_edit": {
+    "pt": "A entrada precisa de um texto não vazio e de uma localização existente.",
+    "en": "Input needs nonempty text and an existing location."
+  },
+  "invalid_configuration_edit": {
+    "pt": "Use um número válido para uma configuração numérica existente.",
+    "en": "Use a valid number for an existing numeric setting."
+  },
+  "invalid_prompt_edit": {
+    "pt": "O prompt precisa de texto e deve pertencer a uma tarefa existente.",
+    "en": "The prompt needs text and must belong to an existing task."
+  },
+  "unknown_reference_item": {
+    "pt": "Item do gabarito não encontrado. Atualize a página.",
+    "en": "Reference item not found. Refresh the page."
+  },
+  "invalid_reference_fields": {
+    "pt": "Há campos inválidos. Confira valores, tipos, unidades e evidências.",
+    "en": "Some fields are invalid. Check values, types, units and evidence."
+  },
+  "reference_id_is_fixed": {
+    "pt": "O ID deve continuar igual ao vocabulário do teste.",
+    "en": "The ID must remain consistent with the test vocabulary."
+  },
+  "scenario_input_is_fixed": {
+    "pt": "Edite a descrição da alteração em Entradas e saídas.",
+    "en": "Edit the change description under Inputs and outputs."
+  },
+  "invalid_reference_evidence": {
+    "pt": "A evidência precisa citar documento, localização e trecho que existam na entrada atual.",
+    "en": "Evidence must cite a document, location and passage present in the current input."
+  },
+  "requirement_input_is_separate": {
+    "pt": "Edite o texto do requisito em Entradas e saídas; aqui só se altera a criticidade.",
+    "en": "Edit requirement text under Inputs and outputs; only criticality is edited here."
+  },
+  "relationship_used_by_scenario": {
+    "pt": "Esta relação é usada por cenários. Ajuste as dependências dos cenários antes de mudar seus nós.",
+    "en": "This relationship is used by scenarios. Update their dependencies before changing its nodes."
+  },
+  "invalid_edit_kind": {
+    "pt": "Este tipo de edição não é permitido.",
+    "en": "This edit type is not allowed."
+  },
+  "secret_in_edit": {
+    "pt": "Foi detectada uma possível chave no texto. Remova a credencial antes de salvar.",
+    "en": "A possible key was detected in the text. Remove it before saving."
+  },
+  "operation_in_progress": {
+    "pt": "Aguarde a operação em andamento antes de editar o benchmark.",
+    "en": "Wait for the current operation before editing the benchmark."
+  },
+  "reference_has_rejected_items": {
+    "pt": "Há itens recusados no gabarito. Corrija ou confirme a referência antes de avaliar. Nenhuma chamada foi iniciada.",
+    "en": "The reference has rejected items. Correct or confirm it before evaluating. No call was started."
+  }
+}

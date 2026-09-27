@@ -30,13 +30,34 @@ def digest(value):
     return hashlib.sha256(value).hexdigest()
 
 
-def load_dataset(mode="controlled_text"):
+def load_dataset(mode="controlled_text", db=None, use_local=True):
     documents = {}
     for doc, filename in DOC_FILES.items():
         lines = (ROOT / "data/normalized" / filename).read_text().splitlines()
         documents[doc] = {
             m[1]: m[2] for line in lines if (m := re.match(r"\[(.+?)\] (.*)", line))
         }
+    gt = {
+        key: read_json(ROOT / f"data/ground_truth/{key}.json")
+        for key in ("entities", "relationships", "requirements", "change_scenarios")
+    }
+    result = {
+        "manifest": read_json(ROOT / "data/manifest.json"),
+        "documents": documents,
+        "system_config": read_json(ROOT / "data/normalized/system_config.json"),
+        "scope": read_json(ROOT / "data/task_scope.json"),
+        "sources": read_json(ROOT / "data/sources.json"),
+        "ground_truth": gt,
+        "input_mode": mode,
+        "pdf_hashes": {},
+    }
+    if use_local:
+        from .workbench import active_revision
+
+        revision = active_revision(db)
+        if revision:
+            result = revision["dataset"]
+    documents = result["documents"]
     pdf_hashes = {}
     if mode == "pdf_text":
         from pypdf import PdfReader
@@ -58,20 +79,8 @@ def load_dataset(mode="controlled_text"):
                 )
     elif mode != "controlled_text":
         raise ValueError("Unknown input mode")
-    gt = {
-        key: read_json(ROOT / f"data/ground_truth/{key}.json")
-        for key in ("entities", "relationships", "requirements", "change_scenarios")
-    }
-    return {
-        "manifest": read_json(ROOT / "data/manifest.json"),
-        "documents": documents,
-        "system_config": read_json(ROOT / "data/normalized/system_config.json"),
-        "scope": read_json(ROOT / "data/task_scope.json"),
-        "sources": read_json(ROOT / "data/sources.json"),
-        "ground_truth": gt,
-        "input_mode": mode,
-        "pdf_hashes": pdf_hashes,
-    }
+    result.update(documents=documents, input_mode=mode, pdf_hashes=pdf_hashes)
+    return result
 
 
 def public_scenario(s):
@@ -112,7 +121,13 @@ def task_plan(tasks):
     ]
 
 
-def prompt_bundle():
+def prompt_bundle(db=None, use_local=True):
+    if use_local:
+        from .workbench import active_revision
+
+        revision = active_revision(db)
+        if revision:
+            return revision["prompts"]
     return {p.stem: p.read_text() for p in sorted((ROOT / "prompts").glob("*.txt"))}
 
 

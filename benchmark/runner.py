@@ -87,7 +87,12 @@ def prepare_runs(
         if model not in cfg["models"]:
             raise ValueError("Model must be present in config/models.json")
     require_ready(models, db)
-    ds, prompts = load_dataset(input_mode), prompt_bundle()
+    ds, prompts = load_dataset(input_mode, db=db), prompt_bundle(db=db)
+    from .workbench import review_state
+
+    reference_review = review_state(load_dataset(db=db), db)
+    if reference_review["rejected"]:
+        raise ValueError("reference_has_rejected_items")
     schemas = {t: response_schema(t) for t in tasks}
     feedback = []
     baseline = None
@@ -175,6 +180,7 @@ def prepare_runs(
                 "metadata": metadata,
                 "snapshot": {
                     "dataset": ds,
+                    "reference_review": reference_review,
                     "prompts": prompts,
                     "schemas": schemas,
                     "model_config": model,

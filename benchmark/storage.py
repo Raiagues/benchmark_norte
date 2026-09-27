@@ -29,6 +29,8 @@ def init_db(db=None):
         CREATE TABLE IF NOT EXISTS feedback (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, confirmed INTEGER NOT NULL, data TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS human_reviews (id TEXT PRIMARY KEY, run_id TEXT NOT NULL, data TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS connection_checks (provider TEXT NOT NULL, model TEXT NOT NULL, key_hash TEXT NOT NULL, config_hash TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(provider,model));
+        CREATE TABLE IF NOT EXISTS benchmark_revisions (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS benchmark_reviews (id INTEGER PRIMARY KEY, dataset_hash TEXT NOT NULL, data TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS results_run ON task_results(run_id);
         """)
 

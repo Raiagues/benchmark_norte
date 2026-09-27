@@ -2,8 +2,8 @@
 
 Versão 1.1: resultados publicados somente após uma execução real e completa das APIs.
 
-- 74 testes Python passaram. Incluem precisão/recall/F1, evidências, relações direcionadas, impactos críticos, parsing, normalização dos provedores, feedback, publicação atômica e rejeição de respostas inválidas.
-- 8 testes de navegador passaram na interface compilada: estado vazio; falha sem resultado; seleção de modelo e grafos lado a lado; métricas e respostas originais; layout móvel; bloqueio de todos os modelos quando falta uma chave; confirmação manual persistente; diagnóstico de crédito sem confundir resposta HTTP com geração confirmada.
+- 86 testes Python passaram. Incluem precisão/recall/F1, evidências, relações direcionadas, impactos críticos, parsing, normalização dos provedores, feedback, publicação atômica e rejeição de respostas inválidas.
+- 14 testes de navegador passaram na interface compilada: estado vazio; falha sem resultado; seleção de modelo e grafos lado a lado; métricas e respostas originais; layout móvel; bloqueio de todos os modelos quando falta uma chave; confirmação manual persistente; diagnóstico de crédito sem confundir resposta HTTP com geração confirmada.
 - As confirmações são testadas em bancos temporários: ausência/rotação de chave, configuração alterada, crédito, cota, rate limit, acesso negado e resposta malformada. Iniciar não repete o teste de conexão e uma única pendência bloqueia o lote antes de qualquer chamada.
 - `./setup`, `./start` repetido, `./stop` repetido e reabertura imediata passaram no ambiente Linux. O instalador criou apenas um `.env` vazio e preserva arquivos existentes. O servidor atende interface e API em uma única porta.
 - A compilação de produção do frontend passou. O Vite informa que ignora a diretiva `use client` da dependência React Flow; isso não impede a compilação.
@@ -19,3 +19,11 @@ As fontes oficiais e os PDFs locais foram conferidos durante a implementação i
 Não foram feitas chamadas pagas ou medições de modelos reais nesta validação. Acesso às contas, compatibilidade dos modelos reais com os schemas, qualidade das respostas e faturamento dependem de chaves válidas. Não houve teste de hardware.
 
 A suíte Python informa uma depreciação do uso de httpx no TestClient do Starlette. Os testes passaram; o aviso é da dependência de teste.
+
+## Interface e revisão do benchmark
+
+- Navegação reorganizada em O benchmark, Entradas e saídas, Gabarito revisável e Critérios de avaliação, além das páginas de comparação. O diagrama separa entrada, instruções, saída e avaliação. Não há respostas ou pontuações de exemplo no aplicativo.
+- A prévia foi comparada com a função real que monta o prompt. Respostas esperadas e feedback de primeira passagem continuam fora da entrada; L2 remove as pistas diretas.
+- Testes cobrem revisão humana, recusa que bloqueia chamadas, versões de entradas/prompts/gabarito, conflito de edição, evidências inválidas, prevenção de credenciais e preservação de snapshots antigos.
+- Testes de navegador cobrem os dois idiomas, persistência da preferência, conteúdo original inalterado, edição sem JSON, histórico e layout móvel. Ícones são ilustrações de interface, não fotografias dos componentes.
+- A inspeção visual no servidor real foi somente de leitura. Não confirmou gabaritos, não criou edições locais nem chamou modelos.

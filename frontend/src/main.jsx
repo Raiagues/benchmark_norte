@@ -4,11 +4,17 @@ import {
   ReactFlow,
   Background,
   Controls,
+  ControlButton,
+  useReactFlow,
   MarkerType,
   Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
+import "./workbench.css";
+import Benchmark from "./Benchmark";
+import Icon from "./Icon";
+import { t as tr, L, getLanguage, setLanguage, locale } from "./i18n";
 
 const providers = {
   openai: "OpenAI",
@@ -23,12 +29,26 @@ const tasks = {
   one_hop: "Raciocínio de um passo",
 };
 const pages = {
+  documents: "O benchmark",
+  inputs: "Entradas e saídas",
+  reference: "Gabarito revisável",
+  criteria: "Critérios de avaliação",
   results: "Resultados",
   graphs: "Grafos",
   impact: "Alterações",
-  documents: "Documentos",
   run: "Nova avaliação",
 };
+const pageIcons = {
+  documents: "overview",
+  inputs: "input",
+  reference: "reference",
+  criteria: "chart",
+  results: "chart",
+  graphs: "graph",
+  impact: "change",
+  run: "run",
+};
+
 const levels = {
   L1_DIRECT: "L1 · Relações explícitas",
   L2_ONE_HOP: "L2 · Um passo de raciocínio",
@@ -79,12 +99,12 @@ const nodeLabels = {
 const pct = (v) =>
   v == null
     ? "—"
-    : `${(v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+    : `${(v * 100).toLocaleString(locale(), { maximumFractionDigits: 1 })}%`;
 const decimal = (v) =>
-  v == null ? "—" : v.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  v == null ? "—" : v.toLocaleString(locale(), { maximumFractionDigits: 2 });
 const usd = (v) => (v == null ? "Não disponível" : `$${v.toFixed(4)}`);
 const date = (v) =>
-  new Date(v).toLocaleString("pt-BR", {
+  new Date(v).toLocaleString(locale(), {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -132,14 +152,17 @@ function Empty({ title = "Nenhum resultado ainda", children, action = true }) {
       <div className="empty-icon" aria-hidden="true">
         ↗
       </div>
-      <h2>{title}</h2>
+      <h2>{tr(title)}</h2>
       <p>
-        {children ||
-          "Os resultados aparecem após uma avaliação real concluída pelas APIs."}
+        {tr(
+          children ||
+            "Os resultados aparecem após uma avaliação real concluída pelas APIs.",
+        )}
       </p>
       {action && (
         <button className="primary" onClick={() => go("run")}>
-          Executar primeira avaliação <span>→</span>
+          {tr("Executar primeira avaliação ")}
+          <span>→</span>
         </button>
       )}
     </div>
@@ -148,8 +171,8 @@ function Empty({ title = "Nenhum resultado ainda", children, action = true }) {
 function SectionHeading({ title, children }) {
   return (
     <div className="section-heading">
-      <h2>{title}</h2>
-      {children}
+      <h2>{tr(title)}</h2>
+      {tr(children)}
     </div>
   );
 }
@@ -159,20 +182,28 @@ function Evidence({ items = [] }) {
       {items.map((e, i) => (
         <blockquote key={i}>
           <small>
-            {e.document_id} · {e.location}
+            {tr(e.document_id)} · {tr(e.location)}
           </small>
           <p>{e.excerpt}</p>
         </blockquote>
       ))}
     </div>
   ) : (
-    <p className="muted">Sem evidência informada.</p>
+    <p className="muted">{tr("Sem evidência informada.")}</p>
   );
 }
 
 function App() {
+  const [language, setLanguageState] = useState(getLanguage);
+  function changeLanguage(value) {
+    setLanguage(value);
+    setLanguageState(value);
+  }
+  useEffect(() => {
+    document.documentElement.lang = locale();
+  }, [language]);
   const [page, setPage] = useState(
-    pages[location.hash.slice(1)] ? location.hash.slice(1) : "results",
+    pages[location.hash.slice(1)] ? location.hash.slice(1) : "documents",
   );
   const [config, setConfig] = useState(null),
     [ds, setDs] = useState(null),
@@ -183,16 +214,18 @@ function App() {
     [ready, setReady] = useState(false);
   async function refresh() {
     try {
-      const [r, s, e, c] = await Promise.all([
+      const [r, s, e, c, d] = await Promise.all([
         api("/runs"),
         api("/summary"),
         api("/executions"),
         api("/config"),
+        api("/documents"),
       ]);
       setRuns(r);
       setSummary(s);
       setExecutions(e);
       setConfig(c);
+      setDs(d);
       setError("");
       setReady(true);
     } catch {
@@ -212,7 +245,7 @@ function App() {
     const timer = setInterval(refresh, 4000);
     const navigate = () =>
       setPage(
-        pages[location.hash.slice(1)] ? location.hash.slice(1) : "results",
+        pages[location.hash.slice(1)] ? location.hash.slice(1) : "documents",
       );
     window.addEventListener("hashchange", navigate);
     return () => {
@@ -222,73 +255,148 @@ function App() {
   }, []);
   return (
     <>
-      <header className="topbar">
-        <a className="brand" href="#results">
-          <span className="brand-icon">n</span>Norte
-          <span className="brand-caption">/ benchmark</span>
+      <aside className="sidebar">
+        <a className="brand" href="#documents">
+          <span className="brand-icon">{tr("n")}</span>
+          {tr("Norte")}
+          <span className="brand-caption">{tr("/ benchmark")}</span>
         </a>
-        <nav aria-label="Navegação principal">
+        <p className="nav-group-label">
+          {L("ENTENDER O TESTE", "UNDERSTAND THE TEST")}
+        </p>
+        <nav aria-label={tr("Navegação principal")}>
           {Object.entries(pages)
-            .filter(([key]) => key !== "run")
-            .map(([key, name]) => (
+            .filter(([key]) =>
+              ["documents", "inputs", "reference", "criteria"].includes(key),
+            )
+            .map(([key, label]) => (
               <a
                 key={key}
                 href={`#${key}`}
                 aria-current={page === key ? "page" : undefined}
               >
-                {name}
+                <Icon name={pageIcons[key]} />
+                <span>{tr(label)}</span>
               </a>
             ))}
         </nav>
-        <a className="button primary" href="#run">
-          Nova avaliação <span>＋</span>
+        <p className="nav-group-label">
+          {L("COMPARAR MODELOS", "COMPARE MODELS")}
+        </p>
+        <nav aria-label={L("Resultados das avaliações", "Evaluation results")}>
+          {Object.entries(pages)
+            .filter(([key]) => ["results", "graphs", "impact"].includes(key))
+            .map(([key, label]) => (
+              <a
+                key={key}
+                href={`#${key}`}
+                aria-current={page === key ? "page" : undefined}
+              >
+                <Icon name={pageIcons[key]} />
+                <span>{tr(label)}</span>
+              </a>
+            ))}
+        </nav>
+        <a className="button primary sidebar-run" href="#run">
+          <Icon name="run" size={17} />
+          {L("Nova avaliação", "New evaluation")}
         </a>
-      </header>
-      <main>
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">COMPREENSÃO DE ENGENHARIA</p>
-            <h1>{pages[page]}</h1>
-          </div>
-          {config && (
-            <span className="dataset-tag">
-              Dataset {config.manifest.dataset_version}
-            </span>
-          )}
-        </div>
-        {error && (
-          <div role="alert" className="notice error">
-            {error}
-            <button onClick={refresh}>Tentar novamente</button>
-          </div>
-        )}
-        {!ready || !config || !ds ? (
-          <p className="loading">Carregando…</p>
-        ) : (
-          <>
-            {page === "results" && <Results runs={runs} summary={summary} />}
-            {page === "graphs" && <Graphs runs={runs} />}
-            {page === "impact" && <Impacts runs={runs} />}
-            {page === "documents" && <Documents ds={ds} config={config} />}
-            {page === "run" && (
-              <RunPage
-                config={config}
-                runs={runs}
-                executions={executions}
-                refresh={refresh}
-              />
+        <div className="sidebar-note">
+          <Icon name="lock" size={17} />
+          <span>
+            {L(
+              "APIs no servidor. Chaves no seu .env.",
+              "Server-side APIs. Keys in your .env.",
             )}
-          </>
-        )}
-        <footer>
-          Norte · Avaliação local de modelos
-          {config && (
-            <span>
-              Referência documental · {config.manifest.dataset_version}
-            </span>
+          </span>
+        </div>
+      </aside>
+      <div className="workspace">
+        <header className="workspace-topbar">
+          <span>
+            {L(
+              "ENGENHARIA, EVIDÊNCIA E MODELOS",
+              "ENGINEERING, EVIDENCE AND MODELS",
+            )}
+          </span>
+          <div
+            className="language-switch"
+            aria-label={L("Idioma da interface", "Interface language")}
+          >
+            <button
+              type="button"
+              aria-pressed={language === "pt"}
+              onClick={() => changeLanguage("pt")}
+            >
+              {tr("Português")}
+            </button>
+            <button
+              type="button"
+              aria-pressed={language === "en"}
+              onClick={() => changeLanguage("en")}
+            >
+              {tr("English")}
+            </button>
+          </div>
+        </header>
+        <main>
+          <div className="page-heading">
+            <div>
+              <p className="eyebrow">{tr("COMPREENSÃO DE ENGENHARIA")}</p>
+              <h1>{tr(pages[page])}</h1>
+            </div>
+            {config && (
+              <span className="dataset-tag">
+                {L("Benchmark atual ", "Current benchmark ")}
+                {tr(config.manifest.dataset_version)}
+              </span>
+            )}
+          </div>
+          {error && (
+            <div role="alert" className="notice error">
+              {tr(error)}
+              <button onClick={refresh}>{tr("Tentar novamente")}</button>
+            </div>
           )}
-        </footer>
-      </main>
+          {!ready || !config || !ds ? (
+            <p className="loading">{tr("Carregando…")}</p>
+          ) : (
+            <>
+              {page === "results" && <Results runs={runs} summary={summary} />}
+              {page === "graphs" && <Graphs runs={runs} />}
+              {page === "impact" && <Impacts runs={runs} />}
+              {["documents", "inputs", "reference", "criteria"].includes(
+                page,
+              ) && (
+                <Benchmark
+                  datasetHash={config.dataset_hash}
+                  page={page}
+                  api={api}
+                  runs={runs}
+                  refresh={refresh}
+                />
+              )}
+              {page === "run" && (
+                <RunPage
+                  config={config}
+                  runs={runs}
+                  executions={executions}
+                  refresh={refresh}
+                />
+              )}
+            </>
+          )}
+          <footer>
+            {tr("Norte · Avaliação local de modelos")}
+            {config && (
+              <span>
+                {tr("Referência documental · ")}
+                {tr(config.manifest.dataset_version)}
+              </span>
+            )}
+          </footer>
+        </main>
+      </div>
     </>
   );
 }
@@ -324,9 +432,9 @@ function RunPicker({ selection }) {
   return (
     <div className="toolbar run-picker">
       <label>
-        Modelo
+        {tr("Modelo")}
         <select
-          aria-label="Modelo"
+          aria-label={tr("Modelo")}
           value={chosen}
           onChange={(e) =>
             setId(
@@ -338,15 +446,15 @@ function RunPicker({ selection }) {
         >
           {models.map((m) => (
             <option key={m} value={m}>
-              {providers[m.split("|")[0]]} · {m.split("|")[1]}
+              {tr(providers[m.split("|")[0]])} · {tr(m.split("|")[1])}
             </option>
           ))}
         </select>
       </label>
       <label>
-        Execução
+        {tr("Execução")}
         <select
-          aria-label="Execução"
+          aria-label={tr("Execução")}
           value={selected?.id || ""}
           onChange={(e) => setId(e.target.value)}
         >
@@ -354,22 +462,33 @@ function RunPicker({ selection }) {
             .filter((r) => `${r.provider}|${r.model}` === chosen)
             .map((r) => (
               <option key={r.id} value={r.id}>
-                {date(r.created_at)} · repetição {r.repetition} ·{" "}
-                {r.experiment === "first_pass"
-                  ? "sem correções"
-                  : "com correções"}{" "}
-                · {r.input_mode === "pdf_text" ? "PDF" : "texto"} ·{" "}
-                {r.id.slice(0, 6)}
+                {tr(date(r.created_at))}
+                {tr(" · repetição ")}
+                {tr(r.repetition)} ·{tr(" ")}
+                {tr(
+                  r.experiment === "first_pass"
+                    ? "sem correções"
+                    : "com correções",
+                )}
+                {tr(" ")}· {tr(r.input_mode === "pdf_text" ? "PDF" : "texto")} ·
+                {tr(" ")}
+                {tr(r.id.slice(0, 6))}
               </option>
             ))}
         </select>
       </label>
+      {selected?.dataset_version && (
+        <span className="muted run-version">
+          {L("Dataset desta execução", "Dataset for this run")} ·{" "}
+          {selected.dataset_version}
+        </span>
+      )}
       {selected && (
         <a
           className="text-link download"
           href={`/api/runs/${selected.id}/download`}
         >
-          Baixar resposta completa ↓
+          {tr("Baixar resposta completa ↓")}
         </a>
       )}
     </div>
@@ -383,7 +502,8 @@ function Results({ runs, summary }) {
     [hidden, setHidden] = useState([]);
   const selection = useRun(runs);
   if (!runs.length) return <Empty />;
-  if (!summary.length) return <p className="loading">Carregando métricas…</p>;
+  if (!summary.length)
+    return <p className="loading">{tr("Carregando métricas…")}</p>;
   const cohorts = [
     ...new Map(summary.map((row) => [cohortKey(row), row])).values(),
   ];
@@ -422,9 +542,9 @@ function Results({ runs, summary }) {
       <div className="toolbar comparison-controls">
         {cohorts.length > 1 && (
           <label>
-            Avaliação comparável
+            {tr("Avaliação comparável")}
             <select
-              aria-label="Avaliação comparável"
+              aria-label={tr("Avaliação comparável")}
               value={cohortKey(chosen)}
               onChange={(e) => {
                 setCohort(e.target.value);
@@ -433,39 +553,47 @@ function Results({ runs, summary }) {
             >
               {cohorts.map((c, i) => (
                 <option key={cohortKey(c)} value={cohortKey(c)}>
-                  {i + 1}.{" "}
-                  {c.input_mode === "controlled_text" ? "Texto" : "PDF"} ·{" "}
-                  {c.experiment === "first_pass"
-                    ? "Sem correções"
-                    : "Com correções"}{" "}
-                  · versão {c.comparison_hash.slice(0, 6)}
+                  {tr(i + 1)}.{tr(" ")}
+                  {tr(c.input_mode === "controlled_text" ? "Texto" : "PDF")} ·
+                  {tr(" ")}
+                  {tr(
+                    c.experiment === "first_pass"
+                      ? "Sem correções"
+                      : "Com correções",
+                  )}
+                  {tr(" ")}
+                  {tr("· versão ")}
+                  {tr(c.comparison_hash.slice(0, 6))}
                 </option>
               ))}
             </select>
           </label>
         )}
         <label>
-          Dificuldade
+          {tr("Dificuldade")}
           <select
-            aria-label="Dificuldade"
+            aria-label={tr("Dificuldade")}
             value={level}
             onChange={(e) => setLevel(e.target.value)}
           >
             {Object.entries(levels).map(([v, label]) => (
               <option key={v} value={v}>
-                {label}
+                {tr(label)}
               </option>
             ))}
           </select>
         </label>
         <span className="muted control-note">
-          {chosen?.input_mode === "pdf_text" ? "PDF" : "Texto controlado"} ·{" "}
-          {chosen?.experiment === "first_pass"
-            ? "Sem correções prévias"
-            : "Com correções confirmadas"}
+          {tr(chosen?.input_mode === "pdf_text" ? "PDF" : "Texto controlado")} ·
+          {tr(" ")}
+          {tr(
+            chosen?.experiment === "first_pass"
+              ? "Sem correções prévias"
+              : "Com correções confirmadas",
+          )}
         </span>
       </div>
-      <div className="model-filters" aria-label="Modelos comparados">
+      <div className="model-filters" aria-label={tr("Modelos comparados")}>
         {allModels.map((m) => (
           <label key={modelKey(m)} className={`filter-chip ${m.provider}`}>
             <input
@@ -480,29 +608,31 @@ function Results({ runs, summary }) {
               }
             />
             <span className="provider-dot" />
-            {m.model}
+            {tr(m.model)}
           </label>
         ))}
       </div>
       {rows.length ? (
         <>
           <section className="panel overview-panel">
-            <SectionHeading title="Visão geral">
-              <span className="muted">Médias das execuções concluídas</span>
+            <SectionHeading title={tr("Visão geral")}>
+              <span className="muted">
+                {tr("Médias das execuções concluídas")}
+              </span>
             </SectionHeading>
             <div className="table-scroll">
               <table>
                 <thead>
                   <tr>
-                    <th>Modelo</th>
+                    <th>{tr("Modelo")}</th>
                     {level === "L1_DIRECT" && (
                       <>
-                        <th>Extração F1 ↑</th>
-                        <th>Relações F1 ↑</th>
+                        <th>{tr("Extração F1 ↑")}</th>
+                        <th>{tr("Relações F1 ↑")}</th>
                       </>
                     )}
-                    <th>Recall de impacto ↑</th>
-                    <th>Falhas críticas ↓</th>
+                    <th>{tr("Recall de impacto ↑")}</th>
+                    <th>{tr("Falhas críticas ↓")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -514,31 +644,37 @@ function Results({ runs, summary }) {
                       return (
                         <tr key={modelKey(m)}>
                           <td>
-                            <strong>{m.model}</strong>
-                            <small>{providers[m.provider]}</small>
+                            <strong>{tr(m.model)}</strong>
+                            <small>{tr(providers[m.provider])}</small>
                           </td>
                           {level === "L1_DIRECT" && (
                             <>
                               <td>
-                                {pct(
-                                  metric(m, "entity_extraction", "entity_f1"),
+                                {tr(
+                                  pct(
+                                    metric(m, "entity_extraction", "entity_f1"),
+                                  ),
                                 )}
                               </td>
                               <td>
-                                {pct(
-                                  metric(
-                                    m,
-                                    "relationship_extraction",
-                                    "relationship_f1",
+                                {tr(
+                                  pct(
+                                    metric(
+                                      m,
+                                      "relationship_extraction",
+                                      "relationship_f1",
+                                    ),
                                   ),
                                 )}
                               </td>
                             </>
                           )}
-                          <td>{pct(metric(m, impact, "impact_recall"))}</td>
+                          <td>{tr(pct(metric(m, impact, "impact_recall")))}</td>
                           <td>
-                            {pct(
-                              metric(m, impact, "critical_impact_miss_rate"),
+                            {tr(
+                              pct(
+                                metric(m, impact, "critical_impact_miss_rate"),
+                              ),
                             )}
                           </td>
                         </tr>
@@ -549,17 +685,17 @@ function Results({ runs, summary }) {
             </div>
           </section>
           <section className="comparison-section">
-            <SectionHeading title="Comparar métricas">
+            <SectionHeading title={tr("Comparar métricas")}>
               <label className="inline-label">
-                Tarefa
+                {tr("Tarefa")}
                 <select
-                  aria-label="Tarefa"
+                  aria-label={tr("Tarefa")}
                   value={activeTask}
                   onChange={(e) => setTask(e.target.value)}
                 >
                   {options.map((t) => (
                     <option key={t} value={t}>
-                      {tasks[t]}
+                      {tr(tasks[t])}
                     </option>
                   ))}
                 </select>
@@ -567,19 +703,19 @@ function Results({ runs, summary }) {
             </SectionHeading>
             <div className="chart-grid">
               <MetricChart
-                title="Precisão"
+                title={tr("Precisão")}
                 hint="Acertos entre as previsões · maior é melhor"
                 rows={series}
                 metric={`${family}_precision`}
               />
               <MetricChart
-                title="Recall"
+                title={tr("Recall")}
                 hint="Dependências encontradas · maior é melhor"
                 rows={series}
                 metric={`${family}_recall`}
               />
               <MetricChart
-                title="F1"
+                title={tr("F1")}
                 hint="Equilíbrio entre precisão e recall · maior é melhor"
                 rows={series}
                 metric={`${family}_f1`}
@@ -595,13 +731,13 @@ function Results({ runs, summary }) {
                 metric={unsupported}
               />
               <MetricChart
-                title="Consistência"
+                title={tr("Consistência")}
                 hint="Respostas iguais entre repetições · maior é melhor"
                 rows={series}
                 field="consistency"
               />
               <MetricChart
-                title="Tempo por chamada"
+                title={tr("Tempo por chamada")}
                 hint="Média em segundos · menor é melhor"
                 rows={series}
                 field="latency_seconds"
@@ -609,40 +745,43 @@ function Results({ runs, summary }) {
               />
             </div>
             <p className="chart-caption">
-              Barras: média. Traços: mínimo e máximo. — = sem medição
-              disponível.
+              {tr(
+                "Barras: média. Traços: mínimo e máximo. — = sem medição disponível.",
+              )}
             </p>
           </section>
           <section className="panel">
-            <SectionHeading title="Uso da API" />
+            <SectionHeading title={tr("Uso da API")} />
             <div className="table-scroll">
               <table>
                 <thead>
                   <tr>
-                    <th>Modelo</th>
-                    <th>Repetições</th>
-                    <th>Tokens de entrada / saída</th>
-                    <th>Custo por tarefa</th>
+                    <th>{tr("Modelo")}</th>
+                    <th>{tr("Repetições")}</th>
+                    <th>{tr("Tokens de entrada / saída")}</th>
+                    <th>{tr("Custo por tarefa")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {series.map((r) => (
                     <tr key={modelKey(r)}>
-                      <td>{r.model}</td>
-                      <td>{r.n}</td>
+                      <td>{tr(r.model)}</td>
+                      <td>{tr(r.n)}</td>
                       <td>
-                        {r.token_usage_complete
-                          ? `${decimal(r.known_input_tokens)} / ${decimal(r.known_output_tokens)}`
-                          : "Não disponível"}
+                        {tr(
+                          r.token_usage_complete
+                            ? `${decimal(r.known_input_tokens)} / ${decimal(r.known_output_tokens)}`
+                            : "Não disponível",
+                        )}
                       </td>
-                      <td>{usd(r.average_cost_per_task_usd)}</td>
+                      <td>{tr(usd(r.average_cost_per_task_usd))}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <details>
-              <summary>Estatísticas completas</summary>
+              <summary>{tr("Estatísticas completas")}</summary>
               <Json
                 value={series.map(
                   ({ model, n, metrics, consistency, latency_seconds }) => ({
@@ -658,12 +797,14 @@ function Results({ runs, summary }) {
           </section>
         </>
       ) : (
-        <div className="empty-inline">Não há medições para esta seleção.</div>
+        <div className="empty-inline">
+          {tr("Não há medições para esta seleção.")}
+        </div>
       )}
       <section className="panel">
-        <SectionHeading title="Inspecionar uma execução" />
+        <SectionHeading title={tr("Inspecionar uma execução")} />
         <RunPicker selection={selection} />
-        {selection.error && <p role="alert">{selection.error}</p>}
+        {selection.error && <p role="alert">{tr(selection.error)}</p>}
         {selection.run && (
           <RunInspector key={selection.run.id} run={selection.run} />
         )}
@@ -691,14 +832,14 @@ function MetricChart({ title, hint, rows, metric, field, seconds = false }) {
     seconds ? (v == null ? "—" : `${decimal(v)} s`) : pct(v);
   return (
     <article className="metric-chart">
-      <h3>{title}</h3>
-      <p>{hint}</p>
+      <h3>{tr(title)}</h3>
+      <p>{tr(hint)}</p>
       <div className="chart-bars">
         {values.map((v) => (
           <div className={`chart-row ${v.provider}`} key={v.key}>
             <div className="chart-row-label">
-              <span>{v.model}</span>
-              <strong>{format(v.mean)}</strong>
+              <span>{tr(v.model)}</span>
+              <strong>{tr(format(v.mean))}</strong>
             </div>
             <div
               className="bar-track"
@@ -741,26 +882,28 @@ function RunInspector({ run }) {
     : null;
   return (
     <details className="run-details">
-      <summary>Resposta original, métricas e informações da execução</summary>
+      <summary>
+        {tr("Resposta original, métricas e informações da execução")}
+      </summary>
       <div className="toolbar">
         <label>
-          Tarefa da resposta
+          {tr("Tarefa da resposta")}
           <select
-            aria-label="Tarefa da resposta"
+            aria-label={tr("Tarefa da resposta")}
             value={index}
             onChange={(e) => setIndex(Number(e.target.value))}
           >
             {run.results.map((r, i) => (
               <option key={r.id} value={i}>
-                {tasks[r.task]} · {levels[r.difficulty]}
+                {tr(tasks[r.task])} · {tr(levels[r.difficulty])}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Conteúdo
+          {tr("Conteúdo")}
           <select
-            aria-label="Conteúdo"
+            aria-label={tr("Conteúdo")}
             value={tab}
             onChange={(e) => setTab(e.target.value)}
           >
@@ -773,12 +916,15 @@ function RunInspector({ run }) {
               feedback_transfer_metrics: "Generalização das correções",
             }).map(([k, v]) => (
               <option key={k} value={k}>
-                {v}
+                {tr(v)}
               </option>
             ))}
           </select>
         </label>
-        <span className="muted">Custo desta execução: {usd(total)}</span>
+        <span className="muted">
+          {tr("Custo desta execução: ")}
+          {tr(usd(total))}
+        </span>
       </div>
       {result &&
         (tab === "prompt" ? (
@@ -787,7 +933,7 @@ function RunInspector({ run }) {
           <Json value={result[tab] ?? "Não disponível para esta tarefa"} />
         ))}
       <details>
-        <summary>Versões e rastreabilidade</summary>
+        <summary>{tr("Versões e rastreabilidade")}</summary>
         <Json
           value={{
             run_id: run.id,
@@ -829,9 +975,10 @@ function Graphs({ runs }) {
   }, [selection.selected?.id]);
   if (!selection.available.length)
     return (
-      <Empty title="Nenhum grafo de modelo ainda">
-        Execute a tarefa de relações para comparar a resposta do modelo com a
-        referência.
+      <Empty title={tr("Nenhum grafo de modelo ainda")}>
+        {tr(
+          "Execute a tarefa de relações para comparar a resposta do modelo com a referência.",
+        )}
       </Empty>
     );
   const chosen = focus === "all" ? null : focus;
@@ -862,12 +1009,12 @@ function Graphs({ runs }) {
     <>
       <RunPicker selection={selection} />
       {(error || selection.error) && (
-        <p role="alert">{error || selection.error}</p>
+        <p role="alert">{tr(error || selection.error)}</p>
       )}
       {graph && (
         <>
           <div className="graph-tools">
-            <div className="segmented" aria-label="Visualização do grafo">
+            <div className="segmented" aria-label={tr("Visualização do grafo")}>
               {[
                 ["side", "Lado a lado"],
                 ["model", "Só modelo"],
@@ -883,27 +1030,29 @@ function Graphs({ runs }) {
                     setItem(null);
                   }}
                 >
-                  {text}
+                  {tr(text)}
                 </button>
               ))}
             </div>
             <label className="inline-label">
-              Foco
+              {tr("Foco")}
               <select
-                aria-label="Foco"
+                aria-label={tr("Foco")}
                 value={focus}
                 onChange={(e) => {
                   setFocus(e.target.value);
                   setItem(null);
                 }}
               >
-                <option value="requirements">Relações de requisitos</option>
-                <option value="all">Todos os elementos</option>
+                <option value="requirements">
+                  {tr("Relações de requisitos")}
+                </option>
+                <option value="all">{tr("Todos os elementos")}</option>
                 {graph.ground_truth.nodes
                   .filter((n) => n.type === "Requirement")
                   .map((n) => (
                     <option key={n.id} value={n.id}>
-                      {n.id} · {nodeLabels[n.id] || n.name}
+                      {tr(n.id)} · {tr(nodeLabels[n.id] || n.name)}
                     </option>
                   ))}
               </select>
@@ -912,15 +1061,15 @@ function Graphs({ runs }) {
           <div className="graph-legend">
             {Object.entries(statuses).map(([key, s]) => (
               <span key={key} className={key}>
-                <b aria-hidden="true">{s.symbol}</b>
-                {s.label} <strong>{counts[key]}</strong>
+                <b aria-hidden="true">{tr(s.symbol)}</b>
+                {tr(s.label)} <strong>{tr(counts[key])}</strong>
               </span>
             ))}
           </div>
           <div className={`graph-layout ${view === "side" ? "paired" : ""}`}>
             {(view === "side" || view === "reference") && (
               <GraphCanvas
-                title="Referência"
+                title={tr("Referência")}
                 subtitle="Relações esperadas no benchmark"
                 kind="reference"
                 graph={graph}
@@ -930,7 +1079,7 @@ function Graphs({ runs }) {
             )}
             {(view === "side" || view === "model") && (
               <GraphCanvas
-                title="Resposta do modelo"
+                title={tr("Resposta do modelo")}
                 subtitle={graph.model_name}
                 kind="model"
                 graph={graph}
@@ -940,7 +1089,7 @@ function Graphs({ runs }) {
             )}
             {view === "diff" && (
               <GraphCanvas
-                title="Diferenças"
+                title={tr("Diferenças")}
                 subtitle="Relações corretas, extras e ausentes"
                 kind="diff"
                 graph={graph}
@@ -950,8 +1099,9 @@ function Graphs({ runs }) {
             )}
           </div>
           <p className="chart-caption">
-            Clique em uma ligação para ver a explicação e a evidência. Clique em
-            um elemento para ver sua fonte.
+            {tr(
+              "Clique em uma ligação para ver a explicação e a evidência. Clique em um elemento para ver sua fonte.",
+            )}
           </p>
           {item && selection.run && (
             <GraphInspector
@@ -962,7 +1112,7 @@ function Graphs({ runs }) {
             />
           )}
           <details className="panel">
-            <summary>Ver relações em lista</summary>
+            <summary>{tr("Ver relações em lista")}</summary>
             <div className="relationship-list">
               {relevant.map((d) => {
                 const e = d.model_edge || d.ground_truth_edge;
@@ -972,16 +1122,20 @@ function Graphs({ runs }) {
                     onClick={() => setItem({ kind: "comparison", edge: d })}
                   >
                     <span className={`status-mark ${d.status}`}>
-                      {statuses[d.status].symbol}
+                      {tr(statuses[d.status].symbol)}
                     </span>
                     <span>
-                      {e.source}{" "}
+                      {tr(e.source)}
+                      {tr(" ")}
                       <small>
-                        {relations[e.relationship] || e.relationship}
-                      </small>{" "}
-                      {e.target}
+                        {tr(relations[e.relationship] || e.relationship)}
+                      </small>
+                      {tr(" ")}
+                      {tr(e.target)}
                     </span>
-                    <span className="muted">{statuses[d.status].label}</span>
+                    <span className="muted">
+                      {tr(statuses[d.status].label)}
+                    </span>
                   </button>
                 );
               })}
@@ -1116,8 +1270,8 @@ function GraphCanvas({ title, subtitle, kind, graph, focus, setItem }) {
         original: n,
         label: (
           <>
-            <small>{n.id}</small>
-            <strong>{nodeLabels[normalize(n.id)] || n.name}</strong>
+            <small>{tr(n.id)}</small>
+            <strong>{tr(nodeLabels[normalize(n.id)] || n.name)}</strong>
           </>
         ),
       },
@@ -1138,7 +1292,7 @@ function GraphCanvas({ title, subtitle, kind, graph, focus, setItem }) {
         source: normalize(e.source),
         target: normalize(e.target),
         type: "default",
-        label: `${s.symbol} ${relations[e.relationship] || e.relationship}`,
+        label: `${s.symbol} ${tr(relations[e.relationship] || e.relationship)}`,
         data: { detail: d },
         markerEnd: { type: MarkerType.ArrowClosed, color: s.color },
         style: { stroke: s.color, strokeWidth: 1.8, strokeDasharray: s.dash },
@@ -1151,13 +1305,19 @@ function GraphCanvas({ title, subtitle, kind, graph, focus, setItem }) {
     })
     .filter((e) => ids.has(e.source) && ids.has(e.target));
   return (
-    <section className="graph-card" aria-label={`Grafo: ${title}`}>
+    <section
+      className="graph-card"
+      aria-label={`${L("Grafo", "Graph")}: ${tr(title)}`}
+    >
       <div className="graph-card-heading">
         <div>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
+          <h2>{tr(title)}</h2>
+          <p>{tr(subtitle)}</p>
         </div>
-        <span className="count-badge">{flowEdges.length} relações</span>
+        <span className="count-badge">
+          {tr(flowEdges.length)}
+          {tr(" relações")}
+        </span>
       </div>
       {flowNodes.length ? (
         <div
@@ -1178,15 +1338,49 @@ function GraphCanvas({ title, subtitle, kind, graph, focus, setItem }) {
             proOptions={{ hideAttribution: true }}
           >
             <Background gap={24} size={1} color="#e3e8ed" />
-            <Controls showInteractive={false} />
+            <LocalizedGraphControls />
           </ReactFlow>
         </div>
       ) : (
         <div className="empty-inline">
-          O modelo não retornou elementos para esta seleção.
+          {tr("O modelo não retornou elementos para esta seleção.")}
         </div>
       )}
     </section>
+  );
+}
+
+function LocalizedGraphControls() {
+  const flow = useReactFlow();
+  return (
+    <Controls
+      showZoom={false}
+      showFitView={false}
+      showInteractive={false}
+      aria-label={L("Controles do grafo", "Graph controls")}
+    >
+      <ControlButton
+        onClick={() => flow.zoomIn()}
+        title={L("Aproximar", "Zoom in")}
+        aria-label={L("Aproximar", "Zoom in")}
+      >
+        +
+      </ControlButton>
+      <ControlButton
+        onClick={() => flow.zoomOut()}
+        title={L("Afastar", "Zoom out")}
+        aria-label={L("Afastar", "Zoom out")}
+      >
+        −
+      </ControlButton>
+      <ControlButton
+        onClick={() => flow.fitView({ padding: 0.15 })}
+        title={L("Enquadrar grafo", "Fit graph")}
+        aria-label={L("Enquadrar grafo", "Fit graph")}
+      >
+        ⛶
+      </ControlButton>
+    </Controls>
   );
 }
 
@@ -1233,7 +1427,7 @@ function GraphInspector({ item, run, onClose }) {
     }
   }
   return (
-    <section className="panel inspector" aria-label="Detalhes da seleção">
+    <section className="panel inspector" aria-label={tr("Detalhes da seleção")}>
       <SectionHeading
         title={
           item.node
@@ -1244,58 +1438,63 @@ function GraphInspector({ item, run, onClose }) {
         <button
           className="icon-button"
           onClick={onClose}
-          aria-label="Fechar detalhes"
+          aria-label={tr("Fechar detalhes")}
         >
-          ×
+          {tr("×")}
         </button>
       </SectionHeading>
       {item.node ? (
         <>
           <p>
-            <strong>{item.node.name}</strong> · {item.node.id}
+            <strong>{tr(item.node.name)}</strong> · {tr(item.node.id)}
           </p>
           <p className="muted">
-            {item.kind === "reference"
-              ? "Fonte da referência"
-              : "Fonte informada pelo modelo"}
-            : {item.node.source} · {item.node.source_reference}
+            {tr(
+              item.kind === "reference"
+                ? "Fonte da referência"
+                : "Fonte informada pelo modelo",
+            )}
+            : {tr(item.node.source)} · {tr(item.node.source_reference)}
           </p>
           <blockquote>
-            {ds.documents[normalize(item.node.source)]?.[
-              item.node.source_reference
-            ] || "Localização não encontrada nos documentos enviados."}
+            {tr(
+              ds.documents[normalize(item.node.source)]?.[
+                item.node.source_reference
+              ] || "Localização não encontrada nos documentos enviados.",
+            )}
           </blockquote>
         </>
       ) : (
         <>
           <div className={`status-label ${item.edge.status}`}>
-            {statuses[item.edge.status].symbol}{" "}
-            {statuses[item.edge.status].label}
+            {tr(statuses[item.edge.status].symbol)}
+            {tr(" ")}
+            {tr(statuses[item.edge.status].label)}
           </div>
           <dl className="edge-facts">
             <div>
-              <dt>Relação</dt>
+              <dt>{tr("Relação")}</dt>
               <dd>
-                {
+                {tr(
                   relations[
                     (item.edge.model_edge || item.edge.ground_truth_edge)
                       .relationship
-                  ]
-                }
+                  ],
+                )}
               </dd>
             </div>
             <div>
-              <dt>Existe na referência</dt>
-              <dd>{item.edge.exists_in_ground_truth ? "Sim" : "Não"}</dd>
+              <dt>{tr("Existe na referência")}</dt>
+              <dd>{tr(item.edge.exists_in_ground_truth ? "Sim" : "Não")}</dd>
             </div>
             <div>
-              <dt>Confiança do modelo</dt>
-              <dd>{pct(item.edge.model_edge?.confidence)}</dd>
+              <dt>{tr("Confiança do modelo")}</dt>
+              <dd>{tr(pct(item.edge.model_edge?.confidence))}</dd>
             </div>
           </dl>
           <div className="evidence-columns">
             <div>
-              <h3>Explicação do modelo</h3>
+              <h3>{tr("Explicação do modelo")}</h3>
               <p>
                 {item.edge.model_edge?.reason ||
                   "O modelo não identificou esta relação."}
@@ -1303,7 +1502,7 @@ function GraphInspector({ item, run, onClose }) {
               <Evidence items={item.edge.model_edge?.source_evidence} />
             </div>
             <div>
-              <h3>Referência</h3>
+              <h3>{tr("Referência")}</h3>
               <p>
                 {item.edge.ground_truth_edge?.reason ||
                   "Esta relação não faz parte da referência."}
@@ -1312,26 +1511,26 @@ function GraphInspector({ item, run, onClose }) {
             </div>
           </div>
           <details>
-            <summary>Registrar correção</summary>
+            <summary>{tr("Registrar correção")}</summary>
             <form onSubmit={save}>
               <div className="toolbar">
                 <label>
-                  Avaliação
+                  {tr("Avaliação")}
                   <select
-                    aria-label="Avaliação"
+                    aria-label={tr("Avaliação")}
                     value={verdict}
                     onChange={(e) => setVerdict(e.target.value)}
                   >
-                    <option value="Correct">Correta</option>
-                    <option value="Incorrect">Incorreta</option>
+                    <option value="Correct">{tr("Correta")}</option>
+                    <option value="Incorrect">{tr("Incorreta")}</option>
                     <option value="Missing relationship">
-                      Relação ausente
+                      {tr("Relação ausente")}
                     </option>
                   </select>
                 </label>
               </div>
               <label>
-                Correção
+                {tr("Correção")}
                 <textarea
                   required
                   maxLength={1000}
@@ -1345,26 +1544,33 @@ function GraphInspector({ item, run, onClose }) {
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
-                Confirmo esta correção para uso em avaliações assistidas.
+                {tr(
+                  "Confirmo esta correção para uso em avaliações assistidas.",
+                )}
               </label>
               <button className="primary" type="submit">
-                Salvar correção
+                {tr("Salvar correção")}
               </button>
             </form>
           </details>
         </>
       )}
       <small className="muted">
-        {run.metadata.model} · execução {run.id}
+        {tr(run.metadata.model)}
+        {tr(" · execução ")}
+        {tr(run.id)}
       </small>
-      {message && <p role="status">{message}</p>}
+      {message && <p role="status">{tr(message)}</p>}
       {!!feedback.length && (
         <details>
-          <summary>Correções desta execução ({feedback.length})</summary>
+          <summary>
+            {tr("Correções desta execução (")}
+            {tr(feedback.length)})
+          </summary>
           {feedback.map((f) => (
             <div className="feedback-row" key={f.id}>
               <span>
-                {f.edge.source} → {f.edge.target}
+                {tr(f.edge.source)} → {tr(f.edge.target)}
                 <small>{f.correction}</small>
               </span>
               <button
@@ -1379,7 +1585,7 @@ function GraphInspector({ item, run, onClose }) {
                   }
                 }}
               >
-                {f.confirmed ? "Retirar confirmação" : "Confirmar"}
+                {tr(f.confirmed ? "Retirar confirmação" : "Confirmar")}
               </button>
             </div>
           ))}
@@ -1400,8 +1606,10 @@ function Impacts({ runs }) {
     [task, setTask] = useState("change_impact");
   if (!selection.available.length)
     return (
-      <Empty title="Nenhuma análise de alteração ainda">
-        Execute a tarefa de impactos para comparar os requisitos afetados.
+      <Empty title={tr("Nenhuma análise de alteração ainda")}>
+        {tr(
+          "Execute a tarefa de impactos para comparar os requisitos afetados.",
+        )}
       </Empty>
     );
   const run = selection.run;
@@ -1427,64 +1635,64 @@ function Impacts({ runs }) {
       <RunPicker selection={selection} />
       <div className="toolbar">
         <label>
-          Dificuldade
+          {tr("Dificuldade")}
           <select
-            aria-label="Dificuldade"
+            aria-label={tr("Dificuldade")}
             value={level}
             onChange={(e) => setLevel(e.target.value)}
           >
             {Object.entries(levels).map(([v, text]) => (
               <option key={v} value={v}>
-                {text}
+                {tr(text)}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Tipo de alteração
+          {tr("Tipo de alteração")}
           <select
-            aria-label="Tipo de alteração"
+            aria-label={tr("Tipo de alteração")}
             value={type}
             onChange={(e) => setType(e.target.value)}
           >
-            <option value="all">Todos</option>
+            <option value="all">{tr("Todos")}</option>
             {[...new Set(cases.map((s) => s.change_type))].map((t) => (
               <option key={t} value={t}>
-                {typeNames[t] || t.replaceAll("_", " ")}
+                {tr(typeNames[t] || t.replaceAll("_", " "))}
               </option>
             ))}
           </select>
         </label>
         {results.length > 1 && (
           <label>
-            Tarefa
+            {tr("Tarefa")}
             <select
-              aria-label="Tarefa"
+              aria-label={tr("Tarefa")}
               value={result?.task}
               onChange={(e) => setTask(e.target.value)}
             >
               {results.map((r) => (
                 <option key={r.id} value={r.task}>
-                  {tasks[r.task]}
+                  {tr(tasks[r.task])}
                 </option>
               ))}
             </select>
           </label>
         )}
       </div>
-      {selection.error && <p role="alert">{selection.error}</p>}
+      {selection.error && <p role="alert">{tr(selection.error)}</p>}
       {run && !result ? (
         <div className="empty-inline">
-          Esta execução não incluiu a tarefa neste nível.
+          {tr("Esta execução não incluiu a tarefa neste nível.")}
         </div>
       ) : (
         result && (
           <section className="panel scenario-panel">
             <div className="scenario-header">
-              <span>Alteração</span>
-              <span>Esperado</span>
-              <span>Modelo</span>
-              <span>Comparação</span>
+              <span>{tr("Alteração")}</span>
+              <span>{tr("Esperado")}</span>
+              <span>{tr("Modelo")}</span>
+              <span>{tr("Comparação")}</span>
             </div>
             {cases
               .filter((s) => type === "all" || s.change_type === type)
@@ -1511,27 +1719,30 @@ function Impacts({ runs }) {
                   <details className="scenario" key={s.id}>
                     <summary>
                       <span>
-                        <strong>{s.id}</strong>
+                        <strong>{tr(s.id)}</strong>
                         <small>{s.title || s.description}</small>
                       </span>
                       <span className="requirement-list">
-                        {s.affected_requirements.join(", ") || "Nenhum"}
+                        {tr(s.affected_requirements.join(", ") || "Nenhum")}
                       </span>
                       <span className="requirement-list">
-                        {pred.join(", ") || "Nenhum"}
+                        {tr(pred.join(", ") || "Nenhum")}
                       </span>
                       <span className="impact-counts">
                         <span className="correct">
-                          ✓ {correct.length} acertos
+                          ✓ {tr(correct.length)}
+                          {tr(" acertos")}
                         </span>
                         {missed.length > 0 && (
                           <span className="missing">
-                            − {missed.length} ausentes
+                            − {tr(missed.length)}
+                            {tr(" ausentes")}
                           </span>
                         )}
                         {extra.length > 0 && (
                           <span className="false_positive">
-                            + {extra.length} extras
+                            + {tr(extra.length)}
+                            {tr(" extras")}
                           </span>
                         )}
                       </span>
@@ -1540,34 +1751,40 @@ function Impacts({ runs }) {
                       <p className="muted">{s.description}</p>
                       <div className="evidence-columns">
                         <div>
-                          <h3>Por que precisa de revisão</h3>
-                          <p>{s.expected_reason}</p>
+                          <h3>{tr("Por que precisa de revisão")}</h3>
+                          <p>{tr(s.expected_reason)}</p>
                           {missed.length > 0 && (
                             <p className="false_positive">
-                              Não identificados: {missed.join(", ")}
+                              {tr("Não identificados: ")}
+                              {tr(missed.join(", "))}
                             </p>
                           )}
                           {extra.length > 0 && (
-                            <p>Previsões extras: {extra.join(", ")}</p>
+                            <p>
+                              {tr("Previsões extras: ")}
+                              {tr(extra.join(", "))}
+                            </p>
                           )}
                         </div>
                         <div>
-                          <h3>Explicação do modelo</h3>
+                          <h3>{tr("Explicação do modelo")}</h3>
                           {answer?.impacts.length ? (
                             answer.impacts.map((i, ix) => (
                               <div key={ix}>
-                                <strong>{i.requirement_id}</strong>
+                                <strong>{tr(i.requirement_id)}</strong>
                                 <p>{i.explanation}</p>
                                 <Evidence items={i.source_evidence} />
                               </div>
                             ))
                           ) : (
-                            <p>Nenhum requisito apontado como afetado.</p>
+                            <p>
+                              {tr("Nenhum requisito apontado como afetado.")}
+                            </p>
                           )}
                         </div>
                       </div>
                       <details>
-                        <summary>Verificação da explicação</summary>
+                        <summary>{tr("Verificação da explicação")}</summary>
                         <Json value={check?.explanation_checks || []} />
                       </details>
                       <ExplanationReview
@@ -1584,7 +1801,7 @@ function Impacts({ runs }) {
       )}
       {result?.feedback_metrics && (
         <section className="panel">
-          <SectionHeading title="Efeito das correções" />
+          <SectionHeading title={tr("Efeito das correções")} />
           <dl className="edge-facts">
             {[
               ["correction_retention_rate", "Correções mantidas"],
@@ -1593,13 +1810,15 @@ function Impacts({ runs }) {
               ["performance_improvement", "Variação do F1"],
             ].map(([key, label]) => (
               <div key={key}>
-                <dt>{label}</dt>
-                <dd>{pct(result.feedback_metrics[key])}</dd>
+                <dt>{tr(label)}</dt>
+                <dd>{tr(pct(result.feedback_metrics[key]))}</dd>
               </div>
             ))}
           </dl>
           <details>
-            <summary>Separar casos conhecidos e casos de transferência</summary>
+            <summary>
+              {tr("Separar casos conhecidos e casos de transferência")}
+            </summary>
             <Json value={result.feedback_transfer_metrics} />
           </details>
         </section>
@@ -1633,40 +1852,40 @@ function ExplanationReview({ run, result, scenario }) {
   }
   return (
     <details>
-      <summary>Revisar explicação</summary>
+      <summary>{tr("Revisar explicação")}</summary>
       <form onSubmit={save}>
         <div className="toolbar">
           <label>
-            Requisito
+            {tr("Requisito")}
             <select
-              aria-label="Requisito"
+              aria-label={tr("Requisito")}
               value={requirement}
               onChange={(e) => setRequirement(e.target.value)}
             >
               {run.snapshot.dataset.ground_truth.requirements.map((r) => (
-                <option key={r.id}>{r.id}</option>
+                <option key={r.id}>{tr(r.id)}</option>
               ))}
             </select>
           </label>
           <label>
-            Parecer
+            {tr("Parecer")}
             <select
-              aria-label="Parecer"
+              aria-label={tr("Parecer")}
               value={verdict}
               onChange={(e) => setVerdict(e.target.value)}
             >
-              <option value="Needs review">Precisa de revisão</option>
+              <option value="Needs review">{tr("Precisa de revisão")}</option>
               <option value="Supported explanation">
-                Explicação sustentada
+                {tr("Explicação sustentada")}
               </option>
               <option value="Unsupported explanation">
-                Explicação sem suporte
+                {tr("Explicação sem suporte")}
               </option>
             </select>
           </label>
         </div>
         <label>
-          Comentário
+          {tr("Comentário")}
           <textarea
             required
             value={comment}
@@ -1674,8 +1893,8 @@ function ExplanationReview({ run, result, scenario }) {
             onChange={(e) => setComment(e.target.value)}
           />
         </label>
-        <button type="submit">Salvar revisão</button>
-        {message && <p role="status">{message}</p>}
+        <button type="submit">{tr("Salvar revisão")}</button>
+        {message && <p role="status">{tr(message)}</p>}
       </form>
     </details>
   );
@@ -1781,7 +2000,7 @@ function RunPage({ config, runs, executions, refresh }) {
   return (
     <>
       <form className="panel run-form" onSubmit={start}>
-        <SectionHeading title="1. Escolha os modelos" />
+        <SectionHeading title={tr("1. Escolha os modelos")} />
         <div className="model-selection-actions">
           <button
             type="button"
@@ -1792,32 +2011,38 @@ function RunPage({ config, runs, executions, refresh }) {
               )
             }
           >
-            Destaques
+            {tr("Destaques")}
           </button>
           <button
             type="button"
             disabled={locked || experiment === "feedback_assisted"}
             onClick={() => setModels(config.models.map((_, i) => i))}
           >
-            Todos os modelos
+            {tr("Todos os modelos")}
           </button>
           <button
             type="button"
             disabled={locked || experiment === "feedback_assisted"}
             onClick={() => setModels([])}
           >
-            Limpar seleção
+            {tr("Limpar seleção")}
           </button>
           <span className="muted">
-            {models.length} selecionado{models.length === 1 ? "" : "s"}
+            {models.length}{" "}
+            {L(
+              models.length === 1 ? "selecionado" : "selecionados",
+              "selected",
+            )}
           </span>
         </div>
         <div className="model-catalog">
           {Object.entries(providers).map(([provider, name]) => (
             <div className="provider-group" key={provider}>
               <h3>
-                <span className={`provider-logo ${provider}`}>{name[0]}</span>
-                {name}
+                <span className={`provider-logo ${provider}`}>
+                  {tr(name[0])}
+                </span>
+                {tr(name)}
               </h3>
               {config.models.map(
                 (m, i) =>
@@ -1833,9 +2058,13 @@ function RunPage({ config, runs, executions, refresh }) {
                         onChange={() => setModels(toggle(models, i))}
                       />
                       <span>
-                        <strong>{m.label || m.model}</strong>
+                        <strong>{tr(m.label || m.model)}</strong>
                         <small>
-                          {m.featured ? "Destaque · raciocínio" : "Alternativa"}
+                          {tr(
+                            m.featured
+                              ? "Destaque · raciocínio"
+                              : "Alternativa",
+                          )}
                         </small>
                       </span>
                     </label>
@@ -1845,22 +2074,24 @@ function RunPage({ config, runs, executions, refresh }) {
           ))}
         </div>
         <p className="setup-note">
-          Destaques seguem a proposta dos fabricantes; a comparação real virá
-          das suas avaliações.
+          {tr(
+            "Destaques seguem a proposta dos fabricantes; a comparação real virá das suas avaliações.",
+          )}
         </p>
         <section
           className="connection-section"
-          aria-label="Checklist de conexões"
+          aria-label={tr("Checklist de conexões")}
         >
           <div className="connection-heading">
-            <SectionHeading title="2. Confira as conexões" />
+            <SectionHeading title={tr("2. Confira as conexões")} />
             <button type="button" disabled={locked} onClick={refresh}>
-              Atualizar status
+              {tr("Atualizar status")}
             </button>
           </div>
           <p className="muted">
-            Preencha as chaves no <code>.env</code>. A mesma chave permite
-            escolher os modelos do seu provedor.
+            {tr("Preencha as chaves no ")}
+            <code>{tr(".env")}</code>
+            {tr(". A mesma chave permite escolher os modelos do seu provedor.")}
           </p>
           <div className="connection-list">
             {checks.map((c) => (
@@ -1869,49 +2100,61 @@ function RunPage({ config, runs, executions, refresh }) {
                 className={`connection-row ${c.ready ? "connection-ready" : "connection-pending"}`}
               >
                 <div className="connection-name">
-                  <strong>{c.label}</strong>
+                  <strong>{tr(c.label)}</strong>
                   <span>
-                    {c.ready ? "✓ Pronto para avaliar" : c.diagnostic?.title}
+                    {tr(
+                      c.ready ? "✓ Pronto para avaliar" : c.diagnostic?.title,
+                    )}
                   </span>
                 </div>
                 <ul className="connection-checks">
                   <li
                     className={c.key_present ? "check-done" : "check-pending"}
                   >
-                    {c.key_present ? "✓" : "○"} Chave no .env{" "}
-                    <code>{c.env_name}</code>
+                    {tr(c.key_present ? "✓" : "○")}
+                    {tr(" Chave no .env")}
+                    {tr(" ")}
+                    <code>{tr(c.env_name)}</code>
                   </li>
                   <li
                     className={c.api_responded ? "check-done" : "check-pending"}
                   >
-                    {c.api_responded ? "✓" : "○"} API respondeu
+                    {tr(c.api_responded ? "✓" : "○")}
+                    {tr(" API respondeu")}
                   </li>
                   <li
                     className={
                       c.generation_confirmed ? "check-done" : "check-pending"
                     }
                   >
-                    {c.generation_confirmed ? "✓" : "○"} Geração confirmada
+                    {tr(c.generation_confirmed ? "✓" : "○")}
+                    {tr(" Geração confirmada")}
                   </li>
                 </ul>
                 {!c.ready && (
-                  <p className="connection-action">{c.diagnostic?.action}</p>
+                  <p className="connection-action">
+                    {tr(c.diagnostic?.action)}
+                  </p>
                 )}
                 {c.diagnostic?.detail && (
                   <details className="connection-detail">
-                    <summary>Detalhe da API</summary>
-                    <p>{c.diagnostic.detail}</p>
+                    <summary>{tr("Detalhe da API")}</summary>
+                    <p>{tr(c.diagnostic.detail)}</p>
                     {c.diagnostic.http_status && (
                       <small>
-                        HTTP {c.diagnostic.http_status} ·{" "}
-                        {c.diagnostic.provider_code}
+                        {tr("HTTP ")}
+                        {tr(c.diagnostic.http_status)} ·{tr(" ")}
+                        {tr(c.diagnostic.provider_code)}
                       </small>
                     )}
                   </details>
                 )}
                 <div className="connection-tools">
                   {c.checked_at && (
-                    <small>Verificado em {date(c.checked_at)}</small>
+                    <small>
+                      {tr("Verificado em ")}
+                      {tr(date(c.checked_at))}
+                    </small>
                   )}
                   {c.key_present && (
                     <button
@@ -1919,8 +2162,10 @@ function RunPage({ config, runs, executions, refresh }) {
                       disabled={locked}
                       onClick={() => verify([c.index], true)}
                     >
-                      {c.ready ? "Verificar novamente" : "Verificar conexão"}
-                      <span className="sr-only"> {c.label}</span>
+                      {tr(
+                        c.ready ? "Verificar novamente" : "Verificar conexão",
+                      )}
+                      <span className="sr-only"> {tr(c.label)}</span>
                     </button>
                   )}
                   {!c.ready &&
@@ -1932,7 +2177,7 @@ function RunPage({ config, runs, executions, refresh }) {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Abrir painel do provedor ↗
+                        {tr("Abrir painel do provedor ↗")}
                       </a>
                     )}
                 </div>
@@ -1940,7 +2185,7 @@ function RunPage({ config, runs, executions, refresh }) {
             ))}
           </div>
           {!checks.length && (
-            <p className="muted">Selecione pelo menos um modelo.</p>
+            <p className="muted">{tr("Selecione pelo menos um modelo.")}</p>
           )}
           <div className="connection-verify">
             <button
@@ -1948,13 +2193,16 @@ function RunPage({ config, runs, executions, refresh }) {
               disabled={locked || !models.length}
               onClick={() => verify()}
             >
-              {checking
-                ? "Verificando conexões…"
-                : "Verificar conexões selecionadas"}
+              {tr(
+                checking
+                  ? "Verificando conexões…"
+                  : "Verificar conexões selecionadas",
+              )}
             </button>
             <small>
-              Envio curto à API, com possível cobrança. A confirmação fica
-              salva; iniciar uma avaliação não repete este teste.
+              {tr(
+                "Envio curto à API, com possível cobrança. A confirmação fica salva; iniciar uma avaliação não repete este teste.",
+              )}
             </small>
           </div>
           {checkMessage && (
@@ -1962,14 +2210,14 @@ function RunPage({ config, runs, executions, refresh }) {
               role="status"
               className={`notice ${pending.length ? "warning" : "success"}`}
             >
-              {checkMessage}
+              {tr(checkMessage)}
             </p>
           )}
         </section>
-        <SectionHeading title="3. Inicie a avaliação" />
+        <SectionHeading title={tr("3. Inicie a avaliação")} />
         <div className="run-settings">
           <label>
-            Repetições por modelo
+            {tr("Repetições por modelo")}
             <input
               type="number"
               required
@@ -1980,10 +2228,10 @@ function RunPage({ config, runs, executions, refresh }) {
               onChange={(e) => setRepetitions(e.target.value)}
             />
           </label>
-          <p>Cada modelo recebe os mesmos documentos e tarefas.</p>
+          <p>{tr("Cada modelo recebe os mesmos documentos e tarefas.")}</p>
         </div>
         <details className="advanced-settings">
-          <summary>Ajustar tarefas e modo de avaliação</summary>
+          <summary>{tr("Ajustar tarefas e modo de avaliação")}</summary>
           <div className="task-choices">
             {config.tasks.map((t) => (
               <label className="check" key={t}>
@@ -1992,53 +2240,59 @@ function RunPage({ config, runs, executions, refresh }) {
                   checked={selectedTasks.includes(t)}
                   onChange={() => setSelectedTasks(toggle(selectedTasks, t))}
                 />
-                {tasks[t]}
+                {tr(tasks[t])}
               </label>
             ))}
           </div>
           <div className="toolbar">
             <label>
-              Documentos
+              {tr("Documentos")}
               <select
-                aria-label="Documentos"
+                aria-label={tr("Documentos")}
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
               >
-                <option value="controlled_text">Texto controlado</option>
+                <option value="controlled_text">
+                  {tr("Texto controlado")}
+                </option>
                 <option value="pdf_text" disabled={!config.pdf_ready}>
-                  Texto dos PDFs{" "}
-                  {config.pdf_ready ? "" : "(arquivos locais necessários)"}
+                  {tr("Texto dos PDFs")}
+                  {tr(" ")}
+                  {tr(config.pdf_ready ? "" : "(arquivos locais necessários)")}
                 </option>
               </select>
             </label>
             <label>
-              Modo
+              {tr("Modo")}
               <select
-                aria-label="Modo"
+                aria-label={tr("Modo")}
                 value={experiment}
                 onChange={(e) => setExperiment(e.target.value)}
               >
-                <option value="first_pass">Sem correções prévias</option>
+                <option value="first_pass">
+                  {tr("Sem correções prévias")}
+                </option>
                 <option value="feedback_assisted">
-                  Com correções confirmadas
+                  {tr("Com correções confirmadas")}
                 </option>
               </select>
             </label>
             {experiment === "feedback_assisted" && (
               <label>
-                Execução de referência
+                {tr("Execução de referência")}
                 <select
-                  aria-label="Execução de referência"
+                  aria-label={tr("Execução de referência")}
                   required
                   value={baseline}
                   onChange={(e) => chooseBaseline(e.target.value)}
                 >
-                  <option value="">Selecione uma execução</option>
+                  <option value="">{tr("Selecione uma execução")}</option>
                   {runs
                     .filter((r) => r.experiment === "first_pass")
                     .map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.model} · {date(r.created_at)} · {r.id.slice(0, 6)}
+                        {tr(r.model)} · {tr(date(r.created_at))} ·{" "}
+                        {tr(r.id.slice(0, 6))}
                       </option>
                     ))}
                 </select>
@@ -2049,10 +2303,14 @@ function RunPage({ config, runs, executions, refresh }) {
 
         <div className="run-submit">
           <span>
-            <strong>{calls} chamadas de benchmark</strong>
+            <strong>
+              {tr(calls)}
+              {tr(" chamadas de benchmark")}
+            </strong>
             <small>
-              Sujeitas à cobrança dos provedores. Retentativas podem aumentar
-              esse total.
+              {tr(
+                "Sujeitas à cobrança dos provedores. Retentativas podem aumentar esse total.",
+              )}
             </small>
           </span>
           <button
@@ -2065,65 +2323,81 @@ function RunPage({ config, runs, executions, refresh }) {
             }
             type="submit"
           >
-            {busy
-              ? "Iniciando…"
-              : active
-                ? "Avaliação em andamento"
-                : "Iniciar avaliação →"}
+            {tr(
+              busy
+                ? "Iniciando…"
+                : active
+                  ? "Avaliação em andamento"
+                  : "Iniciar avaliação →",
+            )}
           </button>
         </div>
         {!!pending.length && (
           <p className="setup-note">
-            Faltam {pending.length} confirmações. Todas as conexões selecionadas
-            precisam estar prontas antes de qualquer chamada de benchmark.
+            {tr("Faltam ")}
+            {tr(pending.length)}
+            {tr(
+              " confirmações. Todas as conexões selecionadas precisam estar prontas antes de qualquer chamada de benchmark.",
+            )}
           </p>
         )}
         {message && (
           <p role="alert" className="notice error">
-            {message}
+            {tr(message)}
           </p>
         )}
       </form>
       {!!executions.length && (
         <section className="panel execution-panel">
-          <SectionHeading title="Atividade" />
+          <SectionHeading title={tr("Atividade")} />
           {executions.slice(0, 12).map((e) => (
             <div className="execution-row" key={e.id}>
               <div>
-                <strong>{e.model}</strong>
+                <strong>{tr(e.model)}</strong>
                 <small>
-                  {date(e.created_at)} · repetição {e.repetition}
+                  {tr(date(e.created_at))}
+                  {tr(" · repetição ")}
+                  {tr(e.repetition)}
                 </small>
               </div>
               <div className="execution-status">
                 {["pending", "running"].includes(e.status) ? (
                   <>
                     <span>
-                      {e.status === "pending"
-                        ? "Aguardando"
-                        : `${e.completed_calls} de ${e.total_calls} tarefas concluídas`}
+                      {tr(
+                        e.status === "pending"
+                          ? "Aguardando"
+                          : L(
+                              `${e.completed_calls} de ${e.total_calls} tarefas concluídas`,
+                              `${e.completed_calls} of ${e.total_calls} tasks completed`,
+                            ),
+                      )}
                     </span>
                     <progress value={e.completed_calls} max={e.total_calls} />
                   </>
                 ) : e.status === "completed" ? (
-                  <span className="correct">✓ Avaliação concluída</span>
+                  <span className="correct">{tr("✓ Avaliação concluída")}</span>
                 ) : (
                   <>
                     <span className="false_positive">
-                      {e.status === "interrupted" ? "Interrompida" : "Falhou"} ·
-                      nenhum resultado publicado
+                      {tr(
+                        e.status === "interrupted" ? "Interrompida" : "Falhou",
+                      )}
+                      {tr(" · nenhum resultado publicado")}
                     </span>
                     <strong>
-                      {e.failure?.diagnostic?.title ||
-                        (e.status === "interrupted"
-                          ? "O servidor foi reiniciado."
-                          : "Não foi possível concluir a avaliação.")}
+                      {tr(
+                        e.failure?.diagnostic?.title ||
+                          (e.status === "interrupted"
+                            ? "O servidor foi reiniciado."
+                            : "Não foi possível concluir a avaliação."),
+                      )}
                     </strong>
-                    <small>{e.failure?.diagnostic?.action}</small>
+                    <small>{tr(e.failure?.diagnostic?.action)}</small>
                     {e.failure?.diagnostic?.detail && (
                       <details>
-                        <summary>Detalhe da API</summary>
-                        <p>{e.failure.diagnostic.detail}</p>
+                        <summary>{tr("Detalhe da API")}</summary>
+                        <p>{tr(e.failure.diagnostic.detail)}</p>
                       </details>
                     )}
                   </>
@@ -2131,170 +2405,11 @@ function RunPage({ config, runs, executions, refresh }) {
               </div>
               {e.status === "completed" && (
                 <a className="text-link" href="#results">
-                  Ver resultados →
+                  {tr("Ver resultados →")}
                 </a>
               )}
             </div>
           ))}
-        </section>
-      )}
-    </>
-  );
-}
-
-function Documents({ ds, config }) {
-  const [tab, setTab] = useState("components");
-  const docNames = {
-    FAN: "Ventilador",
-    SENSOR: "Sensor de temperatura",
-    DRIVER: "Chave de alimentação",
-    REQUIREMENTS: "Requisitos do projeto",
-    PROJECT: "Escopo e verificações",
-  };
-  return (
-    <>
-      <div className="segmented document-tabs">
-        {[
-          ["components", "Componentes"],
-          ["requirements", "Requisitos"],
-          ["input", "Entrada dos modelos"],
-          ["reference", "Referência de avaliação"],
-        ].map(([id, text]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={tab === id ? "active" : ""}
-          >
-            {text}
-          </button>
-        ))}
-      </div>
-      {tab === "components" && (
-        <>
-          <div className="component-cards">
-            {ds.sources
-              .filter((s) =>
-                ["FAN", "SENSOR", "DRIVER"].includes(s.document_id),
-              )
-              .map((s) => (
-                <article className="panel component-card" key={s.document_id}>
-                  <p className="eyebrow">{docNames[s.document_id]}</p>
-                  <h2>{s.part_number}</h2>
-                  <p className="muted">{s.manufacturer}</p>
-                  <a
-                    className="text-link"
-                    href={s.official_datasheet_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Datasheet oficial ↗
-                  </a>
-                  <details>
-                    <summary>Especificações e fonte</summary>
-                    <Json
-                      value={{
-                        parameters: s.parameters,
-                        sections: s.sections,
-                        date_accessed: s.date_accessed,
-                      }}
-                    />
-                  </details>
-                </article>
-              ))}
-          </div>
-          <details className="panel">
-            <summary>Fontes dos componentes alternativos</summary>
-            {ds.sources
-              .filter((s) => s.document_id.startsWith("ALT-"))
-              .map((s) => (
-                <p key={s.document_id}>
-                  {s.manufacturer} · {s.part_number} ·{" "}
-                  <a
-                    href={s.official_datasheet_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Datasheet oficial ↗
-                  </a>
-                </p>
-              ))}
-          </details>
-        </>
-      )}
-      {tab === "requirements" && (
-        <section className="panel">
-          <SectionHeading title="Requisitos do projeto" />
-          <p className="muted">
-            Critérios definidos para este benchmark. Não são medições de
-            hardware nem especificações dos fabricantes.
-          </p>
-          {ds.ground_truth.requirements.map((r) => (
-            <details key={r.id}>
-              <summary>
-                <span className="requirement-code">{r.id}</span>
-                {nodeLabels[r.id]}
-                {r.critical && <span className="critical-tag">Crítico</span>}
-              </summary>
-              <p>{r.text}</p>
-            </details>
-          ))}
-        </section>
-      )}
-      {tab === "input" && (
-        <section className="panel">
-          <SectionHeading title="Documentos enviados aos modelos" />
-          <p className="muted">
-            O texto técnico permanece igual para todos os provedores.
-          </p>
-          {Object.entries(ds.documents).map(([id, lines]) => (
-            <details key={id}>
-              <summary>{docNames[id] || id}</summary>
-              {Object.entries(lines).map(([loc, text]) => (
-                <blockquote key={loc}>
-                  <small>{loc}</small>
-                  <p>{text}</p>
-                </blockquote>
-              ))}
-            </details>
-          ))}
-          <details>
-            <summary>Configuração do sistema</summary>
-            <Json value={ds.system_config} />
-          </details>
-        </section>
-      )}
-      {tab === "reference" && (
-        <section className="panel">
-          <SectionHeading title="Referência de avaliação" />
-          <p>
-            Os rótulos de referência ainda precisam de revisão humana
-            independente.
-          </p>
-          <details>
-            <summary>Relações esperadas</summary>
-            <Json value={ds.ground_truth.relationships} />
-          </details>
-          <details>
-            <summary>Cenários de teste e impactos esperados</summary>
-            <p className="muted">
-              Alterações propostas para testar raciocínio. Não descrevem
-              mudanças executadas ou resultados medidos.
-            </p>
-            <Json value={ds.ground_truth.change_scenarios} />
-          </details>
-          <details>
-            <summary>Entidades e parâmetros</summary>
-            <Json value={ds.ground_truth.entities} />
-          </details>
-          <details>
-            <summary>Versões dos documentos e prompts</summary>
-            <Json
-              value={{
-                manifest: config.manifest,
-                prompt_hashes: config.prompt_hashes,
-              }}
-            />
-          </details>
         </section>
       )}
     </>

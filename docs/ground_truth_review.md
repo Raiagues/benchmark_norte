@@ -69,3 +69,9 @@ Important boundaries: the current and speed tests force ON independently; thresh
 - Approved ground-truth version: pending
 
 Dataset 1.1 removes the two hypothetical candidate-part ratings. CHG-010 uses the documented alternative fan; CHG-012 changes a product target while keeping the real installed fan. Proposed configuration values remain test inputs, never claimed measurements or manufacturer limits.
+
+## Revisão pela interface
+
+A tela **Gabarito revisável / Reviewable reference** apresenta os 58 itens da referência inicial sem um despejo de JSON. Confirmar ou recusar registra uma decisão humana explícita vinculada ao hash do dataset. Não presumimos que esse registro equivale a revisão independente por especialista. A porcentagem apresentada conta itens confirmados, não resultados de modelos.
+
+Edições de entradas, prompts ou gabarito criam versões locais no SQLite. Não alteram o dataset original do repositório, os arquivos já exportados ou o gabarito de execuções anteriores. A referência efetivamente usada e as decisões de revisão são preservadas no snapshot de cada nova execução. Itens recusados impedem novas chamadas de benchmark nessa versão.

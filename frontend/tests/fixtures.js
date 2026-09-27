@@ -1,5 +1,6 @@
 // Browser-only test data. All /api requests are intercepted; nothing enters SQLite or results/.
 import fs from "node:fs";
+import { liveFixture } from "./live-fixtures.js";
 import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const read = (name) => JSON.parse(fs.readFileSync(root + name, "utf8"));
@@ -203,6 +204,7 @@ export async function interceptApi(
   const feedback = [];
   const writes = [];
   let executions = [];
+  let liveRun = null;
   const bench = {
     dataset: structuredClone(dataset),
     edit_hash: "browser-edit-hash",
@@ -446,7 +448,8 @@ export async function interceptApi(
           },
         },
       ];
-      response = { run_ids: ["test-failed-attempt"] };
+      liveRun = liveFixture({ failed: true });
+      response = { run_ids: ["test-failed-attempt"], batch_id: liveRun.id };
     } else if (path === "/runs")
       response = populated
         ? records.runs.map((r) => ({
@@ -458,7 +461,21 @@ export async function interceptApi(
         : [];
     else if (path === "/summary") response = populated ? records.summary : [];
     else if (path === "/executions") response = executions;
-    else if (path === "/feedback" && request.method() === "POST") {
+    else if (path === "/sources")
+      response = sources.map((s) => ({ ...s, available: false, pages: null }));
+    else if (path === "/live") response = liveRun ? [liveRun] : [];
+    else if (path.startsWith("/live/")) {
+      if (path.endsWith("/stream")) {
+        await route.fulfill({
+          contentType: "text/event-stream",
+          body: liveRun
+            ? `event: snapshot\ndata: ${JSON.stringify(liveRun)}\n\n`
+            : "",
+        });
+        return;
+      }
+      response = path.endsWith("/events") ? [] : liveRun;
+    } else if (path === "/feedback" && request.method() === "POST") {
       const data = {
         ...request.postDataJSON(),
         id: `feedback-${feedback.length}`,

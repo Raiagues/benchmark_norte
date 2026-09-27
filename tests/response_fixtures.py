@@ -59,7 +59,7 @@ def fixture_output(task, ds, cases, repetition, feedback):
     return {"scenarios": answers}
 
 
-def install_mock_api(monkeypatch, ds, replies=None, db=None):
+def install_mock_api(monkeypatch, ds, replies=None, db=None, on_request=None):
     """HTTP responses for isolated tests only; the normal provider adapter still runs."""
     import json
     import httpx
@@ -72,6 +72,8 @@ def install_mock_api(monkeypatch, ds, replies=None, db=None):
         body = json.loads(request.content)
         prompt = body["input"][0]["content"]
         sent.append(prompt)
+        if on_request:
+            on_request(request)
         if replies is not None:
             status, text = replies.pop(0)
         else:
@@ -101,7 +103,7 @@ def install_mock_api(monkeypatch, ds, replies=None, db=None):
             status, json=raw if status == 200 else {"error": "Test-only failure"}
         )
 
-    def mocked_call(config, prompt, schema, settings, pricing, api_key=None):
+    def mocked_call(config, prompt, schema, settings, pricing, api_key=None, **options):
         with httpx.Client(transport=httpx.MockTransport(respond)) as client:
             return call_provider(
                 config,
@@ -111,6 +113,7 @@ def install_mock_api(monkeypatch, ds, replies=None, db=None):
                 pricing,
                 client=client,
                 api_key=api_key,
+                **options,
             )
 
     monkeypatch.setenv("OPENAI_API_KEY", "unit-test-only")

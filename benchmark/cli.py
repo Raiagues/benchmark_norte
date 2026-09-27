@@ -64,7 +64,7 @@ def main():
             )
         else:
             print(
-                f"Execution failed ({result.get('failure', {}).get('category', result['status'])}). No result published.",
+                f"Execution failed ({(result.get('failure') or {}).get('category', result['status'])}). Completed task results are preserved; inspect live history.",
                 flush=True,
             )
     if failed:

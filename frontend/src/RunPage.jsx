@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { L, t, locale } from "./i18n";
 import Icon from "./Icon";
+import { RunHistory } from "./LiveExecution";
 import { Modal, Tabs, PagedItems, DetailButton, PagedText } from "./ScreenUI";
 const providers = {
   openai: "OpenAI",
@@ -66,7 +67,14 @@ function statusLabel(c) {
     }[c?.status] || L("Sem conexão", "Not connected")
   );
 }
-export default function RunPage({ config, runs, executions, refresh, api }) {
+export default function RunPage({
+  config,
+  ds,
+  runs,
+  executions,
+  refresh,
+  api,
+}) {
   const [selection, setSelection] = useState(() => initial(config));
   const { models, depths } = selection;
   const [tab, setTab] = useState("models"),
@@ -212,7 +220,7 @@ export default function RunPage({ config, runs, executions, refresh, api }) {
     }
     setBusy(true);
     try {
-      await api("/runs", "POST", {
+      const started = await api("/runs", "POST", {
         models,
         depths: requestDepths,
         tasks: selectedTasks,
@@ -221,8 +229,10 @@ export default function RunPage({ config, runs, executions, refresh, api }) {
         experiment,
         baseline_run_id: baseline || null,
       });
+      window.location.hash = started.batch_id
+        ? `live/${started.batch_id}`
+        : "live";
       await refresh();
-      setTab("activity");
     } catch (e) {
       setMessage(e.message);
     } finally {
@@ -253,6 +263,7 @@ export default function RunPage({ config, runs, executions, refresh, api }) {
         items={[
           ["models", L("Modelos", "Models")],
           ["settings", L("Tarefas e opções", "Tasks and options")],
+          ["inputs", L("Entradas e instruções", "Inputs and instructions")],
           ["activity", L("Atividade", "Activity")],
         ]}
       />
@@ -555,7 +566,11 @@ export default function RunPage({ config, runs, executions, refresh, api }) {
                   >
                     <option value="">{t("Selecione uma execução")}</option>
                     {runs
-                      .filter((r) => r.experiment === "first_pass")
+                      .filter(
+                        (r) =>
+                          r.experiment === "first_pass" &&
+                          r.status === "completed",
+                      )
                       .map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.model} · {date(r.created_at)}
@@ -567,57 +582,120 @@ export default function RunPage({ config, runs, executions, refresh, api }) {
             </div>
           </section>
         )}
-        {tab === "activity" &&
-          (executions.length ? (
-            <PagedItems items={executions} resetKey="executions" size={2}>
-              {(e) => (
-                <article className="activity-card" key={e.id}>
-                  <header>
-                    <strong>{e.model}</strong>
-                    <small>{date(e.created_at)}</small>
-                  </header>
-                  {["pending", "running"].includes(e.status) ? (
-                    <>
-                      <p>
-                        {e.completed_calls} / {e.total_calls}{" "}
-                        {L("tarefas", "tasks")}
-                      </p>
-                      <progress value={e.completed_calls} max={e.total_calls} />
-                    </>
-                  ) : e.status === "completed" ? (
-                    <a href="#results">✓ {t("Ver resultados →")}</a>
-                  ) : (
-                    <>
-                      <p className="false_positive">
-                        {t(
-                          e.status === "interrupted"
-                            ? "Interrompida"
-                            : "Falhou",
-                        )}{" "}
-                        ·{" "}
-                        {L("nenhum resultado publicado", "no result published")}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setDetail({ failure: e.failure })}
-                      >
-                        {t(
-                          e.failure?.diagnostic?.title ||
-                            "Não foi possível concluir a avaliação.",
-                        )}{" "}
-                        ⓘ
-                      </button>
-                    </>
+        {tab === "inputs" && (
+          <div className="launch-inputs product-stack">
+            <section className="product-panel">
+              <div className="panel-heading">
+                <h2>
+                  {L(
+                    "Documentos desta avaliação",
+                    "Documents for this evaluation",
                   )}
-                </article>
-              )}
-            </PagedItems>
-          ) : (
-            <div className="quiet-empty">
-              <Icon name="history" size={30} />
-              <h2>{L("Nenhuma atividade", "No activity yet")}</h2>
-            </div>
-          ))}
+                </h2>
+                <span className="source-badge">
+                  {mode === "pdf_text"
+                    ? L("TEXTO DOS PDFs", "FULL PDF TEXT")
+                    : L("TEXTO NORMALIZADO", "NORMALIZED TEXT")}
+                </span>
+              </div>
+              <div className="launch-artifacts">
+                {ds.sources
+                  .filter((s) =>
+                    ["FAN", "SENSOR", "DRIVER"].includes(s.document_id),
+                  )
+                  .map((s) => (
+                    <a href="#inputs" key={s.document_id}>
+                      <Icon name="document" />
+                      <span>
+                        {s.part_number}
+                        <small>{s.manufacturer}</small>
+                      </span>
+                    </a>
+                  ))}
+                <a href="#inputs/requirements">
+                  <Icon name="reference" />
+                  <span>
+                    {ds.ground_truth.requirements.length}{" "}
+                    {L("requisitos do projeto", "project requirements")}
+                  </span>
+                </a>
+                <a href="#inputs/configuration">
+                  <Icon name="config" />
+                  <span>
+                    {L(
+                      "Configuração e hipóteses",
+                      "Configuration and assumptions",
+                    )}
+                  </span>
+                </a>
+                <a href="#inputs/scenarios">
+                  <Icon name="change" />
+                  <span>
+                    {L(
+                      "Cenários conforme a tarefa e o nível",
+                      "Scenarios selected by task and level",
+                    )}
+                  </span>
+                </a>
+              </div>
+            </section>
+            <section className="product-panel">
+              <h2>
+                {L(
+                  "Instruções e saída esperada",
+                  "Instructions and expected output",
+                )}
+              </h2>
+              <p>
+                {L(
+                  "Ler as evidências fornecidas, usar o vocabulário permitido e devolver JSON com citações. A avaliação compara a resposta com o gabarito separado.",
+                  "Read the supplied evidence, use the allowed vocabulary and return JSON with citations. Evaluation compares that response with the separate ground truth.",
+                )}
+              </p>
+              <div className="detail-chips">
+                {selectedTasks.map((task) => (
+                  <span key={task}>
+                    {t(taskNames[task])} ·{" "}
+                    {task === "one_hop"
+                      ? "L2"
+                      : task === "impact_explanation"
+                        ? "L1 + L2"
+                        : "L1"}
+                  </span>
+                ))}
+              </div>
+              <p className="muted">
+                {experiment === "first_pass"
+                  ? L(
+                      "Primeira passagem: sem correções anteriores e sem respostas do gabarito no contexto.",
+                      "First pass: no previous corrections or ground-truth answers in the context.",
+                    )
+                  : L(
+                      "Modo assistido: inclui apenas as correções confirmadas da execução de referência selecionada.",
+                      "Assisted mode: includes only confirmed corrections from the selected baseline run.",
+                    )}
+              </p>
+              <div className="inline-actions">
+                <a className="button" href="#context">
+                  {L(
+                    "Inspecionar prompts exatos e versões",
+                    "Inspect exact prompts and versions",
+                  )}{" "}
+                  →
+                </a>
+                <a className="button" href="#criteria">
+                  {L("Critérios de avaliação", "Evaluation criteria")}
+                </a>
+              </div>
+            </section>
+          </div>
+        )}
+        {tab === "activity" && (
+          <RunHistory
+            api={api}
+            onOpen={(id) => (window.location.hash = `live/${id}`)}
+          />
+        )}
       </div>
       <div className="launch-bottom">
         {message && (

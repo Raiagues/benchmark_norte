@@ -7,16 +7,20 @@ test("benchmark home explains input, model, output and withheld reference withou
   const { writes } = await interceptApi(page);
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "O benchmark", exact: true }),
+    page.getByRole("heading", { name: "Visão geral", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".pipeline-step")).toHaveCount(4);
+  await expect(page.locator(".story-panel")).toHaveCount(3);
   await expect(
-    page.getByText("0 avaliações concluídas", { exact: false }),
+    page.getByText("Nenhuma execução real nesta tarefa e versão", {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.locator(".metric-chart")).toHaveCount(0);
   await expect(page.locator("pre")).toHaveCount(0);
   await expect(
-    page.getByText("O gabarito fica do lado da avaliação.", { exact: true }),
+    page.getByText("Gabarito separado → comparação determinística", {
+      exact: true,
+    }),
   ).toBeVisible();
   expect(writes).toHaveLength(0);
   await page.screenshot({
@@ -29,7 +33,7 @@ test("input documents, requirements, instructions and output contract are clearl
   page,
 }) => {
   await interceptApi(page);
-  await page.goto("/#inputs");
+  await page.goto("/#context");
   await expect(
     page.getByRole("heading", { name: "Ventilador", exact: true }),
   ).toBeVisible();
@@ -126,7 +130,9 @@ test("human reference decisions and edits have explicit actions, version history
     "/benchmark/review",
     "/benchmark/edit",
   ]);
-  await page.getByRole("link", { name: "Resultados", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Comparação de modelos", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Nenhum resultado ainda" }),
   ).toBeVisible();
@@ -136,7 +142,7 @@ test("language switch covers navigation, benchmark, connections and persists whi
   page,
 }) => {
   await interceptApi(page);
-  await page.goto("/#inputs");
+  await page.goto("/#context");
   const passage = await page
     .locator(".input-passage .source-text")
     .first()
@@ -144,7 +150,7 @@ test("language switch covers navigation, benchmark, connections and persists whi
   await page.getByRole("button", { name: "English", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Inputs and outputs",
+    "Prompt and context",
   );
   await expect(page.locator(".input-passage .source-text").first()).toHaveText(
     passage,
@@ -159,7 +165,7 @@ test("language switch covers navigation, benchmark, connections and persists whi
     "Unsupported claims",
   );
   await page
-    .getByRole("link", { name: "Reviewable reference", exact: true })
+    .getByRole("link", { name: "Review ground truth", exact: true })
     .click();
   await expect(
     page
@@ -197,18 +203,22 @@ test("populated graphs, metric charts and scenario controls translate without ch
   await expect(
     page.getByRole("heading", { name: "Precision", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Graphs", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Relationship map", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Reference", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Model answer", exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Changes", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Impact analysis", exact: true })
+    .click();
   await page
     .getByLabel("Change type", { exact: true })
     .selectOption("no_impact");
-  await expect(page.locator(".scenario")).toHaveCount(2);
+  await expect(page.locator(".scenario-selector button")).toHaveCount(2);
   expect(errors).toEqual([]);
 });
 
@@ -217,9 +227,13 @@ test("new pages and review dialog remain readable on mobile", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await interceptApi(page);
-  for (const p of ["documents", "inputs", "reference", "criteria"]) {
+  for (const p of ["documents", "context", "reference", "criteria"]) {
     await page.goto("/#" + p);
-    await expect(page.locator(".benchmark-workbench")).toBeVisible();
+    await expect(
+      page.locator(
+        p === "documents" ? ".overview-product" : ".benchmark-workbench",
+      ),
+    ).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

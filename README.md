@@ -2,7 +2,7 @@
 
 Um benchmark pequeno para comparar OpenAI, Anthropic e Google Gemini na leitura de documentos de engenharia, extração de relações e análise de impacto de alterações.
 
-**O projeto começa sem resultados. Não existe modo de demonstração.** Um resultado só é publicado depois que todas as tarefas daquela repetição recebem respostas reais da API, em JSON válido e no formato esperado. Uma resposta tecnicamente errada ainda é avaliada: o que fica fora dos resultados é uma execução que falhou, foi interrompida ou retornou um formato inválido.
+**O projeto começa sem resultados. Não existe modo de demonstração.** Cada resposta real da API é salva e fica disponível assim que sua estrutura e sua avaliação terminam. Respostas de engenharia incorretas também contam nas métricas. Falhas de API, respostas inválidas e interrupções aparecem no acompanhamento operacional, sem virar notas de benchmark. Uma avaliação parcial preserva todos os resultados válidos já recebidos.
 
 O site mostra métricas separadas, respostas originais e grafos de referência e do modelo lado a lado. Não há uma nota única nem um vencedor pré-definido.
 
@@ -22,7 +22,7 @@ cd benchmark_norte
 ./setup
 ```
 
-O script instala as dependências, compila a interface, cria as tabelas vazias e cria `.env` sem sobrescrever um arquivo existente. O progresso detalhado fica em `.runtime/setup.log`.
+O script instala as dependências, compila a interface, cria ou atualiza as tabelas sem apagar dados e cria `.env` sem sobrescrever um arquivo existente. O progresso detalhado fica em `.runtime/setup.log`.
 
 3. Abra **`.env` na raiz do projeto** no seu editor. Cole cada chave depois do `=` correspondente:
 
@@ -52,12 +52,19 @@ Instalar, abrir e fechar não chamam modelos nem criam resultados. Você pode co
 
 ## Entender e editar o benchmark pelo site
 
-A página inicial agora é **O benchmark**, com um diagrama clicável: **entrada → modelo → saída → avaliação**. Os componentes têm ícones, fatos do fabricante e links para as fontes. Esses fatos são dados fornecidos ao modelo, não respostas geradas por ele.
+A **Visão geral** apresenta o sistema e o fluxo **entrada → prompt/contexto → resposta → avaliação**. O seletor distingue texto normalizado de texto integral dos PDFs. Respostas e métricas só aparecem se houver dados reais compatíveis com o modo selecionado.
 
-- **Entradas e saídas**: selecione uma tarefa para ver exatamente seus documentos, requisitos, configuração, cenários e vocabulário. Os requisitos são regras de projeto dadas ao modelo. A aba **Instruções do modelo** mostra o prompt geral e o da tarefa. **O que deve devolver** explica o contrato da resposta, sem inventar uma resposta de exemplo. **Mensagem completa** permite inspecionar e baixar o pedido exato, construído pela mesma função do executor. A prévia não chama APIs. Em L2 ela já exclui as pistas PROJECT-05/06.
-- **Gabarito revisável**: entidades, valores, relações e impactos esperados usados pela avaliação. Esses arquivos de respostas esperadas não são enviados ao modelo. Em L1, os documentos de entrada já descrevem relações explícitas para extrair. Cada item tem ações **Confirmar**, **Recusar**, **Editar** e, quando aplicável, **Evidências**. A porcentagem desta tela mede revisão humana, não desempenho de modelo.
-- **Critérios de avaliação**: cartões explicam as condições de publicação, acertos, falsos positivos, faltantes, evidência inválida e fórmulas. Uma resposta tecnicamente errada mas válida recebe pontuação; uma chamada que falhou não vira resultado. Não há nota mínima global nem vencedor automático.
-- **Português / English**: troca o idioma da interface inteira e salva a preferência no navegador. Documentos, prompts, evidências e respostas originais permanecem no idioma original para preservar exatamente o conteúdo do teste. A interface identifica esse conteúdo literal.
+- **Entradas do benchmark** separa documentos originais, texto normalizado, requisitos, configuração e cenários. O leitor PDF mostra páginas reais com navegação, zoom e texto acessível; o leitor do navegador é a alternativa. Quando falta um PDF, **Obter PDF oficial para uso local** busca apenas o endereço do registro de fontes. Nenhum modelo é chamado; o PDF fica fora do Git. Os fatos normalizados são uma transcrição técnica, não o documento original nem uma resposta de modelo.
+- **Requisitos** tem busca por ID/texto, categoria, componente, tipo, origem e impacto esperado de um cenário, além de ordenação. A seleção mostra o texto integral, sua verificação e vínculos do gabarito. Categorias organizam a interface sem alterar o prompt ou as regras de avaliação.
+- **Configuração** separa escolhas do sistema, hipóteses documentadas e opções de execução. Cada valor do sistema é identificado como hipótese do benchmark; os limites do fabricante ficam nas fontes.
+- **Cenários** mostra tipo, nível, elemento alterado, descrição, valores antes/depois quando explicitamente disponíveis e presença de respostas reais. O impacto esperado fica identificado como gabarito, separado da entrada.
+- **Prompt e contexto** preserva a prévia exata, o contrato de saída e os editores existentes. Em L2, a prévia remove as pistas PROJECT-05/06. A prévia não chama APIs.
+- **Gabarito revisável** mantém as ações Confirmar, Recusar e Editar. A porcentagem dessa tela mede revisão humana, nunca desempenho de modelo. O gabarito esperado não é enviado na primeira passagem.
+- **Fontes e proveniência** reúne fabricante, peça, revisão, URL oficial, seções, data, disponibilidade local e hash do PDF, além dos IDs e tipos permitidos.
+- **Mapa de relações**, **Análise de impacto** e **Comparação de modelos** usam respostas reais preservadas. Há grafos lado a lado, evidências, contagens de acertos/ausências/extras, amostras e métricas separadas por tarefa, nível, versão, modo e configuração.
+- **Aprendizado** mostra correções, confirmação humana e avaliações assistidas pareadas, se existirem. Não há curvas de melhoria demonstrativas.
+- **Configurações** mostra a versão ativa, idioma, modelos padrão, conexões e hashes dos prompts.
+- **Português / English** troca a interface. Documentos, prompts, evidências e respostas permanecem no idioma original.
 
 Para editar uma entrada, abra seu trecho e clique em **Editar entrada**; configurações, descrições de alterações e prompts também têm editores. Para corrigir uma resposta esperada, use **Editar** no gabarito. Os editores têm campos legíveis; não exigem editar JSON. Explique a alteração e clique em **Salvar nova versão**.
 
@@ -73,10 +80,10 @@ Esta primeira versão permite editar os itens existentes, mantendo IDs e tipos d
 2. Clique no status da linha para ver o diagnóstico: **verde** confirma geração; **vermelho** indica chave ausente, conexão não confirmada ou falha; **amarelo** indica créditos, faturamento, cota ou limite temporário. O detalhe distingue essas causas e mostra o que fazer. A presença de uma chave não significa que ela funciona.
 3. Clique em **Verificar conexões**. É uma chamada curta que pode consumir créditos, separada da avaliação. A confirmação fica salva. Para verificar um modelo individualmente, abra o status daquela linha. Alterar seletores ou clicar em **Atualizar status** consulta apenas o estado local, sem chamar provedores.
 4. Quando as conexões selecionadas estiverem confirmadas, clique em **Iniciar avaliação**. Para começar pequeno, escolha **1 repetição** e, na aba **Tarefas e opções**, deixe apenas **Relações**. A profundidade escolhida é enviada à API e registrada com a execução; não é apenas uma preferência visual.
-5. Acompanhe o progresso em **Atividade**. Falhas têm detalhes próprios e não viram resultados.
-6. Em **Grafos**, escolha modelo e execução para ver referência e resposta lado a lado. Em **Resultados**, use as abas **Gráficos**, **Resumo**, **Uso e custo** e **Respostas**.
+5. Ao iniciar, o site abre **Execução ao vivo** automaticamente. Todos os modelos ficam visíveis; suas repetições aparecem dentro de um único cartão. Abra qualquer resposta recebida sem esperar o restante da avaliação.
+6. Em **Mapa de relações**, escolha modelo e execução para ver referência e resposta lado a lado. Em **Comparação de modelos**, use as abas **Gráficos**, **Resumo**, **Uso e custo** e **Respostas**.
 
-As páginas principais usam uma área fixa, abas e paginação, sem rolagem da página. Os leitores de prompts e respostas preservam todo o texto, dividido em páginas. Editores e detalhes abertos sob demanda podem rolar quando necessário, inclusive para não esconder campos em telas pequenas. A paleta azul-escuro segue o [Norte](https://github.com/Raiagues/norte), consultado no commit `a2945d8`.
+As páginas usam painéis, navegação lateral e rolagem vertical quando necessária. O acompanhamento não esconde modelos atrás de paginação. Os leitores exatos e editores anteriores continuam disponíveis. A paleta segue o [Norte](https://github.com/Raiagues/norte), consultado no commit `a2945d8`. O leitor de documentos usa [PDF.js](https://mozilla.github.io/pdf.js/examples/), servido localmente.
 
 A confirmação é persistida para **aquela chave, modelo, profundidade e configuração**. O botão de iniciar faz apenas a checagem local; não repete o teste de conexão. **Verificar novamente** força uma nova chamada quando você quiser. Trocar/remover a chave, mudar a configuração do modelo ou receber uma falha de API invalida a confirmação. Uma confirmação anterior não garante saldo, disponibilidade ou acesso futuro.
 
@@ -86,9 +93,19 @@ Para comparar OpenAI, Anthropic e Gemini, configure as três chaves e mantenha o
 
 Os destaques iniciais são GPT-6 Astra, Claude Fable 5.1 e Gemini 3.1 Pro Preview, escolhidos pela proposta de raciocínio publicada pelos fabricantes em 27/09/2026. As alternativas são GPT-6 Sol, Claude Opus 5.5 e Gemini 3.8 Flash. **Destaque não é resultado medido nem vencedor deste benchmark.** Modelos preview podem mudar. Fontes, datas e parâmetros estão em `config/models.json` e [docs/api_sources.md](docs/api_sources.md).
 
-**Resultados** permite selecionar modelos, tarefa e dificuldade para comparar precisão, recall, F1, afirmações sem suporte, impactos críticos perdidos, consistência e latência. Tokens e custo ficam na aba **Uso e custo**. Profundidades diferentes são identificadas e não têm suas médias misturadas. Texto/PDF, primeira passagem/correções e versões diferentes ficam em grupos separados. Campos sem medição mostram `—` ou “Não disponível”.
+**Comparação de modelos** permite selecionar modelos, tarefa e dificuldade para comparar precisão, recall, F1, afirmações sem suporte, impactos críticos perdidos, consistência e latência. Tokens e custo ficam na aba **Uso e custo**. Profundidades diferentes são identificadas e não têm suas médias misturadas. Texto/PDF, primeira passagem/correções e versões diferentes ficam em grupos separados. Campos sem medição mostram `—` ou “Não disponível”.
 
-Falhas aparecem somente em **Nova avaliação → Atividade**, com diagnóstico. Nenhum resultado parcial, grafo, nota zero ou exportação é publicado para aquela repetição. Outras repetições concluídas continuam válidas. Fechar o site durante uma avaliação interrompe o trabalho pendente; não há retomada automática de chamadas pagas.
+## Acompanhar e interromper
+
+**Execução ao vivo** mostra estados persistidos pelo backend através de Server-Sent Events. O progresso é `(respostas avaliadas + erros técnicos) / chamadas planejadas`; ele não cresce com o tempo. Interrupções são contadas separadamente. Cada tarefa/nível é uma chamada; tarefas de impacto enviam vários cenários juntos.
+
+O cartão de cada modelo reúne repetições, atividade atual, acertos integrais/parciais, erros técnicos, interrupções, tokens informados, latência e custo quando calculável. A comparação cumulativa mantém L1/L2 e tarefas separados. Clique numa métrica para abrir numerador, denominador e respostas participantes. A matriz alterna tarefas ou cenários sem paginação. O registro de eventos tem filtros e fica em segundo plano.
+
+**Interromper avaliação** exige confirmação. Respostas já salvas permanecem intactas; tarefas na fila não começam. A chamada em andamento pode terminar e ser salva. Interrupções e falhas técnicas não reduzem precisão/recall/F1. Respostas válidas mas incorretas continuam contribuindo para essas métricas.
+
+**Histórico** inclui avaliações parciais, com planejadas, avaliadas, erros e interrupções. Recarregar ou sair da página não para o backend. Já `./stop` encerra o servidor: use o botão do site primeiro se quiser aguardar a resposta em andamento. Após uma queda ou reinício, o estado incompleto é identificado como interrupção, sem retomar chamadas pagas automaticamente.
+
+A atualização de banco é aditiva. As tabelas antigas e os arquivos de respostas não são apagados ou reescritos. Registros antigos que ainda dizem `running` ou `pending` recebem uma anotação separada de recuperação. Eventos históricos ausentes não são inventados. Detalhes da migração, contagens, fórmulas e eventos estão em [docs/live_execution.md](docs/live_execution.md).
 
 ## Chaves e Git
 
@@ -152,7 +169,7 @@ L1 e L2 são medidos separadamente. A avaliação usa código determinístico pa
 
 Repetições produzem média, mínimo, máximo, desvio padrão e consistência de decisões. Nos gráficos, o traço representa mínimo e máximo; não é um intervalo de confiança. Todas as métricas de qualidade são **condicionadas às execuções concluídas**, conforme a regra de publicação: não medem disponibilidade da API ou frequência de falhas. Diagnósticos de tentativas inválidas ficam separados, sem contaminar o ranking de qualidade.
 
-Explicações livres não podem ser integralmente verificadas por essas regras. A tela **Alterações** permite registrar uma revisão humana, sem alterar automaticamente a pontuação. Veja as fórmulas e limitações em `docs/metrics.md`.
+Explicações livres não podem ser integralmente verificadas por essas regras. A tela **Análise de impacto** permite registrar uma revisão humana, sem alterar automaticamente a pontuação. Veja as fórmulas e limitações em `docs/metrics.md`.
 
 Os preços de `config/pricing.json` começam indisponíveis. Só preencha valores por milhão de tokens após verificar preço, data e fonte oficial. Custos estimados não equivalem à fatura. Falta de preço confiável, cache com preço não modelado ou uso incompleto permanece indisponível.
 
@@ -195,12 +212,13 @@ data/manifest.json            Versões do benchmark e dataset
 data/benchmark.sqlite3        Banco local, ignorado pelo Git
 frontend/                     Interface React e grafos React Flow
 results/<provider>/<id>/run.json   Somente avaliações reais concluídas
+results/<provider>/<id>/calls/     Respostas avaliadas, salvas durante a execução
 tests/                        Testes isolados de Python
 frontend/tests/               Testes isolados do navegador
 docs/                         Regras de avaliação e revisão da referência
 ```
 
-SQLite mantém confirmações em `connection_checks`, separadas de resultados, e separa `executions` (andamento e diagnósticos) de `runs`/`task_results` (resultados completos). A publicação de uma repetição é atômica: todas as suas tarefas ou nenhuma. Uma execução bem-sucedida também gera `run.json` com resposta original, saída validada, métricas, tokens, latência, horários, modelo, prompts e hashes, dataset, ground truth, preços e configurações. O download no site usa o registro completo do banco. Falhas de chamada não criam exportações de resultados.
+SQLite mantém confirmações em `connection_checks`, separadas de resultados, e separa `executions` (repetições e diagnósticos) de `runs`/`task_results` (repetições completas). `live_batches`, `live_calls` e `live_events` guardam o progresso, cada resposta avaliada e os eventos reais; `execution_recovery` anota interrupções sem reescrever o histórico antigo. As tarefas válidas ficam disponíveis imediatamente, mesmo quando a repetição termina parcialmente. Ao concluir todas as tarefas, a publicação nas tabelas originais continua atômica e gera `run.json` com respostas, métricas, uso, horários, configurações, prompts e referências. O download usa o registro preservado no banco. Falhas de chamada não criam exportações de resultados de qualidade.
 
 Não há importação de resultados fictícios, modo offline de geração de respostas ou API para o navegador enviar notas prontas. Cabeçalhos e chaves não são salvos. Não há telemetria externa.
 
@@ -236,3 +254,5 @@ npm --prefix frontend run test:e2e
 Os testes Python usam bancos temporários e transporte HTTP interceptado. Os testes do navegador interceptam todas as rotas `/api` dentro do próprio teste. **Nenhum teste popula o banco do aplicativo, cria resultados em `results/` ou chama modelos pagos.** Fixtures existem somente para testar o código, fora do fluxo da aplicação.
 
 Sem suas chaves, não é possível verificar acesso às contas, aceitação do schema pelos modelos reais, qualidade das respostas ou faturamento. O estado vazio, a publicação de resultados, rejeição de falhas, métricas, gráficos e feedback são verificáveis localmente. Este benchmark pequeno não demonstra competência geral em engenharia nem valida hardware.
+
+Os novos resultados por tarefa também ficam em `results/<provedor>/<repetição>/calls/<execução>.json`. Repetições completas mantêm `run.json`. O SQLite é a fonte principal; arquivos históricos não são sobrescritos pela migração. PDFs originais podem ser obtidos no site para uso local, sem entrar no Git.

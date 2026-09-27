@@ -179,7 +179,17 @@ def estimate_cost(tokens, pricing, provider, model):
     ) / 1_000_000
 
 
-def call_provider(config, prompt, schema, settings, pricing, client=None, api_key=None):
+def call_provider(
+    config,
+    prompt,
+    schema,
+    settings,
+    pricing,
+    client=None,
+    api_key=None,
+    observer=None,
+    cancelled=None,
+):
     started, clock = utcnow(), time.perf_counter()
     result = {
         "start_time": started,
@@ -197,12 +207,18 @@ def call_provider(config, prompt, schema, settings, pricing, client=None, api_ke
         url, headers, body = request_spec(
             config, prompt, schema, settings["max_output_tokens"], api_key=key
         )
+        if observer:
+            observer("REQUEST_PREPARED", {})
         owned = client is None
         client = client or httpx.Client(
             timeout=settings["timeout_seconds"], follow_redirects=False
         )
         try:
             for attempt in range(settings["retries"] + 1):
+                if cancelled and cancelled():
+                    if not result["attempts"]:
+                        result["error"] = "cancelled_before_request"
+                    break
                 entry = {
                     "number": attempt + 1,
                     "start_time": utcnow(),
@@ -212,6 +228,14 @@ def call_provider(config, prompt, schema, settings, pricing, client=None, api_ke
                 tick = time.perf_counter()
                 transient = False
                 try:
+                    if observer:
+                        observer(
+                            "API_REQUEST_SENT",
+                            {
+                                "attempt": attempt + 1,
+                                "request_started_at": entry["start_time"],
+                            },
+                        )
                     response = client.post(url, headers=headers, json=body)
                     entry["http_status"] = response.status_code
                     try:
@@ -219,6 +243,15 @@ def call_provider(config, prompt, schema, settings, pricing, client=None, api_ke
                     except ValueError:
                         raw = {"non_json_body": response.text[:4000]}
                     entry["raw_response"] = redact(raw)
+                    if observer:
+                        observer(
+                            "API_RESPONSE_RECEIVED",
+                            {
+                                "attempt": attempt + 1,
+                                "http_status": response.status_code,
+                                "response_checkpoint": redact(raw, extra_secrets=[key]),
+                            },
+                        )
                     if response.is_error:
                         diagnostic = api_error(
                             config["provider"], response.status_code, raw
@@ -260,6 +293,16 @@ def call_provider(config, prompt, schema, settings, pricing, client=None, api_ke
                 )
                 result["attempts"].append(entry)
                 result["error"] = entry["error"]
+                if observer:
+                    observer(
+                        "API_ATTEMPT_FINISHED",
+                        {
+                            "call": redact(result, extra_secrets=[key]),
+                            "error": entry["error"],
+                            "http_status": entry["http_status"],
+                            "latency_seconds": entry["latency_seconds"],
+                        },
+                    )
                 if not transient or attempt >= settings["retries"]:
                     break
                 time.sleep(min(2**attempt, 4))

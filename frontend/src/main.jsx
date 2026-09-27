@@ -1,4 +1,8 @@
 import RunPage from "./RunPage";
+import LiveExecution, { RunHistory } from "./LiveExecution";
+import InputExplorer from "./InputExplorer";
+import ImpactPage from "./ImpactPage";
+import { Overview, Learning, Settings } from "./ProductPages";
 import {
   Tabs,
   PagedItems,
@@ -22,6 +26,7 @@ import "@xyflow/react/dist/style.css";
 import "./style.css";
 import "./workbench.css";
 import "./norte.css";
+import "./product.css";
 import Benchmark from "./Benchmark";
 import Icon from "./Icon";
 import { t as tr, L, getLanguage, setLanguage, locale } from "./i18n";
@@ -39,25 +44,41 @@ const tasks = {
   one_hop: "Raciocínio de um passo",
 };
 const pages = {
-  documents: "O benchmark",
-  inputs: "Entradas e saídas",
+  documents: "Visão geral",
+  inputs: "Entradas do benchmark",
+  context: "Prompt e contexto",
   reference: "Gabarito revisável",
   criteria: "Critérios de avaliação",
-  results: "Resultados",
-  graphs: "Grafos",
-  impact: "Alterações",
+  sources: "Fontes e proveniência",
+  graphs: "Mapa de relações",
+  impact: "Análise de impacto",
+  results: "Comparação de modelos",
+  learning: "Aprendizado",
+  live: "Execução ao vivo",
+  history: "Histórico",
   run: "Nova avaliação",
+  settings: "Configurações",
 };
 const pageIcons = {
   documents: "overview",
   inputs: "input",
+  context: "model",
   reference: "reference",
   criteria: "chart",
-  results: "chart",
+  sources: "document",
   graphs: "graph",
   impact: "change",
+  results: "chart",
+  learning: "edit",
+  live: "run",
+  history: "history",
   run: "run",
+  settings: "config",
 };
+const currentPage = () =>
+  pages[location.hash.slice(1).split("/")[0]]
+    ? location.hash.slice(1).split("/")[0]
+    : "documents";
 
 const depthLabel = (value) =>
   ({
@@ -224,9 +245,7 @@ function App() {
   useEffect(() => {
     document.documentElement.lang = locale();
   }, [language]);
-  const [page, setPage] = useState(
-    pages[location.hash.slice(1)] ? location.hash.slice(1) : "documents",
-  );
+  const [page, setPage] = useState(currentPage());
   const [config, setConfig] = useState(null),
     [ds, setDs] = useState(null),
     [runs, setRuns] = useState([]),
@@ -265,10 +284,7 @@ function App() {
       .catch(() => setError("Não foi possível carregar os documentos."));
     refresh();
     const timer = setInterval(refresh, 4000);
-    const navigate = () =>
-      setPage(
-        pages[location.hash.slice(1)] ? location.hash.slice(1) : "documents",
-      );
+    const navigate = () => setPage(currentPage());
     window.addEventListener("hashchange", navigate);
     return () => {
       clearInterval(timer);
@@ -289,7 +305,14 @@ function App() {
         <nav aria-label={tr("Navegação principal")}>
           {Object.entries(pages)
             .filter(([key]) =>
-              ["documents", "inputs", "reference", "criteria"].includes(key),
+              [
+                "documents",
+                "inputs",
+                "context",
+                "reference",
+                "criteria",
+                "sources",
+              ].includes(key),
             )
             .map(([key, label]) => (
               <a
@@ -307,7 +330,17 @@ function App() {
         </p>
         <nav aria-label={L("Resultados das avaliações", "Evaluation results")}>
           {Object.entries(pages)
-            .filter(([key]) => ["results", "graphs", "impact"].includes(key))
+            .filter(([key]) =>
+              [
+                "live",
+                "history",
+                "graphs",
+                "impact",
+                "results",
+                "learning",
+                "settings",
+              ].includes(key),
+            )
             .map(([key, label]) => (
               <a
                 key={key}
@@ -373,12 +406,42 @@ function App() {
               {page === "results" && <Results runs={runs} summary={summary} />}
               {page === "graphs" && <Graphs runs={runs} />}
               {page === "impact" && <Impacts runs={runs} />}
-              {["documents", "inputs", "reference", "criteria"].includes(
-                page,
-              ) && (
+              {page === "documents" && (
+                <Overview
+                  api={api}
+                  ds={ds}
+                  config={config}
+                  runs={runs}
+                  summary={summary}
+                />
+              )}
+              {page === "inputs" && (
+                <InputExplorer api={api} ds={ds} runs={runs} />
+              )}
+              {page === "sources" && (
+                <InputExplorer api={api} ds={ds} runs={runs} sourcePage />
+              )}
+              {page === "live" && (
+                <LiveExecution
+                  api={api}
+                  renderGraph={(detail) => <LiveGraph detail={detail} />}
+                />
+              )}
+              {page === "history" && (
+                <RunHistory api={api} onOpen={(id) => go(`live/${id}`)} />
+              )}
+              {page === "learning" && <Learning api={api} runs={runs} />}
+              {page === "settings" && (
+                <Settings
+                  config={config}
+                  language={language}
+                  changeLanguage={changeLanguage}
+                />
+              )}
+              {["context", "reference", "criteria"].includes(page) && (
                 <Benchmark
                   datasetHash={config.dataset_hash}
-                  page={page}
+                  page={page === "context" ? "inputs" : page}
                   api={api}
                   runs={runs}
                   refresh={refresh}
@@ -388,6 +451,7 @@ function App() {
                 <RunPage
                   api={api}
                   config={config}
+                  ds={ds}
                   runs={runs}
                   executions={executions}
                   refresh={refresh}
@@ -398,6 +462,65 @@ function App() {
         </main>
       </div>
     </>
+  );
+}
+
+function LiveGraph({ detail }) {
+  const [view, setView] = useState("side"),
+    [item, setItem] = useState(null);
+  const graph = {
+    model: detail.result.parsed_output,
+    ground_truth: {
+      nodes: detail.ground_truth.entities.nodes,
+      edges: detail.ground_truth.relationships,
+    },
+    comparison: detail.comparison,
+  };
+  return (
+    <div className="live-graphs">
+      <Tabs
+        value={view}
+        onChange={setView}
+        items={[
+          ["side", L("Lado a lado", "Side by side")],
+          ["model", L("Modelo", "Model")],
+          ["reference", L("Gabarito", "Ground truth")],
+          ["diff", L("Comparação", "Comparison")],
+        ]}
+      />
+      <div
+        className={view === "side" ? "live-graph-pair" : "live-graph-single"}
+      >
+        {(view === "side" ? ["reference", "model"] : [view]).map((kind) => (
+          <GraphCanvas
+            key={kind}
+            title={
+              kind === "reference"
+                ? L("Gabarito", "Ground truth")
+                : kind === "model"
+                  ? detail.model
+                  : L("Comparação", "Comparison")
+            }
+            kind={kind}
+            graph={graph}
+            focus={null}
+            setItem={setItem}
+          />
+        ))}
+      </div>
+      {item && (
+        <GraphInspector
+          key={item.node?.id || item.edge?.key.join("|")}
+          item={item}
+          run={{
+            id: detail.run_id,
+            metadata: { model: detail.model },
+            snapshot: { dataset: { documents: detail.input.documents } },
+          }}
+          onClose={() => setItem(null)}
+        />
+      )}
+    </div>
   );
 }
 
@@ -422,7 +545,7 @@ function useRun(runs, eligible = () => true) {
     return () => {
       active = false;
     };
-  }, [selected?.id]);
+  }, [selected?.id, selected?.completed_calls, selected?.evaluated_calls]);
   return { available, selected, run, error, setId };
 }
 function RunPicker({ selection }) {
@@ -605,6 +728,22 @@ function Results({ runs, summary }) {
           )}
         </span>
       </div>
+      {series.some((r) => r.incomplete_batch_ids?.length) && (
+        <div className="partial-result-note">
+          <span>
+            {L(
+              "Inclui avaliação parcial. Qualidade calculada apenas sobre respostas avaliadas; o tamanho da amostra aparece em cada modelo.",
+              "Includes a partial run. Quality uses only evaluated responses; sample sizes are shown for each model.",
+            )}
+          </span>
+          <a
+            href={`#live/${series.find((r) => r.incomplete_batch_ids?.length).incomplete_batch_ids[0]}`}
+          >
+            {L("Ver contagens e interrupções", "See counts and interruptions")}{" "}
+            →
+          </a>
+        </div>
+      )}
       <div className="model-filters" aria-label={tr("Modelos comparados")}>
         {allModels.map((m) => (
           <label key={modelKey(m)} className={`filter-chip ${m.provider}`}>
@@ -991,7 +1130,7 @@ function RunInspector({ run }) {
 
 function Graphs({ runs }) {
   const selection = useRun(runs, (r) =>
-    r.tasks.includes("relationship_extraction"),
+    (r.available_tasks || r.tasks).includes("relationship_extraction"),
   );
   const [graph, setGraph] = useState(null),
     [error, setError] = useState(""),
@@ -1015,7 +1154,7 @@ function Graphs({ runs }) {
     return () => {
       active = false;
     };
-  }, [selection.selected?.id]);
+  }, [selection.selected?.id, selection.selected?.completed_calls]);
   if (!selection.available.length)
     return (
       <Empty title={tr("Nenhum grafo de modelo ainda")}>
@@ -1056,6 +1195,51 @@ function Graphs({ runs }) {
       )}
       {graph && (
         <>
+          <div className="graph-summary-strip">
+            <div>
+              <span>
+                {L(
+                  "Nós / relações extraídos",
+                  "Extracted nodes / relationships",
+                )}
+              </span>
+              <strong>
+                {graph.model.nodes.length} / {graph.model.edges.length}
+              </strong>
+            </div>
+            <div>
+              <span>
+                {L("Precisão / recall / F1", "Precision / recall / F1")}
+              </span>
+              <strong>
+                {pct(graph.comparison.relationship?.precision)} /{" "}
+                {pct(graph.comparison.relationship?.recall)} /{" "}
+                {pct(graph.comparison.relationship_f1)}
+              </strong>
+            </div>
+            <div>
+              <span>
+                {L("Relações sem suporte", "Unsupported relationships")}
+              </span>
+              <strong>
+                {
+                  graph.comparison.edges.filter(
+                    (e) => e.model_edge && e.status !== "correct",
+                  ).length
+                }{" "}
+                / {graph.model.edges.length}
+              </strong>
+            </div>
+            <div>
+              <span>{L("Execução / nível", "Execution / level")}</span>
+              <strong>{selection.selected.id.slice(0, 8)} · L1</strong>
+              <small>
+                {selection.selected.incomplete
+                  ? L("Avaliação parcial", "Partial run")
+                  : L("Resposta avaliada", "Evaluated response")}
+              </small>
+            </div>
+          </div>
           <div className="graph-tools">
             <div className="segmented" aria-label={tr("Visualização do grafo")}>
               {[
@@ -1658,14 +1842,10 @@ function GraphInspector({ item, run, onClose }) {
 
 function Impacts({ runs }) {
   const selection = useRun(runs, (r) =>
-    r.tasks.some((t) =>
+    (r.available_tasks || r.tasks).some((t) =>
       ["change_impact", "one_hop", "impact_explanation"].includes(t),
     ),
   );
-  const [detail, setDetail] = useState(null);
-  const [level, setLevel] = useState("L1_DIRECT"),
-    [type, setType] = useState("all"),
-    [task, setTask] = useState("change_impact");
   if (!selection.available.length)
     return (
       <Empty title={tr("Nenhuma análise de alteração ainda")}>
@@ -1674,239 +1854,19 @@ function Impacts({ runs }) {
         )}
       </Empty>
     );
-  const run = selection.run;
-  const results =
-    run?.results.filter(
-      (r) => r.difficulty === level && r.parsed_output?.scenarios,
-    ) || [];
-  const result = results.find((r) => r.task === task) || results[0];
-  const cases =
-    run?.snapshot.dataset.ground_truth.change_scenarios.filter(
-      (s) => s.difficulty === level,
-    ) || [];
-  const typeNames = {
-    component: "Componente",
-    requirement: "Requisito",
-    configuration: "Configuração",
-    document: "Documento",
-    no_impact: "Sem impacto",
-    parameter: "Parâmetro",
-  };
   return (
-    <div className="impacts-screen">
-      <RunPicker selection={selection} />
-      <div className="toolbar">
-        <label>
-          {tr("Dificuldade")}
-          <select
-            aria-label={tr("Dificuldade")}
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
-          >
-            {Object.entries(levels).map(([v, text]) => (
-              <option key={v} value={v}>
-                {tr(text)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {tr("Tipo de alteração")}
-          <select
-            aria-label={tr("Tipo de alteração")}
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            <option value="all">{tr("Todos")}</option>
-            {[...new Set(cases.map((s) => s.change_type))].map((t) => (
-              <option key={t} value={t}>
-                {tr(typeNames[t] || t.replaceAll("_", " "))}
-              </option>
-            ))}
-          </select>
-        </label>
-        {results.length > 1 && (
-          <label>
-            {tr("Tarefa")}
-            <select
-              aria-label={tr("Tarefa")}
-              value={result?.task}
-              onChange={(e) => setTask(e.target.value)}
-            >
-              {results.map((r) => (
-                <option key={r.id} value={r.task}>
-                  {tr(tasks[r.task])}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-      </div>
-      {selection.error && <p role="alert">{tr(selection.error)}</p>}
-      {run && !result ? (
-        <div className="empty-inline">
-          {tr("Esta execução não incluiu a tarefa neste nível.")}
-        </div>
-      ) : (
-        result && (
-          <section className="panel scenario-panel">
-            <div className="scenario-header">
-              <span>{tr("Alteração")}</span>
-              <span>{tr("Esperado")}</span>
-              <span>{tr("Modelo")}</span>
-              <span>{tr("Comparação")}</span>
-            </div>
-            <PagedItems
-              items={cases.filter(
-                (s) => type === "all" || s.change_type === type,
-              )}
-              resetKey={`${type}:${level}:${run.id}`}
-              size={3}
-            >
-              {(s) => {
-                const answer = result.parsed_output.scenarios.find(
-                  (a) => normalize(a.scenario_id) === s.id,
-                );
-                const check = result.metrics.scenarios?.find(
-                  (x) => x.scenario_id === s.id,
-                );
-                const pred = (answer?.impacts || []).map((i) =>
-                  normalize(i.requirement_id),
-                );
-                const correct = pred.filter((id) =>
-                  s.affected_requirements.includes(id),
-                );
-                const missed = s.affected_requirements.filter(
-                  (id) => !pred.includes(id),
-                );
-                const extra = pred.filter(
-                  (id) => !s.affected_requirements.includes(id),
-                );
-                return (
-                  <article className="scenario" key={s.id}>
-                    <button
-                      type="button"
-                      className="scenario-summary"
-                      onClick={() => setDetail(s.id)}
-                    >
-                      <span>
-                        <strong>{tr(s.id)}</strong>
-                        <small>{s.title || s.description}</small>
-                      </span>
-                      <span className="requirement-list">
-                        {tr(s.affected_requirements.join(", ") || "Nenhum")}
-                      </span>
-                      <span className="requirement-list">
-                        {tr(pred.join(", ") || "Nenhum")}
-                      </span>
-                      <span className="impact-counts">
-                        <span className="correct">
-                          ✓ {tr(correct.length)}
-                          {tr(" acertos")}
-                        </span>
-                        {missed.length > 0 && (
-                          <span className="missing">
-                            − {tr(missed.length)}
-                            {tr(" ausentes")}
-                          </span>
-                        )}
-                        {extra.length > 0 && (
-                          <span className="false_positive">
-                            + {tr(extra.length)}
-                            {tr(" extras")}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                    {detail === s.id && (
-                      <Modal
-                        title={`${s.id} · ${s.title || ""}`}
-                        onClose={() => setDetail(null)}
-                      >
-                        <div className="scenario-body">
-                          <p className="muted">{s.description}</p>
-                          <div className="evidence-columns">
-                            <div>
-                              <h3>{tr("Por que precisa de revisão")}</h3>
-                              <p>{tr(s.expected_reason)}</p>
-                              {missed.length > 0 && (
-                                <p className="false_positive">
-                                  {tr("Não identificados: ")}
-                                  {tr(missed.join(", "))}
-                                </p>
-                              )}
-                              {extra.length > 0 && (
-                                <p>
-                                  {tr("Previsões extras: ")}
-                                  {tr(extra.join(", "))}
-                                </p>
-                              )}
-                            </div>
-                            <div>
-                              <h3>{tr("Explicação do modelo")}</h3>
-                              {answer?.impacts.length ? (
-                                answer.impacts.map((i, ix) => (
-                                  <div key={ix}>
-                                    <strong>{tr(i.requirement_id)}</strong>
-                                    <p>{i.explanation}</p>
-                                    <Evidence items={i.source_evidence} />
-                                  </div>
-                                ))
-                              ) : (
-                                <p>
-                                  {tr(
-                                    "Nenhum requisito apontado como afetado.",
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <details>
-                            <summary>{tr("Verificação da explicação")}</summary>
-                            <Json value={check?.explanation_checks || []} />
-                          </details>
-                          <ExplanationReview
-                            run={run}
-                            result={result}
-                            scenario={s}
-                          />
-                        </div>
-                      </Modal>
-                    )}
-                  </article>
-                );
-              }}
-            </PagedItems>
-          </section>
-        )
+    <ImpactPage
+      selection={selection}
+      picker={<RunPicker selection={selection} />}
+      renderReview={(run, result, scenario) => (
+        <ExplanationReview
+          key={scenario.id + result.id}
+          run={run}
+          result={result}
+          scenario={scenario}
+        />
       )}
-      {result?.feedback_metrics && (
-        <DetailButton label={tr("Efeito das correções")}>
-          <section className="panel">
-            <SectionHeading title={tr("Efeito das correções")} />
-            <dl className="edge-facts">
-              {[
-                ["correction_retention_rate", "Correções mantidas"],
-                ["repeated_error_rate", "Erros repetidos"],
-                ["new_error_rate", "Erros novos"],
-                ["performance_improvement", "Variação do F1"],
-              ].map(([key, label]) => (
-                <div key={key}>
-                  <dt>{tr(label)}</dt>
-                  <dd>{tr(pct(result.feedback_metrics[key]))}</dd>
-                </div>
-              ))}
-            </dl>
-            <details>
-              <summary>
-                {tr("Separar casos conhecidos e casos de transferência")}
-              </summary>
-              <Json value={result.feedback_transfer_metrics} />
-            </details>
-          </section>
-        </DetailButton>
-      )}
-    </div>
+    />
   );
 }
 function ExplanationReview({ run, result, scenario }) {

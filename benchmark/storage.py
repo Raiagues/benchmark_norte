@@ -32,6 +32,13 @@ def init_db(db=None):
         CREATE TABLE IF NOT EXISTS benchmark_revisions (id INTEGER PRIMARY KEY, data TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS benchmark_reviews (id INTEGER PRIMARY KEY, dataset_hash TEXT NOT NULL, data TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS results_run ON task_results(run_id);
+        -- Forward-only migration: original execution/result tables are untouched.
+        CREATE TABLE IF NOT EXISTS live_batches (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, status TEXT NOT NULL, stop_requested INTEGER NOT NULL DEFAULT 0, data TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS live_calls (id TEXT PRIMARY KEY, batch_id TEXT NOT NULL, run_id TEXT NOT NULL, ordinal INTEGER NOT NULL, status TEXT NOT NULL, stage TEXT NOT NULL, data TEXT NOT NULL, result TEXT, UNIQUE(run_id, ordinal));
+        CREATE TABLE IF NOT EXISTS live_events (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT NOT NULL, call_id TEXT, created_at TEXT NOT NULL, type TEXT NOT NULL, data TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS execution_recovery (run_id TEXT PRIMARY KEY, recovered_at TEXT NOT NULL, reason TEXT NOT NULL);
+        CREATE INDEX IF NOT EXISTS live_calls_batch ON live_calls(batch_id);
+        CREATE INDEX IF NOT EXISTS live_events_batch ON live_events(batch_id, id);
         """)
 
 
@@ -55,7 +62,7 @@ def save_execution(run, db=None):
 
 
 def publish_run(run, results, db=None):
-    """Publish the entire repetition atomically. Partial/failed attempts never score."""
+    """Finalize a full repetition. Earlier valid tasks also exist in the live journal."""
     if (
         run["status"] != "completed"
         or run["metadata"].get("origin") != "provider_api"
@@ -104,7 +111,7 @@ def publish_run(run, results, db=None):
 
 def list_runs(db=None):
     with connect(db) as con:
-        return [
+        published = [
             {
                 "id": r["id"],
                 "created_at": r["created_at"],
@@ -115,11 +122,50 @@ def list_runs(db=None):
                 "SELECT * FROM runs WHERE status='completed' AND json_extract(metadata, '$.origin')='provider_api' ORDER BY created_at DESC"
             )
         ]
+        # Valid completed tasks remain visible during/after a partial repetition.
+        ids = [
+            r[0]
+            for r in con.execute(
+                "SELECT DISTINCT run_id FROM live_calls WHERE result IS NOT NULL AND run_id NOT IN (SELECT id FROM runs)"
+            )
+        ]
+    for rid in ids:
+        run = get_run(rid, db)
+        if run:
+            published.append(
+                {
+                    "id": rid,
+                    "created_at": run["created_at"],
+                    "status": run["status"],
+                    **run["metadata"],
+                }
+            )
+    return sorted(published, key=lambda r: r["created_at"], reverse=True)
 
 
 def get_run(run_id, db=None):
     with connect(db) as con:
         row = con.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
+        if not row:
+            from .live import partial_results
+
+            execution = get_execution(run_id, db)
+            if not execution or execution["metadata"].get("origin") != "provider_api":
+                return None
+            results = partial_results(run_id, db)
+            if not results:
+                return None
+            return {
+                **execution,
+                "status": "partially_completed",
+                "results": results,
+                "metadata": {
+                    **execution["metadata"],
+                    "incomplete": True,
+                    "evaluated_calls": len(results),
+                    "available_tasks": sorted({r["task"] for r in results}),
+                },
+            }
         if (
             not row
             or row["status"] != "completed"
@@ -156,11 +202,17 @@ def export_run(run_id, db=None, results_dir=None):
 
 def list_executions(db=None):
     with connect(db) as con:
+        recovered = {
+            r["run_id"]: dict(r)
+            for r in con.execute("SELECT * FROM execution_recovery")
+        }
         return [
             {
                 "id": r["id"],
                 "created_at": r["created_at"],
-                "status": r["status"],
+                "status": "interrupted" if r["id"] in recovered else r["status"],
+                "original_status": r["status"],
+                "recovery": recovered.get(r["id"]),
                 **json.loads(r["metadata"]),
                 "failure": (
                     {

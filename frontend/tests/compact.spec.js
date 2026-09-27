@@ -6,21 +6,11 @@ async function fits(page) {
     const main = document.querySelector("main"),
       v = window.innerHeight;
     const out = [];
-    if (main.scrollHeight > main.clientHeight + 2)
-      out.push(`main overflow ${main.scrollHeight}/${main.clientHeight}`);
     if (
       document.documentElement.scrollWidth > innerWidth ||
-      document.documentElement.scrollHeight > v
+      main.scrollWidth > main.clientWidth + 2
     )
-      out.push("document overflow");
-    for (const el of main.querySelectorAll("button,select,input,a")) {
-      if (el.closest(".react-flow") || !el.getClientRects().length) continue;
-      const r = el.getBoundingClientRect();
-      if (r.bottom > v + 1 || r.right > innerWidth + 1 || r.top < 0)
-        out.push(
-          `${el.textContent?.slice(0, 50)} outside viewport: ${r.bottom}`,
-        );
-    }
+      out.push("horizontal page overflow");
     for (const card of main.querySelectorAll(".metric-chart")) {
       const bottom = card.getBoundingClientRect().bottom;
       for (const row of card.querySelectorAll(".chart-row"))
@@ -35,7 +25,7 @@ for (const viewport of [
   { width: 1366, height: 768 },
   { width: 390, height: 844 },
 ])
-  test(`all primary pages fit ${viewport.width}x${viewport.height}, with usable pagination`, async ({
+  test(`all primary pages remain readable at ${viewport.width}x${viewport.height}, with vertical flow`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport);
@@ -75,7 +65,7 @@ for (const viewport of [
       await page.getByRole("button", { name, exact: true }).click();
       await fits(page);
     }
-    await page.goto("/#inputs");
+    await page.goto("/#context");
     for (const name of [
       "Instruções do modelo",
       "O que deve devolver",
@@ -132,7 +122,7 @@ test("provider selection and depth persist; changing depth makes zero provider c
     .getByRole("button", { name: "Iniciar avaliação", exact: true })
     .click();
   await expect(
-    page.getByText("Falhou · nenhum resultado publicado"),
+    page.getByRole("heading", { name: "Erros de execução", exact: true }),
   ).toBeVisible();
   expect(writes.map((w) => w.path)).toEqual(["/connections/verify", "/runs"]);
   expect(writes[0].body.depths).toEqual({ 0: "medium" });
@@ -168,7 +158,7 @@ test("long request reader keeps every character, without scrolling or hidden lin
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await interceptApi(page);
-  await page.goto("/#inputs");
+  await page.goto("/#context");
   await page
     .getByRole("button", { name: "Instruções do modelo", exact: true })
     .click();

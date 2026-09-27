@@ -1441,8 +1441,8 @@ function Criteria() {
                 [
                   L("API concluiu", "API completed"),
                   L(
-                    "Todas as chamadas da repetição terminaram sem erro, recusa ou truncamento.",
-                    "Every call in the repetition finished without error, refusal or truncation.",
+                    "Esta chamada terminou sem erro, recusa ou truncamento. Respostas anteriores permanecem salvas.",
+                    "This call finished without error, refusal or truncation. Earlier responses remain saved.",
                   ),
                 ],
                 [
@@ -1475,8 +1475,8 @@ function Criteria() {
             </div>
             <p className="boundary-note">
               {L(
-                "Se alguma condição falhar, a tentativa fica em Atividade e não entra em resultados. Se a resposta for válida mas tecnicamente errada, ela é publicada com a pontuação que obteve.",
-                "If any condition fails, the attempt remains in Activity and does not become a result. A valid but technically wrong answer is published with its measured score.",
+                "Se alguma condição falhar, a tentativa fica na execução ao vivo e não entra em resultados. Se a resposta for válida mas tecnicamente errada, ela é publicada com a pontuação que obteve.",
+                "If any condition fails, the attempt remains in Live execution and does not become a result. A valid but technically wrong answer is published with its measured score.",
               )}
             </p>
           </>

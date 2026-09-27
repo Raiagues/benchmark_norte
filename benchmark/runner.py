@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from pydantic import ValidationError
 
-from . import storage
+from . import storage, live
 from .dataset import (
     ROOT,
     TASKS,
@@ -202,6 +202,7 @@ def prepare_runs(
             }
             storage.save_execution(run, db)
             result.append(rid)
+    live.register_batch(result, db)
     return result
 
 
@@ -209,13 +210,23 @@ def execute_run(run_id, db=None):
     run = storage.get_execution(run_id, db)
     if not run or run["status"] != "pending":
         raise ValueError("Only a pending execution can be started")
+    if live.is_stopped(run["metadata"]["batch_id"], db):
+        run["status"] = "interrupted"
+        storage.save_execution(run, db)
+        return run
     results = []
+    active_call = None
     snapshot, meta = run["snapshot"], run["metadata"]
     ds = snapshot["dataset"]
     run["status"] = "running"
     storage.save_execution(run, db)
     try:
-        for task, level in task_plan(meta["tasks"]):
+        for entry in live.calls_for_run(run_id, db):
+            active_call = entry["id"]
+            task, level = entry["data"]["task"], entry["data"]["difficulty"]
+            if not live.begin_call(active_call, db):
+                run["status"] = "interrupted"
+                break
             try:
                 require_ready([snapshot["model_config"]], db)
             except ValueError:
@@ -224,6 +235,12 @@ def execute_run(run_id, db=None):
                     "category": "connection_not_confirmed",
                     "diagnostic": describe("unverified", meta["provider"]),
                 }
+                live.finish_call(
+                    active_call,
+                    error="connection_not_confirmed",
+                    diagnostic=run["failure"]["diagnostic"],
+                    db=db,
+                )
                 break
             key = get_key(meta["provider"])
             schema = snapshot["schemas"][task]
@@ -239,6 +256,25 @@ def execute_run(run_id, db=None):
                 ds, snapshot["prompts"], task, level, schema, context_feedback
             )
             cases = cases_for_task(ds, task, level)
+            live.transition(
+                active_call,
+                "BUILDING_REQUEST",
+                "INPUT_PREPARED",
+                {"prompt": prompt},
+                db,
+            )
+
+            def observe(kind, data):
+                stages = {
+                    "REQUEST_PREPARED": "BUILDING_REQUEST",
+                    "API_REQUEST_SENT": "WAITING_FOR_RESPONSE",
+                    "API_RESPONSE_RECEIVED": "RESPONSE_RECEIVED",
+                    "API_ATTEMPT_FINISHED": "CALL_ERROR"
+                    if data.get("error")
+                    else "RESPONSE_RECEIVED",
+                }
+                live.transition(active_call, stages[kind], kind, data, db)
+
             call = call_provider(
                 snapshot["model_config"],
                 prompt,
@@ -246,26 +282,40 @@ def execute_run(run_id, db=None):
                 snapshot["settings"],
                 snapshot["pricing"],
                 api_key=key,
+                observer=observe,
+                cancelled=lambda: live.is_stopped(meta["batch_id"], db),
             )
+            if call.get("error") == "cancelled_before_request":
+                live.interrupt_running_before_request(active_call, db)
+                run["status"] = "interrupted"
+                break
             note_provider_failure(snapshot["model_config"], key, call, db)
             parsed, valid_json, compliant, contract = None, False, False, False
             error = call["error"]
-            try:
-                load_strict_json(call["text"])
-                valid_json = True
-                parsed = parse_output(task, call["text"])
-                compliant = True
-                contract = "scenarios" not in parsed or {
-                    normalize_id(s["scenario_id"]) for s in parsed["scenarios"]
-                } == {s["id"] for s in cases}
-                if not contract:
-                    error = error or "scenario_coverage_error"
-            except json.JSONDecodeError:
-                error = error or "parsing_failure"
-            except (ValidationError, ValueError):
-                error = error or (
-                    "invalid_structured_output" if valid_json else "parsing_failure"
+            if not error:
+                live.transition(
+                    active_call,
+                    "VALIDATING_OUTPUT",
+                    "VALIDATION_STARTED",
+                    {"call": call},
+                    db,
                 )
+                try:
+                    load_strict_json(call["text"])
+                    valid_json = True
+                    parsed = parse_output(task, call["text"])
+                    compliant = True
+                    contract = "scenarios" not in parsed or {
+                        normalize_id(s["scenario_id"]) for s in parsed["scenarios"]
+                    } == {s["id"] for s in cases}
+                    if not contract:
+                        error = error or "scenario_coverage_error"
+                except json.JSONDecodeError:
+                    error = error or "parsing_failure"
+                except (ValidationError, ValueError):
+                    error = error or (
+                        "invalid_structured_output" if valid_json else "parsing_failure"
+                    )
             if error:
                 run["status"] = "failed"
                 run["failure"] = {
@@ -279,7 +329,16 @@ def execute_run(run_id, db=None):
                     "schema_compliant": compliant,
                     "contract_compliant": contract,
                 }
+                live.finish_call(
+                    active_call,
+                    error=error,
+                    call=call,
+                    diagnostic=run["failure"]["diagnostic"],
+                    db=db,
+                )
                 break
+            live.transition(active_call, "VALIDATING_OUTPUT", "OUTPUT_PARSED", db=db)
+            live.transition(active_call, "EVALUATING", "EVALUATION_STARTED", db=db)
             metrics = evaluate(task, parsed, ds, cases)
             metrics.update(
                 valid_json_rate=1.0,
@@ -296,7 +355,7 @@ def execute_run(run_id, db=None):
                         }
                     )
             result = {
-                "id": uuid.uuid4().hex,
+                "id": active_call,
                 "run_id": run_id,
                 "provider": meta["provider"],
                 "model": meta["model"],
@@ -369,10 +428,15 @@ def execute_run(run_id, db=None):
                                     task, after_sub, before_sub, feedback, ds, subset
                                 )
                             )
+            live.transition(
+                active_call, "CALCULATING_METRICS", "EVALUATION_COMPLETED", db=db
+            )
+            live.transition(active_call, "SAVING", "SAVING_STARTED", db=db)
+            live.finish_call(active_call, result=result, db=db)
             results.append(result)
             meta["completed_calls"] += 1
             storage.save_execution(run, db)
-        if run["status"] != "failed":
+        if len(results) == meta["total_calls"]:
             run["status"] = "completed"
             meta["finished_at"] = utcnow()
             storage.publish_run(run, results, db)
@@ -383,9 +447,26 @@ def execute_run(run_id, db=None):
             "category": "internal_error",
             "exception_type": type(exc).__name__,
         }
+        if active_call:
+            remaining = next(
+                (c for c in live.calls_for_run(run_id, db) if c["id"] == active_call),
+                None,
+            )
+            if remaining and remaining["status"] == "RUNNING":
+                live.finish_call(active_call, error="internal_error", db=db)
     finally:
+        if run["status"] in ("failed", "interrupted"):
+            live.interrupt_queued(
+                meta["batch_id"],
+                "stopped_by_user"
+                if live.is_stopped(meta["batch_id"], db)
+                else "blocked_after_error",
+                db,
+                run_id,
+            )
         meta["finished_at"] = utcnow()
         storage.save_execution(run, db)
+        live.finalize_batch(meta["batch_id"], db)
     if run["status"] == "completed":
         try:
             storage.export_run(run_id, db)
@@ -400,6 +481,12 @@ def execute_run(run_id, db=None):
 def aggregate(db=None):
     groups = defaultdict(list)
     depths = {}
+    provenance = defaultdict(list)
+    with storage.connect(db) as con:
+        batch_states = {
+            r["id"]: r["status"]
+            for r in con.execute("SELECT id,status FROM live_batches")
+        }
     for info in storage.list_runs(db):
         run = storage.get_run(info["id"], db)
         m = run["metadata"]
@@ -416,6 +503,15 @@ def aggregate(db=None):
                 r["difficulty"],
             )
             groups[key].append(r)
+            provenance[key].append(
+                {
+                    "run_id": run["id"],
+                    "batch_id": m.get("batch_id"),
+                    "incomplete": run["status"] != "completed"
+                    or batch_states.get(m.get("batch_id"))
+                    not in (None, "COMPLETED", "COMPLETED_WITH_ERRORS"),
+                }
+            )
             model_config = run["snapshot"]["model_config"]
             depths[key] = model_config.get(depth_field(model_config))
     rows = []
@@ -452,6 +548,14 @@ def aggregate(db=None):
                 "difficulty": level,
                 "origin": "provider_api",
                 "n": len(results),
+                "execution_ids": [r["id"] for r in results],
+                "incomplete_batch_ids": sorted(
+                    {
+                        p["batch_id"]
+                        for p in provenance[key]
+                        if p["incomplete"] and p["batch_id"]
+                    }
+                ),
                 "metrics": {
                     name: statistics([r["metrics"].get(name) for r in results])
                     for name in sorted(names)

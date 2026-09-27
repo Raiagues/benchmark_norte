@@ -1,7 +1,7 @@
 {
   "O benchmark": "The benchmark",
   "Entradas e saídas": "Inputs and outputs",
-  "Gabarito revisável": "Reviewable reference",
+  "Gabarito revisável": "Review ground truth",
   "Critérios de avaliação": "Evaluation criteria",
   "Resultados": "Results",
   "Grafos": "Graphs",
@@ -325,5 +325,15 @@
   "Alterar a formatação do documento": "Change document formatting",
   "Avaliar a troca do ventilador pelas especificações": "Evaluate fan replacement from its specifications",
   "Configurar alimentação do sensor em 5,7 V": "Set sensor supply to 5.7 V",
-  "Exigir velocidade mínima de 5000 rpm": "Require a minimum speed of 5000 rpm"
+  "Exigir velocidade mínima de 5000 rpm": "Require a minimum speed of 5000 rpm",
+  "Entradas do benchmark": "Benchmark inputs",
+  "Prompt e contexto": "Prompt and context",
+  "Fontes e proveniência": "Sources and provenance",
+  "Mapa de relações": "Relationship map",
+  "Análise de impacto": "Impact analysis",
+  "Comparação de modelos": "Model comparison",
+  "Aprendizado": "Feedback and learning",
+  "Execução ao vivo": "Live execution",
+  "Histórico": "History",
+  "Configurações": "Settings"
 }

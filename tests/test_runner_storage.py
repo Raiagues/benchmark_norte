@@ -73,7 +73,7 @@ def test_failed_execution_never_becomes_a_result(
         assert con.execute("SELECT count(*) FROM task_results").fetchone()[0] == 0
 
 
-def test_partial_success_is_not_published(db, ds, monkeypatch):
+def test_partial_success_is_preserved_and_published_as_partial(db, ds, monkeypatch):
     install_mock_api(
         monkeypatch,
         ds,
@@ -89,7 +89,14 @@ def test_partial_success_is_not_published(db, ds, monkeypatch):
     attempt = execute_run(rid, db)
     assert attempt["metadata"]["completed_calls"] == 1
     assert attempt["status"] == "failed"
-    assert storage.list_runs(db) == []
+    assert len(storage.list_runs(db)) == 1
+    partial = storage.get_run(rid, db)
+    assert partial["status"] == "partially_completed"
+    assert partial["metadata"]["incomplete"] is True
+    assert len(partial["results"]) == 1
+    assert partial["results"][0]["task"] == "entity_extraction"
+    assert aggregate(db)[0]["n"] == 1
+    # Failed calls stay operational records, never fabricated quality results.
     with storage.connect(db) as con:
         assert con.execute("SELECT count(*) FROM task_results").fetchone()[0] == 0
 

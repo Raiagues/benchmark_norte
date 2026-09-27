@@ -11,12 +11,16 @@ test("fresh app is empty; no placeholder scores, graphs, or runnable demo", asyn
   ).toBeVisible();
   await expect(page.locator(".metric-chart")).toHaveCount(0);
   await expect(page.getByText(/synthetic|mock|demo/i)).toHaveCount(0);
-  await page.getByRole("link", { name: "Grafos", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Mapa de relações", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Nenhum grafo de modelo ainda" }),
   ).toBeVisible();
   await expect(page.locator(".react-flow")).toHaveCount(0);
-  await page.getByRole("link", { name: "Alterações", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Análise de impacto", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Nenhuma análise de alteração ainda" }),
   ).toBeVisible();
@@ -50,11 +54,14 @@ test("failed API attempt appears only in activity, never as a benchmark result",
     .uncheck();
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
   await expect(
-    page.getByText("Falhou · nenhum resultado publicado"),
+    page.getByRole("heading", { name: "Erros de execução", exact: true }),
   ).toBeVisible();
+  await expect(page).toHaveURL(/#live\//);
   expect(writes[0].body.models).toEqual([0]);
   expect(writes[0].body).not.toHaveProperty("demo");
-  await page.getByRole("link", { name: "Resultados", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Comparação de modelos", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Nenhum resultado ainda" }),
   ).toBeVisible();
@@ -192,13 +199,15 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
   await expect(
     page.getByRole("link", { name: "Baixar resposta completa" }),
   ).toHaveAttribute("href", /download$/);
-  await page.getByRole("link", { name: "Alterações", exact: true }).click();
-  await expect(page.locator(".scenario")).toHaveCount(3);
-  await page.getByLabel("Tipo de alteração").selectOption("no_impact");
-  await expect(page.locator(".scenario")).toHaveCount(2);
-  await expect(page.locator(".scenario").first()).toContainText("Nenhum");
   await page
-    .getByRole("link", { name: "Entradas e saídas", exact: true })
+    .getByRole("link", { name: "Análise de impacto", exact: true })
+    .click();
+  await expect(page.locator(".scenario-selector button")).toHaveCount(9);
+  await page.getByLabel("Tipo de alteração").selectOption("no_impact");
+  await expect(page.locator(".scenario-selector button")).toHaveCount(2);
+  await expect(page.locator(".impact-map")).toContainText("Nenhum impacto");
+  await page
+    .getByRole("link", { name: "Prompt e contexto", exact: true })
     .click();
   await page.getByRole("button", { name: "Fonte ↗", exact: true }).click();
   await expect(
@@ -269,7 +278,9 @@ test("manual check confirms connections without results; start does not repeat i
   expect(writes).toHaveLength(0);
   await page.getByRole("button", { name: "Verificar conexões" }).click();
   await expect(page.locator(".connection-indicator.green")).toHaveCount(3);
-  await page.getByRole("link", { name: "Resultados", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Comparação de modelos", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Nenhum resultado ainda" }),
   ).toBeVisible();
@@ -277,7 +288,7 @@ test("manual check confirms connections without results; start does not repeat i
   await expect(page.locator(".connection-indicator.green")).toHaveCount(3);
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
   await expect(
-    page.getByText("Falhou · nenhum resultado publicado"),
+    page.getByRole("heading", { name: "Erros de execução", exact: true }),
   ).toBeVisible();
   expect(writes.map((w) => w.path)).toEqual(["/connections/verify", "/runs"]);
   expect(writes[1].body.models).toEqual([0, 1, 2]);

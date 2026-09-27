@@ -1,15 +1,17 @@
 import threading
+import asyncio
+import json
 from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import storage
+from . import storage, live
 from .connections import statuses, verify_connections, select_models
 from .dataset import ROOT, TASKS, digest, load_dataset, prompt_bundle
 from .evaluate import compare_graph
@@ -23,13 +25,7 @@ RUN_LOCK = threading.Lock()
 @asynccontextmanager
 async def lifespan(app):
     storage.init_db()
-    # In-process work cannot survive restart. Never silently resume paid calls.
-    for info in storage.list_executions():
-        if info["status"] in ("running", "pending"):
-            run = storage.get_execution(info["id"])
-            run["status"] = "interrupted"
-            run["failure"] = {"category": "server_restarted"}
-            storage.save_execution(run)
+    live.recover_history()
     yield
 
 
@@ -80,6 +76,41 @@ def config():
 @app.get("/api/documents")
 def documents():
     return load_dataset()
+
+
+@app.get("/api/sources")
+def source_registry():
+    from .artifacts import sources
+
+    return sources()
+
+
+@app.get("/api/sources/{document_id}/pdf")
+def source_pdf(document_id: str):
+    from .artifacts import find_source, source_path
+
+    source = find_source(document_id)
+    path = source_path(source) if source else None
+    if not path:
+        raise HTTPException(404, "Original PDF is not available locally")
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        content_disposition_type="inline",
+        filename=path.name,
+    )
+
+
+@app.post("/api/sources/{document_id}/cache")
+def cache_source_pdf(document_id: str):
+    from .artifacts import cache_source, sources
+    import httpx
+
+    try:
+        cache_source(document_id)
+    except (ValueError, OSError, httpx.HTTPError):
+        raise HTTPException(400, "source_download_failed") from None
+    return sources()
 
 
 @app.get("/api/benchmark")
@@ -163,6 +194,72 @@ def runs():
 @app.get("/api/executions")
 def executions():
     return storage.list_executions()
+
+
+@app.get("/api/live")
+def live_history():
+    return live.list_batches()
+
+
+@app.get("/api/live/{batch_id}")
+def live_snapshot(batch_id: str):
+    result = live.snapshot(batch_id)
+    if result is None:
+        raise HTTPException(404, "Run not found")
+    return result
+
+
+@app.get("/api/live/{batch_id}/events")
+def live_events(batch_id: str, after: int = 0):
+    return live.events(batch_id, after)
+
+
+@app.get("/api/live/{batch_id}/stream")
+async def live_stream(batch_id: str, request: Request):
+    if not live.snapshot(batch_id):
+        raise HTTPException(404, "Run not found")
+
+    async def stream():
+        # Always send a full persisted snapshot on reconnect (including refresh).
+        previous = None
+        heartbeat = 0
+        while not await request.is_disconnected():
+            data = await asyncio.to_thread(live.snapshot, batch_id)
+            version = (data["last_event_id"], data["status"])
+            if version != previous:
+                yield f"id: {data['last_event_id']}\nevent: snapshot\ndata: {json.dumps(redact(data), ensure_ascii=False)}\n\n"
+                previous = version
+            heartbeat += 1
+            if heartbeat % 20 == 0:
+                yield ": keepalive\n\n"
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+class StopRequest(BaseModel):
+    confirmed: Literal[True]
+
+
+@app.post("/api/live/{batch_id}/stop")
+def stop_live(batch_id: str, body: StopRequest):
+    try:
+        live.stop_batch(batch_id)
+    except ValueError:
+        raise HTTPException(404, "Run not found") from None
+    return live.snapshot(batch_id)
+
+
+@app.get("/api/live-results/{call_id}")
+def live_result(call_id: str):
+    result = live.call_detail(call_id)
+    if result is None:
+        raise HTTPException(404, "Execution not found")
+    return result
 
 
 def require_run(run_id):
@@ -292,7 +389,10 @@ def start_run(body: RunRequest, background: BackgroundTasks):
         RUN_LOCK.release()
         raise
     background.add_task(execute_batch, ids)
-    return {"run_ids": ids}
+    return {
+        "run_ids": ids,
+        "batch_id": storage.get_execution(ids[0])["metadata"]["batch_id"],
+    }
 
 
 class FeedbackRequest(BaseModel):

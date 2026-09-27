@@ -377,8 +377,8 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
               </strong>
               <p>
                 {L(
-                  "Os arquivos com respostas esperadas não são incluídos no pedido ao modelo. Em L1, os documentos descrevem relações explícitas para extrair; L2 remove essas pistas.",
-                  "Files containing expected answers are not included in the model request. In L1, documents describe explicit relationships to extract; L2 removes those hints.",
+                  "O modelo recebe os documentos do projeto e o texto integral dos PDFs. O gabarito, a lista de relações e os impactos esperados ficam somente no avaliador.",
+                  "The model receives project documents and full PDF text. The answer key, relationship list and expected impacts remain only in the evaluator.",
                 )}
               </p>
             </div>
@@ -786,7 +786,7 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
 function Inputs({ bench, api, edit, runs }) {
   const [task, setTask] = useState("relationship_extraction"),
     [level, setLevel] = useState("L1_DIRECT"),
-    [mode, setMode] = useState("controlled_text"),
+    [mode] = useState("pdf_text"),
     [doc, setDoc] = useState("FAN"),
     [tab, setTab] = useState(() => {
       const v = sessionStorage.getItem("norte-input-tab") || "received";
@@ -824,6 +824,8 @@ function Inputs({ bench, api, edit, runs }) {
     FAN: [L("Ventilador", "Fan"), "fan"],
     SENSOR: [L("Sensor de temperatura", "Temperature sensor"), "sensor"],
     DRIVER: [L("Chave de alimentação", "Power switch"), "switch"],
+    "ALT-FAN": [L("Ventilador substituto", "Replacement fan"), "fan"],
+    "ALT-DRIVER": [L("Chave substituta", "Replacement switch"), "switch"],
     REQUIREMENTS: [
       L("Requisitos do projeto", "Project requirements"),
       "document",
@@ -875,12 +877,12 @@ function Inputs({ bench, api, edit, runs }) {
         )}
         <label>
           {L("Documentos", "Documents")}
-          <select value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="controlled_text">
-              {L("Texto controlado", "Controlled text")}
-            </option>
-            <option value="pdf_text">{L("Texto dos PDFs", "PDF text")}</option>
-          </select>
+          <strong className="fixed-document-mode">
+            {L(
+              "PDFs originais + documentos do projeto",
+              "Original PDFs + project documents",
+            )}
+          </strong>
         </label>
         <span className="preview-free">
           {effectiveLevel === "L1_DIRECT" ? "L1" : "L2"} ·{" "}
@@ -954,8 +956,8 @@ function Inputs({ bench, api, edit, runs }) {
                           )
                         : doc === "PROJECT" && effectiveLevel === "L2_ONE_HOP"
                           ? L(
-                              "L2 não recebe PROJECT-05 e PROJECT-06.",
-                              "L2 does not receive PROJECT-05 and PROJECT-06.",
+                              "Nenhum nível recebe a lista de relações ou os impactos esperados.",
+                              "No level receives the relationship list or expected impacts.",
                             )
                           : L(
                               "Conteúdo exato enviado ao modelo · original em inglês",
@@ -971,7 +973,7 @@ function Inputs({ bench, api, edit, runs }) {
                       <article className="input-passage" key={loc}>
                         <header>
                           <code>{loc}</code>
-                          {mode === "controlled_text" && (
+                          {["PROJECT", "REQUIREMENTS"].includes(doc) && (
                             <button
                               onClick={() =>
                                 edit("document", `${doc}:${loc}`, text)

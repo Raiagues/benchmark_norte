@@ -52,15 +52,15 @@ Instalar, abrir e fechar não chamam modelos nem criam resultados. Você pode co
 
 ## Entender e editar o benchmark pelo site
 
-A **Visão geral** apresenta o sistema e o fluxo **entrada → prompt/contexto → resposta → avaliação**. O seletor distingue texto normalizado de texto integral dos PDFs. Respostas e métricas só aparecem se houver dados reais compatíveis com o modo selecionado.
+A **Visão geral** apresenta o sistema e o fluxo **entrada → prompt/contexto → resposta → avaliação**. Novas avaliações usam o texto integral dos PDFs originais e os documentos do projeto. Respostas e métricas só aparecem quando há execuções reais; protocolos diferentes ficam separados.
 
-- **Entradas do benchmark** separa documentos originais, texto normalizado, requisitos, configuração e cenários. O leitor PDF mostra páginas reais com navegação, zoom e texto acessível; o leitor do navegador é a alternativa. Quando falta um PDF, **Obter PDF oficial para uso local** busca apenas o endereço do registro de fontes. Nenhum modelo é chamado; o PDF fica fora do Git. Os fatos normalizados são uma transcrição técnica, não o documento original nem uma resposta de modelo.
+- **Entradas do benchmark** separa PDFs originais, documentos do projeto, requisitos, configuração e cenários. O leitor PDF mostra páginas reais com navegação, zoom e texto acessível; o leitor do navegador é a alternativa. Quando falta um PDF, **Obter PDF oficial para uso local** busca apenas o endereço do registro de fontes. Nenhum modelo é chamado; o PDF fica fora do Git. As transcrições antigas continuam nos arquivos para referência e compatibilidade histórica, mas não são uma opção de entrada para novas avaliações.
 - **Requisitos** tem busca por ID/texto, categoria, componente, tipo, origem e impacto esperado de um cenário, além de ordenação. A seleção mostra o texto integral, sua verificação e vínculos do gabarito. Categorias organizam a interface sem alterar o prompt ou as regras de avaliação.
 - **Configuração** separa escolhas do sistema, hipóteses documentadas e opções de execução. Cada valor do sistema é identificado como hipótese do benchmark; os limites do fabricante ficam nas fontes.
 - **Cenários** mostra tipo, nível, elemento alterado, descrição, valores antes/depois quando explicitamente disponíveis e presença de respostas reais. O impacto esperado fica identificado como gabarito, separado da entrada.
-- **Prompt e contexto** preserva a prévia exata, o contrato de saída e os editores existentes. Em L2, a prévia remove as pistas PROJECT-05/06. A prévia não chama APIs.
+- **Prompt e contexto** preserva a prévia exata, o contrato de saída e os editores existentes. Nenhum nível do protocolo 2.0 envia PROJECT-05/06, o inventário esperado de entidades, relações esperadas ou rótulos de cenários sem impacto. A prévia não chama APIs.
 - **Gabarito revisável** mantém as ações Confirmar, Recusar e Editar. A porcentagem dessa tela mede revisão humana, nunca desempenho de modelo. O gabarito esperado não é enviado na primeira passagem.
-- **Fontes e proveniência** reúne fabricante, peça, revisão, URL oficial, seções, data, disponibilidade local e hash do PDF, além dos IDs e tipos permitidos.
+- **Fontes e proveniência** reúne fabricante, peça, revisão, URL oficial, seções, data, disponibilidade local e hash do PDF, além dos tipos permitidos e do inventário de referência, identificado como exclusivo do avaliador.
 - **Mapa de relações**, **Análise de impacto** e **Comparação de modelos** usam respostas reais preservadas. Há grafos lado a lado, evidências, contagens de acertos/ausências/extras, amostras e métricas separadas por tarefa, nível, versão, modo e configuração.
 - **Aprendizado** mostra correções, confirmação humana e avaliações assistidas pareadas, se existirem. Não há curvas de melhoria demonstrativas.
 - **Configurações** mostra a versão ativa, idioma, modelos padrão, conexões e hashes dos prompts.
@@ -68,7 +68,7 @@ A **Visão geral** apresenta o sistema e o fluxo **entrada → prompt/contexto �
 
 Para editar uma entrada, abra seu trecho e clique em **Editar entrada**; configurações, descrições de alterações e prompts também têm editores. Para corrigir uma resposta esperada, use **Editar** no gabarito. Os editores têm campos legíveis; não exigem editar JSON. Explique a alteração e clique em **Salvar nova versão**.
 
-Cada edição é uma ação humana explícita e cria uma revisão local, como `1.1.0+local.1`. Ela fica em `benchmark_revisions` no SQLite, sem sobrescrever os arquivos originais do Git nem resultados antigos. A versão local passa a ser usada pelas novas avaliações, tanto no site quanto no CLI. As confirmações antigas não valem automaticamente para conteúdo alterado. Editar uma entrada não recalcula a resposta esperada: revise o gabarito correspondente. Alterar a criticidade de um requisito atualiza sua classificação em todos os cenários.
+Cada edição é uma ação humana explícita e cria uma revisão local, como `2.0.0+local.1`. Ela fica em `benchmark_revisions` no SQLite, sem sobrescrever os arquivos originais do Git nem resultados antigos. A versão local passa a ser usada pelas novas avaliações, tanto no site quanto no CLI. As confirmações antigas não valem automaticamente para conteúdo alterado. Editar uma entrada não recalcula a resposta esperada: revise o gabarito correspondente. Alterar a criticidade de um requisito atualiza sua classificação em todos os cenários.
 
 Confirmações e recusas ficam em `benchmark_reviews`, com data, item, observação e hash do dataset. Recusar exige explicar o problema e bloqueia novas avaliações daquela versão até corrigir ou confirmar a referência. A versão inicial continua provisória; não há aprovação humana inventada. Evidências inexistentes não podem ser confirmadas. Duas edições concorrentes não sobrescrevem uma à outra silenciosamente.
 
@@ -79,8 +79,8 @@ Esta primeira versão permite editar os itens existentes, mantendo IDs e tipos d
 1. Abra **Nova avaliação → Modelos**. Ative os provedores desejados. Cada linha tem **modelo** e **profundidade**; o modelo padrão vem marcado com ★. **Todos os modelos** inclui o catálogo inteiro; **Padrões** volta a um modelo por provedor. Sua seleção fica salva neste navegador.
 2. Clique no status da linha para ver o diagnóstico: **verde** confirma geração; **vermelho** indica chave ausente, conexão não confirmada ou falha; **amarelo** indica créditos, faturamento, cota ou limite temporário. O detalhe distingue essas causas e mostra o que fazer. A presença de uma chave não significa que ela funciona.
 3. Clique em **Verificar conexões**. É uma chamada curta que pode consumir créditos, separada da avaliação. A confirmação fica salva. Para verificar um modelo individualmente, abra o status daquela linha. Alterar seletores ou clicar em **Atualizar status** consulta apenas o estado local, sem chamar provedores.
-4. Quando as conexões selecionadas estiverem confirmadas, clique em **Iniciar avaliação**. Para começar pequeno, escolha **1 repetição** e, na aba **Tarefas e opções**, deixe apenas **Relações**. A profundidade escolhida é enviada à API e registrada com a execução; não é apenas uma preferência visual.
-5. Ao iniciar, o site abre **Execução ao vivo** automaticamente. Todos os modelos ficam visíveis; suas repetições aparecem dentro de um único cartão. Abra qualquer resposta recebida sem esperar o restante da avaliação.
+4. Em **Fontes e proveniência**, obtenha os cinco PDFs oficiais usando o botão de download local de cada documento. Quando os documentos e as conexões selecionadas estiverem prontos, clique em **Iniciar avaliação**. Para começar pequeno, escolha **1 repetição** e, na aba **Tarefas e opções**, deixe apenas **Relações**. A profundidade escolhida é enviada à API e registrada com a execução; não é apenas uma preferência visual.
+5. Ao iniciar, o site abre **Execução ao vivo** automaticamente. Todos os modelos ficam visíveis; suas repetições aparecem dentro de um único cartão. Clique no nome do modelo ou em **ver execuções**. Selecione categoria, repetição e cenário dentro desse único explorador, sem esperar o restante da avaliação.
 6. Em **Mapa de relações**, escolha modelo e execução para ver referência e resposta lado a lado. Em **Comparação de modelos**, use as abas **Gráficos**, **Resumo**, **Uso e custo** e **Respostas**.
 
 As páginas usam painéis, navegação lateral e rolagem vertical quando necessária. O acompanhamento não esconde modelos atrás de paginação. Os leitores exatos e editores anteriores continuam disponíveis. A paleta segue o [Norte](https://github.com/Raiagues/norte), consultado no commit `a2945d8`. O leitor de documentos usa [PDF.js](https://mozilla.github.io/pdf.js/examples/), servido localmente.
@@ -163,9 +163,13 @@ Os rótulos de referência foram escritos durante a implementação, independent
 | Relações | Ligações direcionadas, tipos permitidos e evidências |
 | Impactos | Quais requisitos precisam de revisão após cada alteração |
 | Explicações | Elemento alterado, requisito, dependência e evidência declarados |
-| Raciocínio de um passo | Impactos L2, sem as indicações explícitas usadas em L1 |
+| Raciocínio de um passo | Impactos dos cenários L2; nenhum nível recebe o gabarito |
 
 L1 e L2 são medidos separadamente. A avaliação usa código determinístico para TP, FP, FN, precisão, recall, F1, acurácia de valores/unidades/fontes, alegações sem suporte, falsos alarmes, impactos perdidos e falhas críticas. Conclusão correta com evidência inválida não recebe crédito de relação sustentada. A direção da ligação importa.
+
+**Recall 100% não significa resposta inteiramente correta.** O modelo pode encontrar todos os requisitos afetados e ainda errar a dependência, citação ou alegação numérica. Respostas com erros ficam vermelhas. O explorador mostra os motivos exatos e uma tabela por cenário: requisito do projeto, impacto esperado, impacto previsto e resultado da resposta. Expanda uma linha para comparar a dependência e cada alegação. “Correta” nessa tabela avalia a resposta do modelo, não comprova conformidade do hardware.
+
+**Impactos e Explicações são chamadas independentes.** Impactos enfatiza a seleção dos requisitos; Explicações enfatiza a justificativa. Ambas exigem dependência e evidências e usam as mesmas regras de avaliação. Explicações não recebe a resposta de Impactos. A referência é limitada: um fato fora do seu inventário é rejeitado pela pontuação, o que não prova que seja fisicamente falso. Não há avaliação objetiva sem referência neste protótipo; a revisão humana permanece separada.
 
 Repetições produzem média, mínimo, máximo, desvio padrão e consistência de decisões. Nos gráficos, o traço representa mínimo e máximo; não é um intervalo de confiança. Todas as métricas de qualidade são **condicionadas às execuções concluídas**, conforme a regra de publicação: não medem disponibilidade da API ou frequência de falhas. Diagnósticos de tentativas inválidas ficam separados, sem contaminar o ranking de qualidade.
 
@@ -175,9 +179,13 @@ Os preços de `config/pricing.json` começam indisponíveis. Só preencha valore
 
 ## Documentos completos
 
-O modo principal é **Texto controlado**: todos os modelos recebem os mesmos fatos normalizados. Ele funciona sem internet para carregar o dataset; as APIs exigem conexão.
+Novas avaliações aceitam apenas os PDFs originais dos três componentes e dos dois substitutos, junto aos requisitos, configuração e documento de arquitetura do projeto. Use **Fontes e proveniência → Obter PDF oficial para uso local**. Sem todos os arquivos, nenhuma chamada de benchmark começa. Não há download automático durante a execução nem seleção de texto controlado.
 
-O modo secundário **Texto dos PDFs** extrai o texto de PDFs locais com o mesmo parser para todos os provedores. Ele não mede visão nativa de PDF. Consulte `data/pdfs/README.md` para obter os PDFs oficiais e salvá-los localmente. PDFs ficam fora do Git. As métricas deste modo nunca são misturadas às do texto controlado.
+O backend usa `pypdf` para extrair **todas as páginas**, sem reescrever ou resumir o texto. Todos os modelos recebem a mesma extração, com número de página. Isso é leitura do conteúdo textual dos PDFs, **não visão nativa de PDF nem leitura de diagramas/imagens**. PDFs digitalizados sem texto são recusados. Os PDFs ficam fora do Git. Consulte `data/pdfs/README.md`.
+
+O protocolo **2.0.0** remove as listas de respostas e pistas explícitas do contexto antigo. O gabarito, os valores normalizados do registro de fontes e os rótulos `no_impact` não entram na primeira passagem. Os tipos de relação e uma convenção de nomes permanecem no contrato JSON; não fornecem relações esperadas. Requisitos e procedimentos do projeto continuam sendo entradas legítimas.
+
+Execuções anteriores preservam prompts, respostas e métricas originais. O explorador identifica seu contexto anterior, que continha pistas em L1; seus resultados não equivalem ao novo protocolo. A separação usa hashes de dataset, prompts, esquema e código. Veja `docs/protocol-v2.md`.
 
 ## Experimento com correções
 
@@ -206,7 +214,9 @@ benchmark/                    API, provedores, conexões, execução e métricas
 config/                       Modelos, configurações e preços
 prompts/                      Instruções versionadas de cada tarefa
 data/sources.json             Fontes oficiais e fatos técnicos
-data/normalized/              Documentos e configuração enviados aos modelos
+data/project/                 Documento de arquitetura sem o antigo gabarito explícito
+data/normalized/              Requisitos/configuração e transcrições históricas de referência
+data/pdfs/                    PDFs oficiais locais, ignorados pelo Git
 data/ground_truth/            Entidades, relações, requisitos e cenários esperados
 data/manifest.json            Versões do benchmark e dataset
 data/benchmark.sqlite3        Banco local, ignorado pelo Git

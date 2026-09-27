@@ -68,7 +68,8 @@ def config():
         "tasks": TASKS,
         "connections": statuses(configuration()["models"]),
         "pdf_ready": all(
-            (ROOT / f"data/pdfs/{d}.pdf").exists() for d in ("fan", "sensor", "driver")
+            (ROOT / f"data/pdfs/{d}.pdf").exists()
+            for d in ("fan", "sensor", "driver", "alt-fan", "alt-driver")
         ),
     }
 
@@ -124,7 +125,7 @@ def benchmark_overview():
 def benchmark_preview(
     task: str = "relationship_extraction",
     difficulty: str = "L1_DIRECT",
-    input_mode: str = "controlled_text",
+    input_mode: Literal["pdf_text"] = "pdf_text",
 ):
     from .workbench import preview
 
@@ -317,7 +318,7 @@ class RunRequest(BaseModel):
     depths: dict[str, str] = Field(default_factory=dict)
     tasks: list[str] = Field(default_factory=lambda: TASKS.copy())
     repetitions: int = Field(default=3, ge=1, le=10)
-    input_mode: Literal["controlled_text", "pdf_text"] = "controlled_text"
+    input_mode: Literal["pdf_text"] = "pdf_text"
     experiment: Literal["first_pass", "feedback_assisted"] = "first_pass"
     baseline_run_id: str | None = None
 

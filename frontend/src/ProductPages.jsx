@@ -4,7 +4,7 @@ import Icon from "./Icon";
 import { Modal } from "./ScreenUI";
 import { taskLabel, percent, number, money, stamp } from "./liveLabels";
 export function Overview({ api, ds, config, runs, summary }) {
-  const [mode, setMode] = useState(runs[0]?.input_mode || "controlled_text"),
+  const [mode] = useState("pdf_text"),
     [task, setTask] = useState("relationship_extraction"),
     [preview, setPreview] = useState(null),
     [loading, setLoading] = useState(true),
@@ -141,20 +141,12 @@ export function Overview({ api, ds, config, runs, summary }) {
         <div className="inline-actions">
           <label>
             {L("Entrada", "Input")}
-            <select
-              aria-label={L("Entrada", "Input")}
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-            >
-              <option value="controlled_text">
-                {L("Texto normalizado", "Normalized text")}
-              </option>
-              {config.pdf_ready && (
-                <option value="pdf_text">
-                  {L("Texto integral dos PDFs", "Full PDF text")}
-                </option>
+            <strong className="fixed-document-mode">
+              {L(
+                "PDFs originais + documentos do projeto",
+                "Original PDFs + project documents",
               )}
-            </select>
+            </strong>
           </label>
           <label>
             {L("Tarefa", "Task")}
@@ -180,12 +172,10 @@ export function Overview({ api, ds, config, runs, summary }) {
           <ul className="artifact-summary">
             <li>
               <Icon name="document" />
-              {mode === "pdf_text"
-                ? L("Datasheets → texto integral", "Datasheets → full text")
-                : L(
-                    "Datasheets → texto normalizado",
-                    "Datasheets → normalized text",
-                  )}
+              {L(
+                "PDFs originais → texto integral",
+                "Original PDFs → full text",
+              )}
             </li>
             <li>
               <Icon name="reference" />
@@ -222,8 +212,8 @@ export function Overview({ api, ds, config, runs, summary }) {
             <li>{L("Ler as evidências do sistema", "Read system evidence")}</li>
             <li>
               {L(
-                "Usar os IDs e relações permitidos",
-                "Use allowed IDs and relationships",
+                "Inferir relações e citar as fontes",
+                "Infer relationships and cite sources",
               )}
             </li>
             <li>
@@ -241,10 +231,8 @@ export function Overview({ api, ds, config, runs, summary }) {
             {L("Ler prompt exato", "Read exact prompt")} →
           </button>
           <small>
-            {mode === "pdf_text"
-              ? L("Texto integral dos PDFs", "Full PDF text")
-              : L("Texto controlado", "Controlled text")}{" "}
-            · {preview?.prompt_hash.slice(0, 12) || "—"}
+            {L("Texto integral dos PDFs", "Full PDF text")} ·{" "}
+            {preview?.prompt_hash.slice(0, 12) || "—"}
           </small>
         </section>
         <section className="product-panel story-panel">

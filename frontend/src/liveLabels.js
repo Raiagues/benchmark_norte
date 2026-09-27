@@ -20,7 +20,7 @@ export const statusLabel = (v) =>
     PARTIALLY_COMPLETED: L("Parcialmente concluída", "Partially completed"),
     INTERRUPTED_BY_USER: L("Interrompida pelo usuário", "Interrupted by user"),
     COMPLETED_CORRECT: L("Correta", "Correct"),
-    COMPLETED_INCORRECT: L("Com erros de benchmark", "Benchmark errors"),
+    COMPLETED_INCORRECT: L("Resposta com erros", "Answer has errors"),
     TECHNICAL_ERROR: L("Erro técnico", "Technical error"),
     INTERRUPTED: L("Interrompida", "Interrupted"),
     Running: L("Em execução", "Running"),
@@ -151,6 +151,7 @@ export const tone = (state) =>
     ? "good"
     : [
           "TECHNICAL_ERROR",
+          "COMPLETED_INCORRECT",
           "COMPLETED_WITH_ERRORS",
           "Provider error",
           "Quota error",
@@ -160,3 +161,57 @@ export const tone = (state) =>
       : ["RUNNING", "Running"].includes(state)
         ? "active"
         : "neutral";
+
+export const issueLabel = (code) =>
+  ({
+    source_attribution: L(
+      "Atribuição de fonte rejeitada",
+      "Source attribution rejected",
+    ),
+    missing: L(
+      "Item esperado não identificado",
+      "Expected item not identified",
+    ),
+    extra: L("Item adicional incorreto", "Incorrect additional item"),
+    correct_changed_element: L(
+      "Elemento alterado incorreto",
+      "Incorrect changed element",
+    ),
+    correct_dependency: L(
+      "Dependência diferente da esperada",
+      "Dependency differs from the reference",
+    ),
+    valid_evidence: L(
+      "Citação inválida ou inadequada à dependência",
+      "Citation is invalid or unrelated to the dependency",
+    ),
+    unsupported_structured_claims: L(
+      "Alegação numérica rejeitada pela regra",
+      "Numerical claim rejected by the rule",
+    ),
+    empty_explanation: L("Explicação ausente", "Missing explanation"),
+  })[code] || code;
+
+export const taskPurpose = (task) =>
+  ({
+    entity_extraction: L(
+      "Extrai componentes, requisitos e valores dos documentos.",
+      "Extracts components, requirements and values from documents.",
+    ),
+    relationship_extraction: L(
+      "Identifica relações entre os itens de engenharia e suas evidências.",
+      "Identifies engineering relationships and their evidence.",
+    ),
+    change_impact: L(
+      "Pergunta quais requisitos precisam de revisão após cada mudança. Também exige dependência e evidências.",
+      "Asks which requirements need review after each change. Dependencies and evidence are also required.",
+    ),
+    impact_explanation: L(
+      "Uma chamada independente enfatiza a justificativa de cada impacto. Usa os mesmos documentos e cenários; não recebe a resposta do teste de Impactos.",
+      "An independent call emphasizes the justification for each impact. It uses the same documents and scenarios; it does not receive the Impact analysis answer.",
+    ),
+    one_hop: L(
+      "Avalia os cenários L2, inferindo o impacto a partir dos documentos.",
+      "Evaluates L2 scenarios, inferring impact from the documents.",
+    ),
+  })[task] || task;

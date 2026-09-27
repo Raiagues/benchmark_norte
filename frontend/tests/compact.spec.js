@@ -166,7 +166,7 @@ test("long request reader keeps every character, without scrolling or hidden lin
     async () =>
       await (
         await fetch(
-          "/api/benchmark/preview?task=relationship_extraction&difficulty=L1_DIRECT&input_mode=controlled_text",
+          "/api/benchmark/preview?task=relationship_extraction&difficulty=L1_DIRECT&input_mode=pdf_text",
         )
       ).json(),
   );

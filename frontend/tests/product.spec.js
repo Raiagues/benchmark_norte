@@ -63,7 +63,7 @@ test("live view groups repetitions into one card per model, exposes every model,
   await expect(page.locator("progress")).toHaveAttribute("value", "0");
   await expect(page.locator(".quality-stat strong").first()).toHaveText("—");
   await expect(
-    page.getByText("Nenhuma resposta avaliada ainda.", { exact: true }),
+    page.getByText("Nenhuma resposta avaliada ainda.", { exact: true }).first(),
   ).toBeVisible();
   await page.reload();
   await expect(page.getByTestId("model-lane")).toHaveCount(3);
@@ -129,7 +129,7 @@ test("stopping requires confirmation and keeps the persisted partial run visible
   ).toContainText("9");
 });
 
-test("input explorer distinguishes original PDFs, normalized text, project requirements, assumptions and ground truth", async ({
+test("input explorer distinguishes original PDFs, project documents, requirements, assumptions and ground truth", async ({
   page,
 }) => {
   await interceptApi(page);
@@ -140,11 +140,14 @@ test("input explorer distinguishes original PDFs, normalized text, project requi
   await expect(page.locator(".document-workspace")).toContainText(
     "FONTE DO FABRICANTE",
   );
+  await expect(
+    page.getByRole("button", { name: "Fatos normalizados", exact: true }),
+  ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Fatos normalizados", exact: true })
+    .getByRole("button", { name: "Documentos do projeto", exact: true })
     .click();
-  await expect(page.locator(".document-workspace")).toContainText(
-    "Não é o PDF nem uma resposta do modelo",
+  await expect(page.locator(".artifact-explorer")).toContainText(
+    "Não contêm o gabarito",
   );
   await page.getByRole("button", { name: "Requisitos", exact: true }).click();
   await expect(page.locator(".requirements-explorer tbody tr")).toHaveCount(5);
@@ -257,7 +260,7 @@ test("in-app PDF renderer shows original pages with zoom, accessible text and so
       .getByRole("button", { name: "PDF original", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "Fatos normalizados", exact: true })
+      .getByRole("button", { name: "Proveniência", exact: true })
       .click();
   }
   await page.waitForTimeout(300);
@@ -273,7 +276,7 @@ test("missing results and feedback never produce improvement charts; both langua
     page.getByText("Nenhuma avaliação assistida ainda", { exact: true }),
   ).toBeVisible();
   await expect(page.locator(".evolution,.metric-chart")).toHaveCount(0);
-  await page.goto("/#inputs/normalized");
+  await page.goto("/#inputs/project");
   const content = await page.locator(".normalized-facts p").allTextContents();
   await page.getByRole("button", { name: "English", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
@@ -292,4 +295,172 @@ test("missing results and feedback never produce improvement charts; both langua
     page.getByText("No benchmark is currently running", { exact: true }),
   ).toBeVisible();
   await expect(page.locator("progress")).toHaveCount(0);
+});
+
+test("one model explorer groups categories and repetitions and explains a red answer despite perfect impact recall", async ({
+  page,
+}) => {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await interceptApi(page);
+  const state = liveFixture();
+  const base = state.calls[0];
+  state.calls = ["change_impact", "impact_explanation"].flatMap((task) =>
+    [1, 2, 3].map((repetition) => ({
+      ...base,
+      id: `isolated-${task}-${repetition}`,
+      task,
+      repetition,
+      status:
+        task === "impact_explanation"
+          ? "COMPLETED_INCORRECT"
+          : "COMPLETED_CORRECT",
+      stage: "COMPLETED",
+      has_result: true,
+      scenario_ids: ["CHG-001", "CHG-008"],
+      result_summary: { impact_recall: 1 },
+      failure_counts:
+        task === "impact_explanation" ? { correct_dependency: 1 } : {},
+      finished_at: "2026-09-27T12:00:00Z",
+    })),
+  );
+  state.tasks = ["change_impact", "impact_explanation"];
+  state.scenario_ids = ["CHG-001", "CHG-008"];
+  state.models = state.models.slice(0, 1);
+  state.models[0].operations = {
+    ...state.models[0].operations,
+    planned: 6,
+    evaluated: 6,
+    correct: 3,
+    partial: 3,
+    interrupted: 0,
+  };
+  state.status = "COMPLETED";
+  await liveRoutes(page, state);
+  await page.route("**/api/live-results/*", (route) => {
+    const call = state.calls.find(
+      (c) => c.id === route.request().url().split("/").at(-1),
+    );
+    const wrong = call.task === "impact_explanation";
+    const inspection = ["CHG-001", "CHG-008"].map((id) => {
+      const change = dataset.ground_truth.change_scenarios.find(
+        (s) => s.id === id,
+      );
+      return {
+        ...change,
+        correct: wrong && id === "CHG-001" ? 4 : 5,
+        incorrect: wrong && id === "CHG-001" ? 1 : 0,
+        rows: dataset.ground_truth.requirements.map((req) => {
+          const affected = change.affected_requirements.includes(req.id);
+          const bad = wrong && id === "CHG-001" && req.id === "REQ-001";
+          const deps = change.affected_relationships.filter(
+            (e) => e.source === req.id,
+          );
+          return {
+            requirement_id: req.id,
+            requirement_text: req.text,
+            expected_affected: affected,
+            predicted_affected: affected,
+            decision_correct: true,
+            status: bad ? "incorrect" : "correct",
+            issues: bad ? ["correct_dependency"] : [],
+            claims: [],
+            expected_dependencies: deps,
+            checks: affected
+              ? {
+                  correct_changed_element: true,
+                  correct_dependency: !bad,
+                  valid_evidence: true,
+                }
+              : null,
+            answer: affected
+              ? {
+                  changed_entity: change.changed_entity,
+                  dependency: bad
+                    ? {
+                        source: req.id,
+                        relationship: "constrains",
+                        target: "FAN",
+                      }
+                    : deps[0],
+                  explanation: "Isolated component test explanation",
+                  source_evidence: [],
+                }
+              : null,
+          };
+        }),
+      };
+    });
+    return route.fulfill({
+      json: {
+        ...call,
+        input_policy: "legacy_explicit_context",
+        input: {},
+        prompt: "Isolated prompt",
+        snapshot_metadata: { dataset_hash: "isolated-ui-hash" },
+        ground_truth: dataset.ground_truth,
+        failure_counts: call.failure_counts,
+        inspection,
+        result: {
+          parsed_output: { scenarios: [] },
+          metrics: { impact: { recall: 1 } },
+          latency_seconds: 1,
+          tokens: { input: 10, output: 10 },
+        },
+      },
+    });
+  });
+  await page.goto("/#live/ui-live-run");
+  await expect(page.getByTestId("model-lane")).toHaveCount(1);
+  await expect(page.locator(".result-feed-row")).toHaveCount(0);
+  await page.getByRole("button", { name: /avaliadas · ver execuções/ }).click();
+  const dialog = page.getByRole("dialog");
+  await page
+    .getByLabel("Categoria de teste", { exact: true })
+    .selectOption("impact_explanation|L1_DIRECT");
+  await expect(dialog.locator(".detail-meta .state-pill")).toHaveClass(/bad/);
+  await expect(dialog.locator(".evaluation-errors")).toContainText(
+    "Recall 100%",
+  );
+  await expect(dialog.locator(".task-purpose")).toContainText(
+    "não recebe a resposta do teste de Impactos",
+  );
+  await expect(dialog.locator(".requirement-results tbody > tr")).toHaveCount(
+    5,
+  );
+  const bounds = await dialog
+    .locator(".requirement-results")
+    .evaluate((t) => ({
+      table: t.getBoundingClientRect().right,
+      last: t.querySelector("thead th:last-child").getBoundingClientRect()
+        .right,
+      container: t.parentElement.getBoundingClientRect().right,
+    }));
+  expect(bounds.last).toBeLessThanOrEqual(bounds.container + 1);
+  await dialog.getByRole("button", { name: /REQ-001/ }).click();
+  await expect(dialog.locator(".requirement-verdict-detail")).toContainText(
+    "P-FAN-CURRENT",
+  );
+  await expect(dialog.locator(".requirement-verdict-detail")).toContainText(
+    "constrains → FAN",
+  );
+  await page
+    .getByLabel("Repetição do resultado", { exact: true })
+    .selectOption("3");
+  await expect(
+    page.getByLabel("Repetição do resultado", { exact: true }),
+  ).toHaveValue("3");
+  await page
+    .getByLabel("Cenário de mudança", { exact: true })
+    .selectOption("CHG-008");
+  await expect(dialog.locator(".scenario-totals")).toContainText("0 com erro");
+  await page
+    .getByLabel("Categoria de teste", { exact: true })
+    .selectOption("change_impact|L1_DIRECT");
+  await expect(dialog.locator(".detail-meta .state-pill")).toHaveClass(/good/);
+  await expect(dialog.locator(".evaluation-errors")).toHaveCount(0);
+  expect(errors).toEqual([]);
+  await page.screenshot({
+    path: "test-results/grouped-requirement-results.png",
+  });
 });

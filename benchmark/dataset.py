@@ -11,6 +11,8 @@ TASKS = [
     "impact_explanation",
     "one_hop",
 ]
+PDF_DOCUMENTS = ("FAN", "SENSOR", "DRIVER", "ALT-FAN", "ALT-DRIVER")
+INPUT_POLICY = "source_documents_v2"
 DOC_FILES = {
     "FAN": "motor.txt",
     "SENSOR": "temperature_sensor.txt",
@@ -51,6 +53,7 @@ def load_dataset(mode="controlled_text", db=None, use_local=True):
         "input_mode": mode,
         "pdf_hashes": {},
     }
+    revision = None
     if use_local:
         from .workbench import active_revision
 
@@ -58,11 +61,20 @@ def load_dataset(mode="controlled_text", db=None, use_local=True):
         if revision:
             result = revision["dataset"]
     documents = result["documents"]
+    if result["manifest"].get("input_policy") == INPUT_POLICY:
+        # Fresh base datasets use the actual project document; local edits already
+        # contain this document and are intentionally preserved.
+        if not (use_local and revision):
+            documents["PROJECT"] = {
+                m[1]: m[2]
+                for line in (ROOT / "data/project/system.txt").read_text().splitlines()
+                if (m := re.match(r"\[(.+?)\] (.*)", line))
+            }
     pdf_hashes = {}
     if mode == "pdf_text":
         from pypdf import PdfReader
 
-        for doc in ("FAN", "SENSOR", "DRIVER"):
+        for doc in PDF_DOCUMENTS:
             path = ROOT / f"data/pdfs/{doc.lower()}.pdf"
             if not path.exists():
                 raise ValueError(
@@ -133,8 +145,9 @@ def prompt_bundle(db=None, use_local=True):
 
 def make_prompt(dataset, prompts, task, difficulty, schema, feedback):
     docs = {d: dict(lines) for d, lines in dataset["documents"].items()}
-    if difficulty == "L2_ONE_HOP":
-        # Explicit traceability hints removed in this separate reasoning level.
+    source_only = dataset["manifest"].get("input_policy") == INPUT_POLICY
+    if source_only or difficulty == "L2_ONE_HOP":
+        # No answer hints in the new protocol; preserve legacy L2 reconstruction.
         docs["PROJECT"].pop("PROJECT-05", None)
         docs["PROJECT"].pop("PROJECT-06", None)
     # Do not leak normalized manufacturer values through the source registry in PDF mode.
@@ -156,6 +169,37 @@ def make_prompt(dataset, prompts, task, difficulty, schema, feedback):
         ],
         "confirmed_feedback": feedback,
     }
+    if source_only:
+        # This branch applies only to the new protocol. Old snapshots retain
+        # their exact reconstruction and remain inspectable as historical input.
+        payload["scope"] = {
+            "relationship_types": dataset["scope"]["relationship_types"],
+            "id_convention": (
+                "Use source document IDs for components; retain requirement, "
+                "configuration and verification IDs stated in the project documents. "
+                "For component parameters use P-<document ID>-<quantity>: "
+                "CURRENT, SPEED, VOLTAGE or SUPPLY (sensor supply envelope). "
+                "Numeric requirement criteria and configuration values retain their own IDs."
+            ),
+        }
+        payload["sources"] = [
+            {
+                k: s[k]
+                for k in (
+                    "document_id",
+                    "manufacturer",
+                    "part_number",
+                    "official_datasheet_url",
+                    "date_accessed",
+                )
+                if k in s
+            }
+            for s in dataset["sources"]
+        ]
+        payload["scenarios"] = [
+            {k: s[k] for k in ("id", "description", "changed_entity")}
+            for s in cases_for_task(dataset, task, difficulty)
+        ]
     return (
         prompts["common"]
         + "\n"

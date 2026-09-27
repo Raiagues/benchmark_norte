@@ -20,8 +20,8 @@ def main():
     run.add_argument("--repetitions", type=int, default=3)
     run.add_argument(
         "--input-mode",
-        choices=["controlled_text", "pdf_text"],
-        default="controlled_text",
+        choices=["pdf_text"],
+        default="pdf_text",
     )
     run.add_argument(
         "--feedback-baseline", help="Run ID of completed first-pass baseline"

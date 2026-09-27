@@ -60,11 +60,13 @@ def prepare_runs(
     models,
     tasks=None,
     repetitions=3,
-    input_mode="controlled_text",
+    input_mode="pdf_text",
     experiment="first_pass",
     baseline_run_id=None,
     db=None,
 ):
+    if input_mode != "pdf_text":
+        raise ValueError("New runs require original PDF documents (pdf_text)")
     if not 1 <= repetitions <= 10:
         raise ValueError("Repetitions must be 1 to 10")
     tasks = TASKS if tasks is None else tasks
@@ -96,6 +98,10 @@ def prepare_runs(
             raise ValueError("Model must be present in config/models.json")
     require_ready(models, db)
     ds, prompts = load_dataset(input_mode, db=db), prompt_bundle(db=db)
+    if ds["manifest"].get("input_policy") != "source_documents_v2":
+        raise ValueError(
+            "The active revision uses the historical hinted-input protocol; select the current benchmark before running"
+        )
     from .workbench import review_state
 
     reference_review = review_state(load_dataset(db=db), db)

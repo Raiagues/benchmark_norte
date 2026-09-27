@@ -65,6 +65,15 @@ def install_mock_api(monkeypatch, ds, replies=None, db=None, on_request=None):
     import httpx
     from benchmark import runner
     from benchmark.providers import call_provider
+    from benchmark.dataset import load_dataset
+
+    # Offline fixtures use local excerpt evidence. Production still requires PDF
+    # mode; only this isolated test loader avoids downloading manufacturer PDFs.
+    monkeypatch.setattr(
+        runner,
+        "load_dataset",
+        lambda mode="controlled_text", **kw: load_dataset("controlled_text", **kw),
+    )
 
     sent = []
 

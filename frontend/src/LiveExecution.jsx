@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { L, t } from "./i18n";
 import { Modal, Tabs } from "./ScreenUI";
+import ModelResults from "./ModelResults";
+import ScenarioResults from "./ScenarioResults";
 import {
+  issueLabel,
+  taskPurpose,
   taskLabel,
   statusLabel,
   stageLabel,
@@ -184,9 +188,8 @@ export default function LiveExecution({ api, renderGraph }) {
     [connected, setConnected] = useState(false),
     [stop, setStop] = useState(false),
     [stopping, setStopping] = useState(false),
-    [detail, setDetail] = useState(null),
+    [browser, setBrowser] = useState(null),
     [metric, setMetric] = useState(null),
-    [queue, setQueue] = useState(null),
     [matrixView, setMatrixView] = useState("task"),
     [selectedTask, setSelectedTask] = useState(
       "relationship_extraction|L1_DIRECT",
@@ -265,11 +268,16 @@ export default function LiveExecution({ api, renderGraph }) {
       stream.close();
     };
   }, [id]);
-  async function inspect(cid) {
-    try {
-      setDetail(await api(`/live-results/${cid}`));
-    } catch (e) {
-      setError(e.message);
+  function inspect(cid, scenario = "") {
+    const call = run.calls.find((c) => c.id === cid);
+    if (call) {
+      setMetric(null);
+      setBrowser({
+        key: groupKey(call),
+        task: taskKey(call),
+        rep: call.repetition,
+        scenario,
+      });
     }
   }
   if (!id)
@@ -486,7 +494,16 @@ export default function LiveExecution({ api, renderGraph }) {
                 </span>
                 <State value={m.status} />
               </header>
-              <h3>{m.model}</h3>
+              <h3>
+                <button
+                  className="model-title-button"
+                  onClick={() =>
+                    setBrowser({ key: groupKey(m), task: selected })
+                  }
+                >
+                  {m.model} <span aria-hidden="true">↗</span>
+                </button>
+              </h3>
               <small>
                 {m.depth} ·{" "}
                 {L(
@@ -531,9 +548,11 @@ export default function LiveExecution({ api, renderGraph }) {
                   <button
                     key={r.repetition}
                     onClick={() =>
-                      setQueue(
-                        run.calls.filter((c) => r.execution_ids.includes(c.id)),
-                      )
+                      setBrowser({
+                        key: groupKey(m),
+                        rep: r.repetition,
+                        task: selected,
+                      })
                     }
                     title={`${r.evaluated}/${r.planned} ${L("avaliadas", "evaluated")}`}
                     className={
@@ -541,7 +560,7 @@ export default function LiveExecution({ api, renderGraph }) {
                         ? "running"
                         : r.interrupted
                           ? "interrupted"
-                          : r.technical_errors
+                          : r.technical_errors || r.partial || r.incorrect
                             ? "error"
                             : !r.remaining
                               ? "complete"
@@ -552,7 +571,7 @@ export default function LiveExecution({ api, renderGraph }) {
                       ? "◉"
                       : r.interrupted
                         ? "■"
-                        : r.technical_errors
+                        : r.technical_errors || r.partial || r.incorrect
                           ? "!"
                           : !r.remaining
                             ? "✓"
@@ -605,6 +624,37 @@ export default function LiveExecution({ api, renderGraph }) {
                 </span>
                 <span>{money(o.cost_usd)}</span>
               </footer>
+              {(() => {
+                const latest = completed.find(
+                  (c) => groupKey(c) === groupKey(m),
+                );
+                return latest ? (
+                  <button
+                    className="latest-model-result"
+                    onClick={() => inspect(latest.id)}
+                  >
+                    <small>
+                      {L("Última resposta", "Latest response")} ·{" "}
+                      {taskLabel(latest.task)} · Rep. {latest.repetition}
+                    </small>
+                    <State value={latest.status} />
+                    {Object.entries(latest.failure_counts || {}).map(
+                      ([k, n]) => (
+                        <small className="answer-bad" key={k}>
+                          {n} × {issueLabel(k)}
+                        </small>
+                      ),
+                    )}
+                  </button>
+                ) : (
+                  <p className="muted">
+                    {L(
+                      "Nenhuma resposta avaliada ainda.",
+                      "No evaluated response yet.",
+                    )}
+                  </p>
+                );
+              })()}
               <details className="quiet-details">
                 <summary>{L("Uso por tarefa", "Usage by task")}</summary>
                 {m.usage_by_task?.map((u) => (
@@ -618,9 +668,7 @@ export default function LiveExecution({ api, renderGraph }) {
               </details>
               <button
                 className="text-button"
-                onClick={() =>
-                  setQueue(run.calls.filter((c) => groupKey(c) === groupKey(m)))
-                }
+                onClick={() => setBrowser({ key: groupKey(m), task: selected })}
               >
                 {o.evaluated} / {o.planned}{" "}
                 {L(
@@ -936,8 +984,10 @@ export default function LiveExecution({ api, renderGraph }) {
                       return (
                         <td key={groupKey(m)}>
                           <button
-                            className="matrix-cell"
-                            onClick={() => setQueue(cell)}
+                            className={`matrix-cell ${wrong || err ? "has-errors" : ""}`}
+                            onClick={() =>
+                              cell[0] && inspect(cell[0].id, sid || "")
+                            }
                           >
                             <strong>
                               {done} / {cell.length}
@@ -972,59 +1022,6 @@ export default function LiveExecution({ api, renderGraph }) {
             </tbody>
           </table>
         </div>
-      </section>
-      <section className="product-panel">
-        <div className="panel-heading">
-          <h2>{L("Resultados recebidos", "Arriving results")}</h2>
-          <small>
-            {completed.length} {L("respostas avaliadas", "evaluated responses")}
-          </small>
-        </div>
-        {completed.length ? (
-          completed.map((c) => (
-            <button
-              className="result-feed-row"
-              key={c.id}
-              onClick={() => inspect(c.id)}
-            >
-              <span>
-                <strong>{c.model}</strong>
-                <small>
-                  {taskLabel(c.task)} · {c.difficulty.split("_")[0]} · Rep.{" "}
-                  {c.repetition}
-                </small>
-              </span>
-              <span>
-                {c.scenario_ids.length
-                  ? `${c.scenario_ids.length} ${L("cenários", "scenarios")}`
-                  : L("Sistema", "System")}
-              </span>
-              <span>
-                <State value={c.status} />
-                {Object.entries(c.result_summary || {})
-                  .filter(([k]) => k !== "critical_missed")
-                  .map(([k, v]) => (
-                    <small key={k}>
-                      {metricLabel(k)} {percent(v)}
-                    </small>
-                  ))}
-                {c.missing_count > 0 && (
-                  <small>
-                    {c.missing_count} {L("itens ausentes", "missing items")}
-                  </small>
-                )}
-              </span>
-              <span>{number(c.latency_seconds)} s →</span>
-            </button>
-          ))
-        ) : (
-          <p className="muted">
-            {L(
-              "Nenhuma resposta avaliada ainda.",
-              "No evaluated response yet.",
-            )}
-          </p>
-        )}
       </section>
       <details className="product-panel event-panel">
         <summary>
@@ -1173,17 +1170,6 @@ export default function LiveExecution({ api, renderGraph }) {
           </div>
         </Modal>
       )}
-      {queue && (
-        <Modal
-          title={L("Execuções individuais", "Individual executions")}
-          onClose={() => setQueue(null)}
-        >
-          <ExecutionQueue
-            calls={run.calls.filter((c) => queue.some((q) => q.id === c.id))}
-            inspect={inspect}
-          />
-        </Modal>
-      )}
       {metric && (
         <Modal title={metricLabel(metric.name)} onClose={() => setMetric(null)}>
           <div className="metric-proof">
@@ -1209,54 +1195,25 @@ export default function LiveExecution({ api, renderGraph }) {
           </div>
         </Modal>
       )}
-      {detail && (
-        <ExecutionDetail
-          detail={detail}
-          onClose={() => setDetail(null)}
-          renderGraph={renderGraph}
+      {browser && (
+        <ModelResults
+          key={JSON.stringify(browser)}
+          calls={run.calls.filter((c) => groupKey(c) === browser.key)}
+          selection={browser}
+          api={api}
+          onClose={() => setBrowser(null)}
+          renderDetail={(detail, scenario, onScenario) => (
+            <ExecutionDetail
+              key={detail.id}
+              detail={detail}
+              embedded
+              scenario={scenario}
+              onScenario={onScenario}
+              renderGraph={renderGraph}
+            />
+          )}
         />
       )}
-    </div>
-  );
-}
-function ExecutionQueue({ calls, inspect }) {
-  return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            {[
-              L("Modelo", "Model"),
-              L("Tarefa / nível", "Task / level"),
-              L("Repetição", "Repetition"),
-              L("Estado", "Status"),
-              L("Detalhes", "Details"),
-            ].map((x) => (
-              <th key={x}>{x}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {calls.map((c) => (
-            <tr key={c.id}>
-              <td>{c.model}</td>
-              <td>
-                {taskLabel(c.task)}
-                <small>{c.difficulty}</small>
-              </td>
-              <td>{c.repetition}</td>
-              <td>
-                <State value={c.status} />
-              </td>
-              <td>
-                <button onClick={() => inspect(c.id)}>
-                  {L("Inspecionar", "Inspect")}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }
@@ -1353,26 +1310,85 @@ function MetricEvolution({ models, selected, metric }) {
     </div>
   );
 }
-export function ExecutionDetail({ detail: d, onClose, renderGraph }) {
+export function ExecutionDetail({
+  detail: d,
+  onClose,
+  renderGraph,
+  embedded = false,
+  scenario = "",
+  onScenario = () => {},
+}) {
   const [tab, setTab] = useState(d.result ? "comparison" : "input");
   const result = d.result;
   const output = result?.parsed_output;
+  const Wrapper = embedded ? React.Fragment : Modal;
   return (
-    <Modal
-      title={`${d.model} · ${taskLabel(d.task)} · Rep. ${d.repetition}`}
-      onClose={onClose}
+    <Wrapper
+      {...(embedded
+        ? {}
+        : {
+            title: `${d.model} · ${taskLabel(d.task)} · Rep. ${d.repetition}`,
+            onClose,
+          })}
     >
       <div className="execution-detail">
         <div className="detail-meta">
           <State value={d.status} />
-          <span>{stageLabel(d.stage)}</span>
+          {!["COMPLETED_CORRECT", "COMPLETED_INCORRECT"].includes(d.status) && (
+            <span>{stageLabel(d.stage)}</span>
+          )}
           <span>
-            {d.difficulty} · {d.input_mode}
+            {d.difficulty.split("_")[0]} ·{" "}
+            {d.input_mode === "pdf_text"
+              ? L("PDFs → texto integral", "PDFs → full text")
+              : L(
+                  "Texto normalizado · histórico",
+                  "Normalized text · historical",
+                )}
           </span>
           <span>
             {number(result?.latency_seconds || d.call?.latency_seconds)} s
           </span>
         </div>
+        <p className="task-purpose">{taskPurpose(d.task)}</p>
+        {Object.keys(d.failure_counts || {}).length > 0 && (
+          <aside className="evaluation-errors">
+            <strong>
+              {L("O que falhou nesta resposta", "What failed in this answer")}
+            </strong>
+            <ul>
+              {Object.entries(d.failure_counts).map(([k, n]) => (
+                <li key={k}>
+                  {n} × {issueLabel(k)}
+                </li>
+              ))}
+            </ul>
+            {result?.metrics.impact?.recall === 1 && (
+              <p>
+                {L(
+                  "Recall 100%: todos os requisitos afetados foram encontrados. As verificações acima ainda falharam.",
+                  "100% recall: all affected requirements were found. The checks above still failed.",
+                )}
+              </p>
+            )}
+          </aside>
+        )}
+        {d.input_policy === "legacy_explicit_context" && (
+          <details className="legacy-context">
+            <summary>
+              {L(
+                "Contexto histórico · protocolo anterior",
+                "Historical context · previous protocol",
+              )}
+            </summary>
+            <p>
+              {L(
+                "Este protocolo incluía um inventário de respostas e pistas explícitas em L1. A execução original foi preservada. Novas avaliações usam documentos sem essas pistas; os protocolos não são equivalentes.",
+                "This protocol included an answer inventory and explicit hints in L1. The original execution is preserved. New evaluations use documents without those hints; these protocols are not equivalent.",
+              )}
+            </p>
+          </details>
+        )}
         {d.error && (
           <div className="notice error">
             <strong>{d.error}</strong>
@@ -1523,7 +1539,11 @@ export function ExecutionDetail({ detail: d, onClose, renderGraph }) {
               <RelationshipRows comparison={d.comparison} />
             </>
           ) : output?.scenarios ? (
-            <ImpactRows detail={d} />
+            <ScenarioResults
+              detail={d}
+              scenario={scenario}
+              onScenario={onScenario}
+            />
           ) : (
             <div className="table-scroll">
               <table>
@@ -1553,7 +1573,7 @@ export function ExecutionDetail({ detail: d, onClose, renderGraph }) {
           {d.snapshot_metadata.dataset_hash.slice(0, 12)}
         </small>
       </div>
-    </Modal>
+    </Wrapper>
   );
 }
 export function RelationshipRows({ comparison }) {
@@ -1575,7 +1595,12 @@ export function RelationshipRows({ comparison }) {
         </thead>
         <tbody>
           {comparison.edges.map((e) => (
-            <tr key={e.key.join("|")}>
+            <tr
+              key={e.key.join("|")}
+              className={
+                e.status === "correct" ? "answer-row-good" : "answer-row-bad"
+              }
+            >
               <th>{e.key[0]}</th>
               <td>{e.key[1]}</td>
               <td>{e.key[2]}</td>
@@ -1618,69 +1643,6 @@ export function RelationshipRows({ comparison }) {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-function ImpactRows({ detail: d }) {
-  return (
-    <div className="impact-result-list">
-      {d.result.metrics.scenarios.map((s) => {
-        const expected = d.ground_truth.change_scenarios.find(
-            (c) => c.id === s.scenario_id,
-          ),
-          answer = d.result.parsed_output.scenarios.find(
-            (c) => c.scenario_id === s.scenario_id,
-          );
-        return (
-          <article className="scenario-result" key={s.scenario_id}>
-            <h3>{s.scenario_id}</h3>
-            <p>{expected.description}</p>
-            <div className="flow-three">
-              <div>
-                <small>{L("Gabarito", "Ground truth")}</small>
-                <strong>
-                  {expected.affected_requirements.join(", ") ||
-                    L("Sem impacto", "No impact")}
-                </strong>
-              </div>
-              <div>
-                <small>{L("Resposta do modelo", "Model output")}</small>
-                <strong>
-                  {answer.impacts.map((i) => i.requirement_id).join(", ") ||
-                    L("Sem impacto", "No impact")}
-                </strong>
-              </div>
-              <div>
-                <small>TP / FP / FN</small>
-                <strong>
-                  {s.comparison.tp} / {s.comparison.fp} / {s.comparison.fn}
-                </strong>
-              </div>
-            </div>
-            {answer.impacts.map((i) => (
-              <details key={i.requirement_id}>
-                <summary>
-                  {i.requirement_id} ·{" "}
-                  {L("Explicação e evidências", "Explanation and evidence")}
-                </summary>
-                <p>{i.explanation}</p>
-                <code>
-                  {i.dependency?.source} → {i.dependency?.relationship} →{" "}
-                  {i.dependency?.target}
-                </code>
-                {i.source_evidence.map((e, j) => (
-                  <blockquote key={j}>
-                    <small>
-                      {e.document_id} · {e.location}
-                    </small>
-                    {e.excerpt}
-                  </blockquote>
-                ))}
-              </details>
-            ))}
-          </article>
-        );
-      })}
     </div>
   );
 }

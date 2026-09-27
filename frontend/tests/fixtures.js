@@ -17,7 +17,12 @@ const documents = Object.fromEntries(
     id,
     Object.fromEntries(
       fs
-        .readFileSync(`${root}data/normalized/${name}.txt`, "utf8")
+        .readFileSync(
+          id === "PROJECT"
+            ? `${root}data/project/system.txt`
+            : `${root}data/normalized/${name}.txt`,
+          "utf8",
+        )
         .split("\n")
         .flatMap((line) => {
           const m = line.match(/^\[(.+?)\] (.*)$/);
@@ -52,7 +57,7 @@ const config = {
   manifest: dataset.manifest,
   key_available: { openai: false, anthropic: false, gemini: false },
   tasks: allTasks,
-  pdf_ready: false,
+  pdf_ready: true,
   prompt_hashes: { common: "test-only-prompt-hash" },
 };
 const key = (e) => [e.source, e.relationship, e.target].join("|");
@@ -347,12 +352,13 @@ export async function interceptApi(
       const input = {
         documents,
         system_config: bench.dataset.system_config,
-        scope: bench.dataset.scope,
+        scope: {
+          relationship_types: bench.dataset.scope.relationship_types,
+          id_convention: "Use document IDs and parameter naming conventions.",
+        },
         sources: bench.dataset.sources.map((s) =>
           Object.fromEntries(
-            Object.entries(s).filter(
-              ([k]) => k !== "parameters" || s.document_id.startsWith("ALT-"),
-            ),
+            Object.entries(s).filter(([k]) => k !== "parameters"),
           ),
         ),
         scenarios: ["entity_extraction", "relationship_extraction"].includes(
@@ -363,14 +369,7 @@ export async function interceptApi(
               .filter((s) => s.difficulty === level)
               .map((s) =>
                 Object.fromEntries(
-                  [
-                    "id",
-                    "change_type",
-                    "difficulty",
-                    "split",
-                    "description",
-                    "changed_entity",
-                  ].map((k) => [k, s[k]]),
+                  ["id", "description", "changed_entity"].map((k) => [k, s[k]]),
                 ),
               ),
         confirmed_feedback: [],

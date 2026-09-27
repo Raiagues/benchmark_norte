@@ -13,6 +13,7 @@ from . import storage
 from .dataset import cases_for_task, digest, task_plan
 from .evaluate import consistency
 from .providers import utcnow
+from .inspection import failure_counts, inspect_impacts
 
 EVALUATED = {"COMPLETED_CORRECT", "COMPLETED_INCORRECT"}
 TERMINAL = EVALUATED | {"TECHNICAL_ERROR", "INTERRUPTED"}
@@ -788,6 +789,7 @@ def snapshot(batch_id, db=None):
         }
         | {
             "has_result": c["status"] in EVALUATED and valid_result(c["result"]),
+            "failure_counts": failure_counts((c["result"] or {}).get("metrics", {})),
             "latency_seconds": (c["result"] or c.get("call") or {}).get(
                 "latency_seconds"
             ),
@@ -898,6 +900,13 @@ def call_detail(cid, db=None):
         "prompt_hash": digest(prompt),
         "input": json.loads(prompt.split("\nINPUT\n", 1)[1]),
         "result": result,
+        "failure_counts": failure_counts(result["metrics"]) if result else {},
+        "inspection": inspect_impacts(result, snap["dataset"])
+        if result and "scenarios" in result["metrics"]
+        else [],
+        "input_policy": snap["dataset"]["manifest"].get(
+            "input_policy", "legacy_explicit_context"
+        ),
         "ground_truth": snap["dataset"]["ground_truth"],
         "schema": snap["schemas"][info["task"]],
         "comparison": compare_graph(result["parsed_output"], snap["dataset"])

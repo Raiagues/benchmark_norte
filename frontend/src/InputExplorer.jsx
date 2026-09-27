@@ -6,7 +6,7 @@ import PdfViewer from "./PdfViewer";
 import { taskLabel } from "./liveLabels";
 export const inputTabs = () => [
   ["original", L("Documentos originais", "Original documents")],
-  ["normalized", L("Texto normalizado", "Normalized input")],
+  ["project", L("Documentos do projeto", "Project documents")],
   ["requirements", L("Requisitos", "Requirements")],
   ["configuration", L("Configuração", "Configuration")],
   ["scenarios", L("Cenários", "Scenarios")],
@@ -195,29 +195,16 @@ export default function InputExplorer({ api, ds, runs, sourcePage = false }) {
               </a>
             </div>
             <Tabs
-              value={
-                sourcePage
-                  ? docTab === "pdf"
-                    ? "pdf"
-                    : docTab === "facts"
-                      ? "facts"
-                      : "metadata"
-                  : docTab
-              }
+              value={docTab}
               onChange={setDocTab}
               items={[
                 ["pdf", L("PDF original", "Original PDF")],
-                ["facts", L("Fatos normalizados", "Normalized facts")],
                 ["metadata", L("Proveniência", "Provenance")],
               ]}
             />
-            {(
-              sourcePage
-                ? docTab === "metadata" || !["pdf", "facts"].includes(docTab)
-                : docTab === "metadata"
-            ) ? (
+            {docTab === "metadata" ? (
               <SourceMetadata source={source} />
-            ) : docTab === "pdf" ? (
+            ) : (
               <PdfViewer
                 source={source}
                 downloading={downloading}
@@ -244,21 +231,13 @@ export default function InputExplorer({ api, ds, runs, sourcePage = false }) {
                   }
                 }}
               />
-            ) : (
-              <>
-                <p className="inline-note">
-                  {L(
-                    "Transcrição técnica normalizada para o benchmark. Não é o PDF nem uma resposta do modelo.",
-                    "Technical facts normalized for the benchmark. This is neither the PDF nor a model response.",
-                  )}
-                </p>
-                <SourceFacts ds={ds} id={source.document_id} />
-              </>
             )}
           </section>
         </div>
       )}
-      {!sourcePage && tab === "normalized" && <NormalizedInputs ds={ds} />}
+      {!sourcePage && ["project", "normalized"].includes(tab) && (
+        <ProjectInputs ds={ds} />
+      )}
       {!sourcePage && tab === "requirements" && <Requirements ds={ds} />}
       {!sourcePage && tab === "configuration" && <Configuration ds={ds} />}
       {!sourcePage && tab === "scenarios" && (
@@ -336,12 +315,12 @@ export function SourceMetadata({ source: s }) {
     </div>
   );
 }
-function NormalizedInputs({ ds }) {
-  const [doc, setDoc] = useState("FAN");
+function ProjectInputs({ ds }) {
+  const [doc, setDoc] = useState("PROJECT");
   return (
     <div className="explorer-columns">
       <aside className="artifact-list">
-        {Object.keys(ds.documents).map((id) => (
+        {["PROJECT", "REQUIREMENTS"].map((id) => (
           <button key={id} aria-pressed={doc === id} onClick={() => setDoc(id)}>
             <Icon name={id === "PROJECT" ? "config" : "document"} />
             <span>
@@ -368,8 +347,8 @@ function NormalizedInputs({ ds }) {
         </div>
         <p className="inline-note">
           {L(
-            "Conteúdo literal do benchmark. Em L2, as pistas PROJECT-05 e PROJECT-06 são removidas. O modo PDF usa o texto integral extraído pelo mesmo parser para todos os modelos.",
-            "Literal benchmark content. L2 omits hints PROJECT-05 and PROJECT-06. PDF mode uses full text extracted by the same parser for all models.",
+            "Documentos de autoria do projeto, enviados junto ao texto integral dos PDFs. Não contêm o gabarito de relações ou de impactos.",
+            "Project-authored documents, sent alongside full PDF text. They do not contain the relationship or impact answer key.",
           )}
         </p>
         <SourceFacts ds={ds} id={doc} />
@@ -961,12 +940,15 @@ function Vocabulary({ ds }) {
   return (
     <section className="product-panel">
       <h2>
-        {L("Vocabulário enviado aos modelos", "Vocabulary supplied to models")}
+        {L(
+          "Esquema e referência de avaliação",
+          "Schema and evaluation reference",
+        )}
       </h2>
       <p>
         {L(
-          "IDs e tipos delimitam o que pode ser extraído. Eles não contêm o gabarito das relações.",
-          "IDs and types define the extraction scope. They do not contain the relationship answer key.",
+          "O modelo recebe os tipos permitidos e a convenção de nomes. O inventário de IDs abaixo pertence ao avaliador e não é enviado ao modelo.",
+          "The model receives allowed types and naming conventions. The ID inventory below belongs to the evaluator and is not sent to the model.",
         )}
       </p>
       <div className="vocabulary-grid">
@@ -990,7 +972,12 @@ function Vocabulary({ ds }) {
         </div>
       </div>
       <details className="quiet-details">
-        <summary>{L("Ver IDs e tipos", "Inspect IDs and types")}</summary>
+        <summary>
+          {L(
+            "IDs de referência · somente avaliador",
+            "Reference IDs · evaluator only",
+          )}
+        </summary>
         <div className="table-scroll">
           <table>
             <tbody>

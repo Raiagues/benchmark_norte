@@ -80,7 +80,7 @@ export default function RunPage({
   const [tab, setTab] = useState("models"),
     [selectedTasks, setTasks] = useState(config.tasks),
     [repetitions, setRepetitions] = useState(config.defaults.repetitions),
-    [mode, setMode] = useState("controlled_text"),
+    [mode] = useState("pdf_text"),
     [experiment, setExperiment] = useState("first_pass"),
     [baseline, setBaseline] = useState(""),
     [checking, setChecking] = useState(false),
@@ -209,6 +209,15 @@ export default function RunPage({
   async function start(e) {
     e.preventDefault();
     setMessage("");
+    if (!config.pdf_ready) {
+      setMessage(
+        L(
+          "Faltam PDFs originais. Abra Fontes e proveniência e baixe os documentos ausentes.",
+          "Original PDFs are missing. Open Sources and provenance to download the missing documents.",
+        ),
+      );
+      return;
+    }
     if (pending.length) {
       setMessage(
         L(
@@ -250,7 +259,6 @@ export default function RunPage({
     if (i >= 0) {
       setSelection({ models: [i], depths: { [i]: depth(m) } });
       setTasks(run.metadata.tasks);
-      setMode(run.metadata.input_mode);
     }
   }
   const details = typeof detail === "number" ? checkFor(detail) : null;
@@ -524,18 +532,20 @@ export default function RunPage({
             <div className="options-fields">
               <label>
                 {t("Documentos")}
-                <select
-                  disabled={locked || experiment === "feedback_assisted"}
-                  value={mode}
-                  onChange={(e) => setMode(e.target.value)}
-                >
-                  <option value="controlled_text">
-                    {t("Texto controlado")}
-                  </option>
-                  <option value="pdf_text" disabled={!config.pdf_ready}>
-                    {t("Texto dos PDFs")}
-                  </option>
-                </select>
+                <strong className="fixed-document-mode">
+                  {L(
+                    "PDFs originais + documentos do projeto",
+                    "Original PDFs + project documents",
+                  )}
+                </strong>
+                {!config.pdf_ready && (
+                  <a href="#sources" className="answer-bad">
+                    {L(
+                      "Faltam PDFs · abrir fontes",
+                      "Missing PDFs · open sources",
+                    )}
+                  </a>
+                )}
               </label>
               <label>
                 {t("Modo")}

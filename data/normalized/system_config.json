@@ -1,0 +1,10 @@
+{
+  "document_id": "CONFIG",
+  "kind": "benchmark_assumption",
+  "fan_voltage_V": 5,
+  "sensor_voltage_V": 3.3,
+  "activation_threshold_degC": 35,
+  "control": "on_off",
+  "controller_concept": "ESP32",
+  "hardware_verified": false
+}

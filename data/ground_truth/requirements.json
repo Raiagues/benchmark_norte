@@ -1,0 +1,37 @@
+[
+  {
+    "id": "REQ-001",
+    "text": "PRODUCT REQUIREMENT: Steady fan current shall be <= 0.08 A at the project operating point. Review the fan current rating; verify with a current measurement after five minutes. The limit is a project choice, not a Noctua specification.",
+    "critical": true,
+    "kind": "product_requirement",
+    "manufacturer_specification": false
+  },
+  {
+    "id": "REQ-002",
+    "text": "PRODUCT REQUIREMENT: Active steady fan speed shall be >= 4000 rpm at the project operating point after five minutes. Review the fan speed rating; use V-SPEED, a tachometer test. A nominal datasheet speed is not a hardware pass result.",
+    "critical": false,
+    "kind": "product_requirement",
+    "manufacturer_specification": false
+  },
+  {
+    "id": "REQ-003",
+    "text": "PRODUCT REQUIREMENT: The controller shall issue ON when the latest supplied measured-temperature value is > 35 degrees C and OFF at <= 35 degrees C. CFG-THRESHOLD implements this boundary. Verify with injected temperature values at 34, 35 and 36 degrees C. This is a software decision test, not a sensor-accuracy or spin-up-time test.",
+    "critical": false,
+    "kind": "product_requirement",
+    "manufacturer_specification": false
+  },
+  {
+    "id": "REQ-004",
+    "text": "PRODUCT REQUIREMENT: The configured sensor supply shall stay within the TMP117 full-temperature-range recommended envelope, 1.8 to 5.5 V. Review P-SENSOR-SUPPLY and CFG-SENSOR-SUPPLY; verify the rail separately.",
+    "critical": true,
+    "kind": "product_requirement",
+    "manufacturer_specification": false
+  },
+  {
+    "id": "REQ-005",
+    "text": "PRODUCT REQUIREMENT: The selected switch's published continuous-current rating shall be >= 0.10 A, the fixed project allocation. Review P-DRIVER-CURRENT. This documentary rating check is not a thermal qualification and does not regulate fan current.",
+    "critical": true,
+    "kind": "product_requirement",
+    "manufacturer_specification": false
+  }
+]

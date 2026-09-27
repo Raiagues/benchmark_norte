@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+umask 077
+mkdir -p .runtime
+chmod 700 .runtime
+exec 9>.runtime/lifecycle.lock
+flock -n 9 || { echo 'Outra operação está em andamento. Aguarde.'; exit 1; }
+source scripts/site_process.sh
+if [[ ! -x .venv/bin/python || ! -d frontend/node_modules || ! -f .env ]]; then
+    echo 'Primeiro execute ./setup. Ele instala as dependências e cria o .env.'
+    exit 1
+fi
+if ! site_running; then
+    .venv/bin/python - <<'PY'
+import socket, sys
+with socket.socket() as s:
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        s.bind(('127.0.0.1', 8000))
+    except OSError:
+        print('A porta 8000 está em uso. Feche o servidor anterior antes de executar ./start.')
+        sys.exit(1)
+PY
+    echo 'Preparando o site…'
+    if ! npm --prefix frontend run build >.runtime/build.log 2>&1; then
+        echo 'Não foi possível preparar a interface. Consulte .runtime/build.log ou execute ./setup.'
+        exit 1
+    fi
+    nohup setsid "$PWD/.venv/bin/python" -m uvicorn benchmark.api:app --host 127.0.0.1 --port 8000 --no-access-log --no-use-colors --timeout-graceful-shutdown 5 >.runtime/site.log 2>&1 < /dev/null 9>&- &
+    echo "$!" >.runtime/site.pid
+    if ! .venv/bin/python - <<'PY'
+import json, time, urllib.request
+for _ in range(100):
+    try:
+        with urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=1) as response:
+            if json.load(response).get('app') == 'norte-benchmark':
+                raise SystemExit(0)
+    except (OSError, ValueError):
+        pass
+    time.sleep(0.1)
+raise SystemExit(1)
+PY
+    then
+        echo 'O servidor não iniciou. Consulte .runtime/site.log.'
+        if site_running; then read -r site_pid < .runtime/site.pid; kill "$site_pid"; fi
+        rm -f .runtime/site.pid
+        exit 1
+    fi
+fi
+echo 'Site aberto em http://127.0.0.1:8000'
+echo 'Para encerrar, execute ./stop.'
+if [[ "${NORTE_NO_BROWSER:-0}" != 1 ]]; then
+    .venv/bin/python -m webbrowser -t http://127.0.0.1:8000 >/dev/null 2>&1 9>&- || true
+fi

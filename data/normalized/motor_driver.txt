@@ -1,0 +1,4 @@
+[DRIVER-01] Manufacturer: Texas Instruments. Exact part: TPS22919 (orderable TPS22919DCKR). Role: high-side load switch (DRIVER), used for fan on/off power control, not speed regulation.
+[DRIVER-02] P-DRIVER-CURRENT: maximum continuous current rating 1.5 A (features and section 6.1). This ceiling is not a guaranteed available current at every thermal condition and is not a current-regulator setpoint.
+[DRIVER-03] P-DRIVER-VOLTAGE: recommended input voltage range 1.6 to 5.5 V (section 6.3).
+[DRIVER-04] ON is active high. Recommended high input range is 1 to 5.5 V; low input range is 0 to 0.35 V (section 6.3).

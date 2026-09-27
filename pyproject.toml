@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "norte-benchmark"
+version = "1.1.0"
+description = "A small evidence-grounded engineering model benchmark"
+requires-python = ">=3.11"
+dependencies = ["fastapi==0.141.1", "uvicorn==0.54.0", "httpx==0.28.1", "pydantic==2.13.5", "python-dotenv==1.2.3", "pypdf==6.19.0", "fonttools==4.66.0"]
+
+[project.optional-dependencies]
+dev = ["pytest==8.3.5"]
+
+[project.scripts]
+norte = "benchmark.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["benchmark*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

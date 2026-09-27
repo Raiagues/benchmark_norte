@@ -1,0 +1,323 @@
+{
+  "nodes": [
+    {
+      "id": "FAN",
+      "type": "Component",
+      "name": "NF-A4x10 5V",
+      "source": "FAN",
+      "source_reference": "FAN-01"
+    },
+    {
+      "id": "SENSOR",
+      "type": "Component",
+      "name": "TMP117",
+      "source": "SENSOR",
+      "source_reference": "SENSOR-01"
+    },
+    {
+      "id": "DRIVER",
+      "type": "Component",
+      "name": "TPS22919",
+      "source": "DRIVER",
+      "source_reference": "DRIVER-01"
+    },
+    {
+      "id": "REQ-001",
+      "type": "Requirement",
+      "name": "Fan current limit",
+      "source": "REQUIREMENTS",
+      "source_reference": "REQ-001"
+    },
+    {
+      "id": "REQ-002",
+      "type": "Requirement",
+      "name": "Minimum steady speed",
+      "source": "REQUIREMENTS",
+      "source_reference": "REQ-002"
+    },
+    {
+      "id": "REQ-003",
+      "type": "Requirement",
+      "name": "Temperature switching decision",
+      "source": "REQUIREMENTS",
+      "source_reference": "REQ-003"
+    },
+    {
+      "id": "REQ-004",
+      "type": "Requirement",
+      "name": "Sensor supply envelope",
+      "source": "REQUIREMENTS",
+      "source_reference": "REQ-004"
+    },
+    {
+      "id": "REQ-005",
+      "type": "Requirement",
+      "name": "Switch current rating",
+      "source": "REQUIREMENTS",
+      "source_reference": "REQ-005"
+    },
+    {
+      "id": "P-FAN-CURRENT",
+      "type": "Parameter",
+      "name": "Fan rated current",
+      "source": "FAN",
+      "source_reference": "FAN-02"
+    },
+    {
+      "id": "P-FAN-SPEED",
+      "type": "Parameter",
+      "name": "Fan rotational speed",
+      "source": "FAN",
+      "source_reference": "FAN-03"
+    },
+    {
+      "id": "P-FAN-VOLTAGE",
+      "type": "Parameter",
+      "name": "Fan rated voltage",
+      "source": "FAN",
+      "source_reference": "FAN-04"
+    },
+    {
+      "id": "P-SENSOR-SUPPLY",
+      "type": "Parameter",
+      "name": "Sensor full-temperature supply envelope",
+      "source": "SENSOR",
+      "source_reference": "SENSOR-02"
+    },
+    {
+      "id": "P-DRIVER-CURRENT",
+      "type": "Parameter",
+      "name": "Switch continuous current rating",
+      "source": "DRIVER",
+      "source_reference": "DRIVER-02"
+    },
+    {
+      "id": "P-DRIVER-VOLTAGE",
+      "type": "Parameter",
+      "name": "Switch recommended input voltage",
+      "source": "DRIVER",
+      "source_reference": "DRIVER-03"
+    },
+    {
+      "id": "CFG-THRESHOLD",
+      "type": "Configuration",
+      "name": "Activation threshold",
+      "source": "PROJECT",
+      "source_reference": "PROJECT-03"
+    },
+    {
+      "id": "CFG-SENSOR-SUPPLY",
+      "type": "Configuration",
+      "name": "Sensor rail",
+      "source": "PROJECT",
+      "source_reference": "PROJECT-03"
+    },
+    {
+      "id": "V-SPEED",
+      "type": "Verification",
+      "name": "Tachometer test",
+      "source": "PROJECT",
+      "source_reference": "PROJECT-07"
+    }
+  ],
+  "parameters": [
+    {
+      "id": "P-FAN-CURRENT",
+      "values": [
+        0.05
+      ],
+      "unit": "A",
+      "qualifier": "rated",
+      "source_evidence": [
+        {
+          "document_id": "FAN",
+          "location": "FAN-02",
+          "excerpt": "P-FAN-CURRENT: rated current 0.05 A with +/-10% tolerance. This is a rating, not a measured system result."
+        }
+      ]
+    },
+    {
+      "id": "P-FAN-SPEED",
+      "values": [
+        4500
+      ],
+      "unit": "rpm",
+      "qualifier": "rated",
+      "source_evidence": [
+        {
+          "document_id": "FAN",
+          "location": "FAN-03",
+          "excerpt": "P-FAN-SPEED: rotational speed 4500 rpm with +/-10% tolerance."
+        }
+      ]
+    },
+    {
+      "id": "P-FAN-VOLTAGE",
+      "values": [
+        5
+      ],
+      "unit": "V",
+      "qualifier": "rated",
+      "source_evidence": [
+        {
+          "document_id": "FAN",
+          "location": "FAN-04",
+          "excerpt": "P-FAN-VOLTAGE: rated voltage 5 V; operating voltage 4.0 to 5.5 V."
+        }
+      ]
+    },
+    {
+      "id": "P-SENSOR-SUPPLY",
+      "values": [
+        1.8,
+        5.5
+      ],
+      "unit": "V",
+      "qualifier": "range",
+      "source_evidence": [
+        {
+          "document_id": "SENSOR",
+          "location": "SENSOR-02",
+          "excerpt": "P-SENSOR-SUPPLY: recommended supply range 1.8 to 5.5 V for ambient temperatures -55 to 150 degrees C (section 6.3). The lower-temperature subrange -55 to 70 degrees C permits 1.7 to 5.5 V. The project deliberately uses the full-temperature-range voltage envelope."
+        }
+      ]
+    },
+    {
+      "id": "P-DRIVER-CURRENT",
+      "values": [
+        1.5
+      ],
+      "unit": "A",
+      "qualifier": "maximum",
+      "source_evidence": [
+        {
+          "document_id": "DRIVER",
+          "location": "DRIVER-02",
+          "excerpt": "P-DRIVER-CURRENT: maximum continuous current rating 1.5 A (features and section 6.1). This ceiling is not a guaranteed available current at every thermal condition and is not a current-regulator setpoint."
+        }
+      ]
+    },
+    {
+      "id": "P-DRIVER-VOLTAGE",
+      "values": [
+        1.6,
+        5.5
+      ],
+      "unit": "V",
+      "qualifier": "range",
+      "source_evidence": [
+        {
+          "document_id": "DRIVER",
+          "location": "DRIVER-03",
+          "excerpt": "P-DRIVER-VOLTAGE: recommended input voltage range 1.6 to 5.5 V (section 6.3)."
+        }
+      ]
+    },
+    {
+      "id": "CFG-THRESHOLD",
+      "values": [
+        35
+      ],
+      "unit": "degC",
+      "qualifier": "configured",
+      "source_evidence": [
+        {
+          "document_id": "PROJECT",
+          "location": "PROJECT-03",
+          "excerpt": "CFG-THRESHOLD = 35 degrees C. CFG-SENSOR-SUPPLY = 3.3 V. Configuration values are project choices, not manufacturer specifications."
+        }
+      ]
+    },
+    {
+      "id": "CFG-SENSOR-SUPPLY",
+      "values": [
+        3.3
+      ],
+      "unit": "V",
+      "qualifier": "configured",
+      "source_evidence": [
+        {
+          "document_id": "PROJECT",
+          "location": "PROJECT-03",
+          "excerpt": "CFG-THRESHOLD = 35 degrees C. CFG-SENSOR-SUPPLY = 3.3 V. Configuration values are project choices, not manufacturer specifications."
+        }
+      ]
+    },
+    {
+      "id": "REQ-001",
+      "values": [
+        0.08
+      ],
+      "unit": "A",
+      "qualifier": "maximum",
+      "source_evidence": [
+        {
+          "document_id": "REQUIREMENTS",
+          "location": "REQ-001",
+          "excerpt": "PRODUCT REQUIREMENT: Steady fan current shall be <= 0.08 A at the project operating point. Review the fan current rating; verify with a current measurement after five minutes. The limit is a project choice, not a Noctua specification."
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "values": [
+        4000
+      ],
+      "unit": "rpm",
+      "qualifier": "minimum",
+      "source_evidence": [
+        {
+          "document_id": "REQUIREMENTS",
+          "location": "REQ-002",
+          "excerpt": "PRODUCT REQUIREMENT: Active steady fan speed shall be >= 4000 rpm at the project operating point after five minutes. Review the fan speed rating; use V-SPEED, a tachometer test. A nominal datasheet speed is not a hardware pass result."
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "values": [
+        35
+      ],
+      "unit": "degC",
+      "qualifier": "threshold",
+      "source_evidence": [
+        {
+          "document_id": "REQUIREMENTS",
+          "location": "REQ-003",
+          "excerpt": "PRODUCT REQUIREMENT: The controller shall issue ON when the latest supplied measured-temperature value is > 35 degrees C and OFF at <= 35 degrees C. CFG-THRESHOLD implements this boundary. Verify with injected temperature values at 34, 35 and 36 degrees C. This is a software decision test, not a sensor-accuracy or spin-up-time test."
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "values": [
+        1.8,
+        5.5
+      ],
+      "unit": "V",
+      "qualifier": "range",
+      "source_evidence": [
+        {
+          "document_id": "REQUIREMENTS",
+          "location": "REQ-004",
+          "excerpt": "PRODUCT REQUIREMENT: The configured sensor supply shall stay within the TMP117 full-temperature-range recommended envelope, 1.8 to 5.5 V. Review P-SENSOR-SUPPLY and CFG-SENSOR-SUPPLY; verify the rail separately."
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "values": [
+        0.1
+      ],
+      "unit": "A",
+      "qualifier": "minimum",
+      "source_evidence": [
+        {
+          "document_id": "REQUIREMENTS",
+          "location": "REQ-005",
+          "excerpt": "PRODUCT REQUIREMENT: The selected switch's published continuous-current rating shall be >= 0.10 A, the fixed project allocation. Review P-DRIVER-CURRENT. This documentary rating check is not a thermal qualification and does not regulate fan current."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+umask 077
+mkdir -p .runtime
+chmod 700 .runtime
+exec 9>.runtime/lifecycle.lock
+flock -n 9 || { echo 'Outra operação está em andamento. Aguarde.'; exit 1; }
+trap 'echo "A instalação não terminou. Consulte .runtime/setup.log para ver o erro."' ERR
+command -v python3 >/dev/null || { echo 'Falta Python 3.11 ou superior. Instale-o e execute ./setup novamente.'; exit 1; }
+python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || { echo 'É necessário Python 3.11 ou superior.'; exit 1; }
+command -v node >/dev/null && command -v npm >/dev/null || { echo 'Falta Node.js 20.19 ou superior com npm. Instale-os e execute ./setup novamente.'; exit 1; }
+node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>20||(a===20&&b>=19)?0:1)' || { echo 'É necessário Node.js 20.19 ou superior.'; exit 1; }
+echo 'Preparando o ambiente Python…'
+python3 -m venv .venv >.runtime/setup.log 2>&1
+.venv/bin/python -m pip install -r requirements.lock >>.runtime/setup.log 2>&1
+echo 'Preparando a interface…'
+npm --prefix frontend ci --no-audit --no-fund >>.runtime/setup.log 2>&1
+npm --prefix frontend run build >>.runtime/setup.log 2>&1
+if [[ ! -e .env ]]; then cp .env.example .env; fi
+chmod 600 .env
+.venv/bin/python -m benchmark.cli init >>.runtime/setup.log 2>&1
+if git rev-parse --git-dir >/dev/null 2>&1; then git config core.hooksPath .githooks; fi
+echo 'Pronto. Preencha as chaves no arquivo .env e execute ./start.'
+echo 'Você também pode abrir sem chaves para conferir as pendências no site.'

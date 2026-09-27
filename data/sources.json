@@ -1,0 +1,138 @@
+[
+  {
+    "document_id": "FAN",
+    "manufacturer": "Noctua",
+    "part_number": "NF-A4x10 5V",
+    "official_datasheet_url": "https://cdn.noctua.at/media/e4b04217/Noctua%20NF-A4x10%205V%20Specification.pdf",
+    "revision": "Detailed specification, 7 pages",
+    "parameters": {
+      "rated_current_A": 0.05,
+      "current_tolerance_percent": 10,
+      "speed_rpm": 4500,
+      "speed_tolerance_percent": 10,
+      "rated_voltage_V": 5,
+      "operating_voltage_V": [
+        4,
+        5.5
+      ]
+    },
+    "sections": [
+      "p4 section 2.2",
+      "p6 section 3.1",
+      "p7 remarks"
+    ],
+    "date_accessed": "2026-09-27",
+    "source_type": "manufacturer_pdf",
+    "redistribution": "URL and independently worded technical facts only; original document not redistributed.",
+    "local_pdf": "data/pdfs/fan.pdf",
+    "checked_document_sha256": "989f5ccc244424262921a60d8cf2dbe62972d4913196d8bacf4d20834aacbc6c"
+  },
+  {
+    "document_id": "SENSOR",
+    "manufacturer": "Texas Instruments",
+    "part_number": "TMP117AIDRVR",
+    "official_datasheet_url": "https://www.ti.com/lit/ds/symlink/tmp117.pdf",
+    "revision": "SNOSD82D, September 2022",
+    "parameters": {
+      "full_temperature_supply_V": [
+        1.8,
+        5.5
+      ],
+      "full_temperature_degC": [
+        -55,
+        150
+      ],
+      "restricted_temperature_supply_V": [
+        1.7,
+        5.5
+      ],
+      "restricted_temperature_degC": [
+        -55,
+        70
+      ]
+    },
+    "sections": [
+      "p5 section 6.3"
+    ],
+    "date_accessed": "2026-09-27",
+    "source_type": "manufacturer_pdf",
+    "redistribution": "URL and independently worded technical facts only; original document not redistributed.",
+    "local_pdf": "data/pdfs/sensor.pdf",
+    "checked_document_sha256": "637a143dda6317d22222e265de47ceac72ba6aed4461ad460efbe84e16b936df"
+  },
+  {
+    "document_id": "DRIVER",
+    "manufacturer": "Texas Instruments",
+    "part_number": "TPS22919DCKR",
+    "official_datasheet_url": "https://www.ti.com/lit/ds/symlink/tps22919.pdf",
+    "revision": "SLVSEN5B, May 2019",
+    "parameters": {
+      "input_voltage_V": [
+        1.6,
+        5.5
+      ],
+      "continuous_current_rating_A": 1.5,
+      "ON_high_V": [
+        1,
+        5.5
+      ],
+      "ON_low_V": [
+        0,
+        0.35
+      ]
+    },
+    "sections": [
+      "p1 features",
+      "p4 sections 6.1 and 6.3"
+    ],
+    "date_accessed": "2026-09-27",
+    "source_type": "manufacturer_pdf",
+    "redistribution": "URL and independently worded technical facts only; original document not redistributed.",
+    "local_pdf": "data/pdfs/driver.pdf",
+    "checked_document_sha256": "743c59b01fb0891d2d0f1faba779161cd2d2b6c18edf68e6d5b3279016240c84"
+  },
+  {
+    "document_id": "ALT-FAN",
+    "manufacturer": "Noctua",
+    "part_number": "NF-A4x20 5V",
+    "official_datasheet_url": "https://cdn.noctua.at/media/8d1b5d38/Noctua%20NF-A4x20%205V%20Specification.pdf",
+    "revision": "Detailed specification dated 18 August 2016, 7 pages",
+    "parameters": {
+      "rated_current_A": 0.1,
+      "current_tolerance_percent": 10,
+      "speed_rpm": 5000,
+      "speed_tolerance_percent": 10,
+      "rated_voltage_V": 5
+    },
+    "sections": [
+      "p4 section 2.2",
+      "p6 section 3.1",
+      "p7 remarks"
+    ],
+    "date_accessed": "2026-09-27",
+    "source_type": "manufacturer_pdf",
+    "redistribution": "URL and independently worded technical facts only; original document not redistributed.",
+    "local_pdf": null
+  },
+  {
+    "document_id": "ALT-DRIVER",
+    "manufacturer": "Texas Instruments",
+    "part_number": "TPS22917DBVR",
+    "official_datasheet_url": "https://www.ti.com/lit/ds/symlink/tps22917.pdf",
+    "revision": "SLVSDW8B, December 2021",
+    "parameters": {
+      "continuous_current_rating_A": 2,
+      "input_voltage_V": [
+        1,
+        5.5
+      ]
+    },
+    "sections": [
+      "p1 features"
+    ],
+    "date_accessed": "2026-09-27",
+    "source_type": "manufacturer_pdf",
+    "redistribution": "URL and independently worded technical facts only; original document not redistributed.",
+    "local_pdf": null
+  }
+]

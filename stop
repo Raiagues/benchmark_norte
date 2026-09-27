@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+umask 077
+mkdir -p .runtime
+exec 9>.runtime/lifecycle.lock
+flock -n 9 || { echo 'Outra operação está em andamento. Aguarde.'; exit 1; }
+source scripts/site_process.sh
+if site_running; then
+    read -r site_pid < .runtime/site.pid
+    kill "$site_pid"
+    for ((i=0; i<100; i++)); do
+        if ! site_running; then break; fi
+        sleep 0.1
+    done
+    if site_running; then kill -KILL "$site_pid"; fi
+    echo 'Site encerrado. Avaliações interrompidas não serão retomadas automaticamente.'
+else
+    echo 'O site já está parado.'
+fi
+rm -f .runtime/site.pid

@@ -1,0 +1,5 @@
+[FAN-01] Manufacturer: Noctua. Exact part: NF-A4x10 5V. Role: fan (FAN).
+[FAN-02] P-FAN-CURRENT: rated current 0.05 A with +/-10% tolerance. This is a rating, not a measured system result.
+[FAN-03] P-FAN-SPEED: rotational speed 4500 rpm with +/-10% tolerance.
+[FAN-04] P-FAN-VOLTAGE: rated voltage 5 V; operating voltage 4.0 to 5.5 V.
+[FAN-05] The detailed specification's conditions are five minutes of operation, 25 degrees C, 65% humidity, vertical mounting in free air. The website's 'max current' label differs from the PDF's 'rated +/-10%' label; this fixture follows the detailed PDF.

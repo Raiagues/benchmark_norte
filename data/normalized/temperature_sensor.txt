@@ -1,0 +1,3 @@
+[SENSOR-01] Manufacturer: Texas Instruments. Exact part: TMP117 (WSON orderable TMP117AIDRVR). Role: digital temperature sensor (SENSOR).
+[SENSOR-02] P-SENSOR-SUPPLY: recommended supply range 1.8 to 5.5 V for ambient temperatures -55 to 150 degrees C (section 6.3). The lower-temperature subrange -55 to 70 degrees C permits 1.7 to 5.5 V. The project deliberately uses the full-temperature-range voltage envelope.
+[SENSOR-03] Communication: I2C / SMBus. Sensor accuracy and conversion timing are outside this benchmark's scored scope.

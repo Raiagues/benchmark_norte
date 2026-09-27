@@ -1,0 +1,420 @@
+[
+  {
+    "id": "CHG-001",
+    "change_type": "component",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Replace NF-A4x10 5V with Noctua NF-A4x20 5V. The alternative manufacturer PDF specifies 5 V rated, 0.10 A rated current with +/-10% tolerance and 5000 rpm speed with +/-10% tolerance. Other tests and the fixed switch allocation are unchanged. See ALT-FAN.",
+    "changed_entity": "FAN",
+    "affected_requirements": [
+      "REQ-001",
+      "REQ-002"
+    ],
+    "unaffected_requirements": [
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-001",
+        "relationship": "constrains",
+        "target": "P-FAN-CURRENT"
+      },
+      {
+        "source": "REQ-002",
+        "relationship": "constrains",
+        "target": "P-FAN-SPEED"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-001"
+    ],
+    "expected_reason": "The fan identity changes, so the old current and speed evidence no longer qualifies the new fan.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-001",
+        "location": "change",
+        "excerpt": "Replace NF-A4x10 5V with Noctua NF-A4x20 5V. The alternative manufacturer PDF specifies 5 V rated, 0.10 A rated current with +/-10% tolerance and 5000 rpm speed with +/-10% tolerance. Other tests and the fixed switch allocation are unchanged. See ALT-FAN."
+      }
+    ],
+    "title": "Trocar ventilador pelo NF-A4x20 5V"
+  },
+  {
+    "id": "CHG-002",
+    "change_type": "component",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Replace TPS22919 with TI TPS22917DBVR, rated for 2 A continuous current and 1 to 5.5 V input (ALT-DRIVER). The 5 V fan-terminal operating point is held fixed for independent current/speed tests.",
+    "changed_entity": "DRIVER",
+    "affected_requirements": [
+      "REQ-005"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003",
+      "REQ-004"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-005",
+        "relationship": "constrains",
+        "target": "P-DRIVER-CURRENT"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-005"
+    ],
+    "expected_reason": "The switch rating document belongs to a different component; review the new rating even if it is sufficient.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-002",
+        "location": "change",
+        "excerpt": "Replace TPS22919 with TI TPS22917DBVR, rated for 2 A continuous current and 1 to 5.5 V input (ALT-DRIVER). The 5 V fan-terminal operating point is held fixed for independent current/speed tests."
+      }
+    ],
+    "title": "Trocar chave pela TPS22917"
+  },
+  {
+    "id": "CHG-003",
+    "change_type": "requirement",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Change the project steady fan current ceiling from 0.08 A to 0.04 A; all components and operating conditions remain identical.",
+    "changed_entity": "REQ-001",
+    "affected_requirements": [
+      "REQ-001"
+    ],
+    "unaffected_requirements": [
+      "REQ-002",
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-001",
+        "relationship": "constrains",
+        "target": "P-FAN-CURRENT"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-001"
+    ],
+    "expected_reason": "The previous acceptance decision used a different current ceiling.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-003",
+        "location": "change",
+        "excerpt": "Change the project steady fan current ceiling from 0.08 A to 0.04 A; all components and operating conditions remain identical."
+      }
+    ],
+    "title": "Reduzir corrente máxima para 0,04 A"
+  },
+  {
+    "id": "CHG-004",
+    "change_type": "requirement",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Increase the minimum required steady fan speed from 4000 rpm to 4600 rpm.",
+    "changed_entity": "REQ-002",
+    "affected_requirements": [
+      "REQ-002"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-002",
+        "relationship": "constrains",
+        "target": "P-FAN-SPEED"
+      }
+    ],
+    "critical_requirements": [],
+    "expected_reason": "The speed acceptance threshold changed; a nominal rating does not prove the revised requirement.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-004",
+        "location": "change",
+        "excerpt": "Increase the minimum required steady fan speed from 4000 rpm to 4600 rpm."
+      }
+    ],
+    "title": "Aumentar velocidade mínima para 4600 rpm"
+  },
+  {
+    "id": "CHG-005",
+    "change_type": "configuration",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Change CFG-THRESHOLD from 35 degrees C to 40 degrees C, while REQ-003 still specifies 35 degrees C.",
+    "changed_entity": "CFG-THRESHOLD",
+    "affected_requirements": [
+      "REQ-003"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-003",
+        "relationship": "depends_on",
+        "target": "CFG-THRESHOLD"
+      }
+    ],
+    "critical_requirements": [],
+    "expected_reason": "The implemented comparison boundary changes and must be checked against the unchanged requirement.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-005",
+        "location": "change",
+        "excerpt": "Change CFG-THRESHOLD from 35 degrees C to 40 degrees C, while REQ-003 still specifies 35 degrees C."
+      }
+    ],
+    "title": "Alterar temperatura de ativação para 40 °C"
+  },
+  {
+    "id": "CHG-006",
+    "change_type": "configuration",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Change CFG-SENSOR-SUPPLY from 3.3 V to 1.7 V. The project still adopts the full-temperature-range 1.8 to 5.5 V envelope.",
+    "changed_entity": "CFG-SENSOR-SUPPLY",
+    "affected_requirements": [
+      "REQ-004"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-004",
+        "relationship": "depends_on",
+        "target": "CFG-SENSOR-SUPPLY"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-004"
+    ],
+    "expected_reason": "The sensor rail is below the project-adopted envelope even though the datasheet permits 1.7 V over a restricted temperature range.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-006",
+        "location": "change",
+        "excerpt": "Change CFG-SENSOR-SUPPLY from 3.3 V to 1.7 V. The project still adopts the full-temperature-range 1.8 to 5.5 V envelope."
+      }
+    ],
+    "title": "Configurar alimentação do sensor em 1,7 V"
+  },
+  {
+    "id": "CHG-007",
+    "change_type": "document",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Correct an internal transcription: the design review had used the restricted-temperature 1.7 V lower limit. Its reference must now use the full-temperature-range 1.8 V lower limit from section 6.3. This is a project documentation correction, not a claimed manufacturer datasheet revision.",
+    "changed_entity": "P-SENSOR-SUPPLY",
+    "affected_requirements": [
+      "REQ-004"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-004",
+        "relationship": "constrains",
+        "target": "P-SENSOR-SUPPLY"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-004"
+    ],
+    "expected_reason": "The provenance and envelope used in the voltage review have changed.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-007",
+        "location": "change",
+        "excerpt": "Correct an internal transcription: the design review had used the restricted-temperature 1.7 V lower limit. Its reference must now use the full-temperature-range 1.8 V lower limit from section 6.3. This is a project documentation correction, not a claimed manufacturer datasheet revision."
+      }
+    ],
+    "title": "Corrigir limite de tensão no documento"
+  },
+  {
+    "id": "CHG-008",
+    "change_type": "no_impact",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Rename the fan display label from Cooling fan to Cabinet fan; exact part number, technical parameters and test evidence are identical.",
+    "changed_entity": "FAN",
+    "affected_requirements": [],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [],
+    "critical_requirements": [],
+    "expected_reason": "Only the display label changes; no acceptance evidence changes.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-008",
+        "location": "change",
+        "excerpt": "Rename the fan display label from Cooling fan to Cabinet fan; exact part number, technical parameters and test evidence are identical."
+      }
+    ],
+    "title": "Renomear um componente"
+  },
+  {
+    "id": "CHG-009",
+    "change_type": "no_impact",
+    "difficulty": "L1_DIRECT",
+    "split": "core",
+    "description": "Reformat the requirements document from plain text to a table. IDs, wording, numerical values and verification evidence are byte-for-byte identical.",
+    "changed_entity": "DOC-FORMAT",
+    "affected_requirements": [],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [],
+    "critical_requirements": [],
+    "expected_reason": "Presentation alone does not invalidate technical verification.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-009",
+        "location": "change",
+        "excerpt": "Reformat the requirements document from plain text to a table. IDs, wording, numerical values and verification evidence are byte-for-byte identical."
+      }
+    ],
+    "title": "Alterar a formatação do documento"
+  },
+  {
+    "id": "CHG-010",
+    "change_type": "component",
+    "difficulty": "L2_ONE_HOP",
+    "split": "core",
+    "description": "Evaluate replacing the installed Noctua NF-A4x10 5V with the real Noctua NF-A4x20 5V. The alternative manufacturer datasheet in ALT-FAN gives a rated current of 0.10 A with a 10 percent tolerance and a speed of 5000 rpm with a 10 percent tolerance at 5 V. This is a proposed replacement; no hardware change or measurement is claimed.",
+    "changed_entity": "FAN",
+    "affected_requirements": [
+      "REQ-001",
+      "REQ-002"
+    ],
+    "unaffected_requirements": [
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-001",
+        "relationship": "constrains",
+        "target": "P-FAN-CURRENT"
+      },
+      {
+        "source": "REQ-002",
+        "relationship": "constrains",
+        "target": "P-FAN-SPEED"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-001"
+    ],
+    "expected_reason": "The documented replacement changes both the current and speed characteristics supporting the existing current and speed requirements. Both require review even though the nominal speed increases. The source is the real alternative fan datasheet; no invented fan specification is used.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-010",
+        "location": "change",
+        "excerpt": "Evaluate replacing the installed Noctua NF-A4x10 5V with the real Noctua NF-A4x20 5V. The alternative manufacturer datasheet in ALT-FAN gives a rated current of 0.10 A with a 10 percent tolerance and a speed of 5000 rpm with a 10 percent tolerance at 5 V. This is a proposed replacement; no hardware change or measurement is claimed."
+      }
+    ],
+    "title": "Avaliar a troca do ventilador pelas especificações"
+  },
+  {
+    "id": "CHG-011",
+    "change_type": "configuration",
+    "difficulty": "L2_ONE_HOP",
+    "split": "transfer",
+    "description": "For a related holdout case, set the sensor rail to 5.7 V while all other test inputs remain fixed. This is a proposed configuration, not a manufacturer rating.",
+    "changed_entity": "CFG-SENSOR-SUPPLY",
+    "affected_requirements": [
+      "REQ-004"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-003",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-004",
+        "relationship": "depends_on",
+        "target": "CFG-SENSOR-SUPPLY"
+      }
+    ],
+    "critical_requirements": [
+      "REQ-004"
+    ],
+    "expected_reason": "Compare the proposed rail with the 5.5 V upper envelope; the voltage evidence requires review.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-011",
+        "location": "change",
+        "excerpt": "For a related holdout case, set the sensor rail to 5.7 V while all other test inputs remain fixed. This is a proposed configuration, not a manufacturer rating."
+      }
+    ],
+    "title": "Configurar alimentação do sensor em 5,7 V"
+  },
+  {
+    "id": "CHG-012",
+    "change_type": "requirement",
+    "difficulty": "L2_ONE_HOP",
+    "split": "transfer",
+    "description": "For a related holdout case, increase the minimum speed in REQ-002 from 4000 rpm to 5000 rpm. The new project target uses the published nominal speed of the real Noctua NF-A4x20 5V in ALT-FAN as a design target. The installed fan remains the NF-A4x10 5V; its manufacturer rating has not changed. This is a proposed product requirement, not a new component specification.",
+    "changed_entity": "REQ-002",
+    "affected_requirements": [
+      "REQ-002"
+    ],
+    "unaffected_requirements": [
+      "REQ-001",
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "affected_relationships": [
+      {
+        "source": "REQ-002",
+        "relationship": "constrains",
+        "target": "P-FAN-SPEED"
+      }
+    ],
+    "critical_requirements": [],
+    "expected_reason": "The installed NF-A4x10 5V has a documented nominal speed of 4500 rpm with a 10 percent tolerance. Its existing speed evidence and verification must be reviewed against the changed 5000 rpm product criterion. No other acceptance criterion or component has changed.",
+    "source_evidence": [
+      {
+        "document_id": "CHG-012",
+        "location": "change",
+        "excerpt": "For a related holdout case, increase the minimum speed in REQ-002 from 4000 rpm to 5000 rpm. The new project target uses the published nominal speed of the real Noctua NF-A4x20 5V in ALT-FAN as a design target. The installed fan remains the NF-A4x10 5V; its manufacturer rating has not changed. This is a proposed product requirement, not a new component specification."
+      }
+    ],
+    "title": "Exigir velocidade mínima de 5000 rpm"
+  }
+]

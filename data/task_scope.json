@@ -1,0 +1,111 @@
+{
+  "nodes": [
+    {
+      "id": "FAN",
+      "type": "Component",
+      "name": "NF-A4x10 5V"
+    },
+    {
+      "id": "SENSOR",
+      "type": "Component",
+      "name": "TMP117"
+    },
+    {
+      "id": "DRIVER",
+      "type": "Component",
+      "name": "TPS22919"
+    },
+    {
+      "id": "REQ-001",
+      "type": "Requirement",
+      "name": "Fan current limit"
+    },
+    {
+      "id": "REQ-002",
+      "type": "Requirement",
+      "name": "Minimum steady speed"
+    },
+    {
+      "id": "REQ-003",
+      "type": "Requirement",
+      "name": "Temperature switching decision"
+    },
+    {
+      "id": "REQ-004",
+      "type": "Requirement",
+      "name": "Sensor supply envelope"
+    },
+    {
+      "id": "REQ-005",
+      "type": "Requirement",
+      "name": "Switch current rating"
+    },
+    {
+      "id": "P-FAN-CURRENT",
+      "type": "Parameter",
+      "name": "Fan rated current"
+    },
+    {
+      "id": "P-FAN-SPEED",
+      "type": "Parameter",
+      "name": "Fan rotational speed"
+    },
+    {
+      "id": "P-FAN-VOLTAGE",
+      "type": "Parameter",
+      "name": "Fan rated voltage"
+    },
+    {
+      "id": "P-SENSOR-SUPPLY",
+      "type": "Parameter",
+      "name": "Sensor full-temperature supply envelope"
+    },
+    {
+      "id": "P-DRIVER-CURRENT",
+      "type": "Parameter",
+      "name": "Switch continuous current rating"
+    },
+    {
+      "id": "P-DRIVER-VOLTAGE",
+      "type": "Parameter",
+      "name": "Switch recommended input voltage"
+    },
+    {
+      "id": "CFG-THRESHOLD",
+      "type": "Configuration",
+      "name": "Activation threshold"
+    },
+    {
+      "id": "CFG-SENSOR-SUPPLY",
+      "type": "Configuration",
+      "name": "Sensor rail"
+    },
+    {
+      "id": "V-SPEED",
+      "type": "Verification",
+      "name": "Tachometer test"
+    }
+  ],
+  "parameter_ids": [
+    "P-FAN-CURRENT",
+    "P-FAN-SPEED",
+    "P-FAN-VOLTAGE",
+    "P-SENSOR-SUPPLY",
+    "P-DRIVER-CURRENT",
+    "P-DRIVER-VOLTAGE",
+    "CFG-THRESHOLD",
+    "CFG-SENSOR-SUPPLY",
+    "REQ-001",
+    "REQ-002",
+    "REQ-003",
+    "REQ-004",
+    "REQ-005"
+  ],
+  "relationship_types": [
+    "has_parameter",
+    "constrains",
+    "depends_on",
+    "verified_by"
+  ],
+  "notes": "A fixed vocabulary prevents name-matching noise. Extract only these facts and the bounded graph scope. This is evidence-grounded extraction, not open-world entity discovery."
+}

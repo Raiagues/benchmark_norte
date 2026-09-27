@@ -1,0 +1,21 @@
+{
+  "benchmark_version": "1.1.0",
+  "dataset_version": "1.1.0",
+  "ground_truth_version": "1.1.0",
+  "date_created": "2026-09-27",
+  "ground_truth_status": "provisional_reference_requires_human_ratification",
+  "ground_truth_provenance": "Explicit reference labels authored during implementation, independently of benchmark provider responses. No independent human sign-off is claimed. Review docs/ground_truth_review.md before publishing model rankings.",
+  "prompt_versions": {
+    "common": "1.0.0",
+    "entity_extraction": "1.0.0",
+    "relationship_extraction": "1.0.0",
+    "change_impact": "1.0.0",
+    "impact_explanation": "1.0.0",
+    "one_hop": "1.0.0"
+  },
+  "component_sources": "data/sources.json",
+  "levels": [
+    "L1_DIRECT",
+    "L2_ONE_HOP"
+  ]
+}

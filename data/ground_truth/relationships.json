@@ -1,0 +1,167 @@
+[
+  {
+    "source": "FAN",
+    "target": "P-FAN-CURRENT",
+    "relationship": "has_parameter",
+    "reason": "P-FAN-CURRENT: rated current 0.05 A with +/-10% tolerance. This is a rating, not a measured system result.",
+    "source_evidence": [
+      {
+        "document_id": "FAN",
+        "location": "FAN-02",
+        "excerpt": "P-FAN-CURRENT: rated current 0.05 A with +/-10% tolerance. This is a rating, not a measured system result."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "FAN",
+    "target": "P-FAN-SPEED",
+    "relationship": "has_parameter",
+    "reason": "P-FAN-SPEED: rotational speed 4500 rpm with +/-10% tolerance.",
+    "source_evidence": [
+      {
+        "document_id": "FAN",
+        "location": "FAN-03",
+        "excerpt": "P-FAN-SPEED: rotational speed 4500 rpm with +/-10% tolerance."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "SENSOR",
+    "target": "P-SENSOR-SUPPLY",
+    "relationship": "has_parameter",
+    "reason": "P-SENSOR-SUPPLY: recommended supply range 1.8 to 5.5 V for ambient temperatures -55 to 150 degrees C (section 6.3). The lower-temperature subrange -55 to 70 degrees C permits 1.7 to 5.5 V. The project deliberately uses the full-temperature-range voltage envelope.",
+    "source_evidence": [
+      {
+        "document_id": "SENSOR",
+        "location": "SENSOR-02",
+        "excerpt": "P-SENSOR-SUPPLY: recommended supply range 1.8 to 5.5 V for ambient temperatures -55 to 150 degrees C (section 6.3). The lower-temperature subrange -55 to 70 degrees C permits 1.7 to 5.5 V. The project deliberately uses the full-temperature-range voltage envelope."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "DRIVER",
+    "target": "P-DRIVER-CURRENT",
+    "relationship": "has_parameter",
+    "reason": "P-DRIVER-CURRENT: maximum continuous current rating 1.5 A (features and section 6.1). This ceiling is not a guaranteed available current at every thermal condition and is not a current-regulator setpoint.",
+    "source_evidence": [
+      {
+        "document_id": "DRIVER",
+        "location": "DRIVER-02",
+        "excerpt": "P-DRIVER-CURRENT: maximum continuous current rating 1.5 A (features and section 6.1). This ceiling is not a guaranteed available current at every thermal condition and is not a current-regulator setpoint."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-001",
+    "target": "P-FAN-CURRENT",
+    "relationship": "constrains",
+    "reason": "PRODUCT REQUIREMENT: Steady fan current shall be <= 0.08 A at the project operating point. Review the fan current rating; verify with a current measurement after five minutes. The limit is a project choice, not a Noctua specification.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-001",
+        "excerpt": "PRODUCT REQUIREMENT: Steady fan current shall be <= 0.08 A at the project operating point. Review the fan current rating; verify with a current measurement after five minutes. The limit is a project choice, not a Noctua specification."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-002",
+    "target": "P-FAN-SPEED",
+    "relationship": "constrains",
+    "reason": "PRODUCT REQUIREMENT: Active steady fan speed shall be >= 4000 rpm at the project operating point after five minutes. Review the fan speed rating; use V-SPEED, a tachometer test. A nominal datasheet speed is not a hardware pass result.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-002",
+        "excerpt": "PRODUCT REQUIREMENT: Active steady fan speed shall be >= 4000 rpm at the project operating point after five minutes. Review the fan speed rating; use V-SPEED, a tachometer test. A nominal datasheet speed is not a hardware pass result."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-003",
+    "target": "CFG-THRESHOLD",
+    "relationship": "depends_on",
+    "reason": "PRODUCT REQUIREMENT: The controller shall issue ON when the latest supplied measured-temperature value is > 35 degrees C and OFF at <= 35 degrees C. CFG-THRESHOLD implements this boundary. Verify with injected temperature values at 34, 35 and 36 degrees C. This is a software decision test, not a sensor-accuracy or spin-up-time test.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-003",
+        "excerpt": "PRODUCT REQUIREMENT: The controller shall issue ON when the latest supplied measured-temperature value is > 35 degrees C and OFF at <= 35 degrees C. CFG-THRESHOLD implements this boundary. Verify with injected temperature values at 34, 35 and 36 degrees C. This is a software decision test, not a sensor-accuracy or spin-up-time test."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-004",
+    "target": "CFG-SENSOR-SUPPLY",
+    "relationship": "depends_on",
+    "reason": "PRODUCT REQUIREMENT: The configured sensor supply shall stay within the TMP117 full-temperature-range recommended envelope, 1.8 to 5.5 V. Review P-SENSOR-SUPPLY and CFG-SENSOR-SUPPLY; verify the rail separately.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-004",
+        "excerpt": "PRODUCT REQUIREMENT: The configured sensor supply shall stay within the TMP117 full-temperature-range recommended envelope, 1.8 to 5.5 V. Review P-SENSOR-SUPPLY and CFG-SENSOR-SUPPLY; verify the rail separately."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-004",
+    "target": "P-SENSOR-SUPPLY",
+    "relationship": "constrains",
+    "reason": "PRODUCT REQUIREMENT: The configured sensor supply shall stay within the TMP117 full-temperature-range recommended envelope, 1.8 to 5.5 V. Review P-SENSOR-SUPPLY and CFG-SENSOR-SUPPLY; verify the rail separately.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-004",
+        "excerpt": "PRODUCT REQUIREMENT: The configured sensor supply shall stay within the TMP117 full-temperature-range recommended envelope, 1.8 to 5.5 V. Review P-SENSOR-SUPPLY and CFG-SENSOR-SUPPLY; verify the rail separately."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-005",
+    "target": "P-DRIVER-CURRENT",
+    "relationship": "constrains",
+    "reason": "PRODUCT REQUIREMENT: The selected switch's published continuous-current rating shall be >= 0.10 A, the fixed project allocation. Review P-DRIVER-CURRENT. This documentary rating check is not a thermal qualification and does not regulate fan current.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-005",
+        "excerpt": "PRODUCT REQUIREMENT: The selected switch's published continuous-current rating shall be >= 0.10 A, the fixed project allocation. Review P-DRIVER-CURRENT. This documentary rating check is not a thermal qualification and does not regulate fan current."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  },
+  {
+    "source": "REQ-002",
+    "target": "V-SPEED",
+    "relationship": "verified_by",
+    "reason": "PRODUCT REQUIREMENT: Active steady fan speed shall be >= 4000 rpm at the project operating point after five minutes. Review the fan speed rating; use V-SPEED, a tachometer test. A nominal datasheet speed is not a hardware pass result.",
+    "source_evidence": [
+      {
+        "document_id": "REQUIREMENTS",
+        "location": "REQ-002",
+        "excerpt": "PRODUCT REQUIREMENT: Active steady fan speed shall be >= 4000 rpm at the project operating point after five minutes. Review the fan speed rating; use V-SPEED, a tachometer test. A nominal datasheet speed is not a hardware pass result."
+      }
+    ],
+    "confidence": 1.0,
+    "inferred_or_explicit": "explicit"
+  }
+]

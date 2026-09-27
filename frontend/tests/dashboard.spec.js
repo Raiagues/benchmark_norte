@@ -25,8 +25,10 @@ test("fresh app is empty; no placeholder scores, graphs, or runnable demo", asyn
     page.getByRole("button", { name: "Iniciar avaliação" }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
-  await expect(page.getByRole("alert")).toContainText("Avaliação bloqueada");
-  await expect(page.getByText("Falta a chave", { exact: true })).toHaveCount(3);
+  await expect(page.getByRole("status")).toContainText(
+    "Nenhuma chamada foi enviada",
+  );
+  await expect(page.locator(".connection-indicator.red")).toHaveCount(3);
   expect(writes).toHaveLength(0);
   await page.goto("/#results");
   await page.screenshot({
@@ -40,8 +42,12 @@ test("failed API attempt appears only in activity, never as a benchmark result",
 }) => {
   const { writes } = await interceptApi(page, { keyed: true, confirmed: true });
   await page.goto("/#run");
-  await page.getByRole("button", { name: "Limpar seleção" }).click();
-  await page.getByRole("checkbox", { name: /GPT-6 Astra/ }).check();
+  await page
+    .getByRole("checkbox", { name: "Anthropic", exact: true })
+    .uncheck();
+  await page
+    .getByRole("checkbox", { name: "Google Gemini", exact: true })
+    .uncheck();
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
   await expect(
     page.getByText("Falhou · nenhum resultado publicado"),
@@ -167,9 +173,11 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
   await expect(page.getByLabel("Tarefa", { exact: true })).toHaveValue(
     "one_hop",
   );
+  await page.getByRole("button", { name: "Resumo", exact: true }).click();
   await expect(page.locator(".overview-panel")).not.toContainText(
     "Extração F1",
   );
+  await page.getByRole("button", { name: "Gráficos", exact: true }).click();
   await page
     .getByLabel("Dificuldade", { exact: true })
     .selectOption("L1_DIRECT");
@@ -177,11 +185,7 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
     path: "test-results/metric-charts.png",
     fullPage: true,
   });
-  await page
-    .getByText("Resposta original, métricas e informações da execução", {
-      exact: true,
-    })
-    .click();
+  await page.getByRole("button", { name: "Respostas", exact: true }).click();
   await expect(page.locator(".run-details pre").first()).toContainText(
     "browser-test-only",
   );
@@ -189,21 +193,23 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
     page.getByRole("link", { name: "Baixar resposta completa" }),
   ).toHaveAttribute("href", /download$/);
   await page.getByRole("link", { name: "Alterações", exact: true }).click();
-  await expect(page.locator(".scenario")).toHaveCount(9);
+  await expect(page.locator(".scenario")).toHaveCount(3);
   await page.getByLabel("Tipo de alteração").selectOption("no_impact");
   await expect(page.locator(".scenario")).toHaveCount(2);
   await expect(page.locator(".scenario").first()).toContainText("Nenhum");
   await page
     .getByRole("link", { name: "Entradas e saídas", exact: true })
     .click();
+  await page.getByRole("button", { name: "Fonte ↗", exact: true }).click();
   await expect(
     page.getByRole("link", { name: "Datasheet oficial" }),
   ).toHaveCount(1);
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await page
     .getByRole("button", { name: "Requisitos do projeto", exact: true })
     .click();
   await expect(
-    page.getByText("Não são medições de hardware", { exact: false }),
+    page.getByText("Regras do projeto enviadas ao modelo", { exact: false }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -235,16 +241,17 @@ test("all-model selection blocks missing keys without benchmark calls", async ({
   const { writes } = await interceptApi(page, { keyed: true, confirmed: true });
   await page.goto("/#run");
   await page.getByRole("button", { name: "Todos os modelos" }).click();
-  await expect(page.locator(".model-option input:checked")).toHaveCount(6);
+  await expect(page.getByLabel("Modelo OpenAI", { exact: true })).toHaveValue(
+    "all",
+  );
+  await expect(page.locator(".run-estimate")).toContainText("6 modelos");
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "Nenhuma chamada de benchmark",
+  await expect(page.getByRole("status")).toContainText(
+    "Nenhuma chamada foi enviada",
   );
   expect(writes).toHaveLength(0);
-  await page
-    .getByRole("button", { name: "Verificar conexões selecionadas" })
-    .click();
-  await expect(page.getByRole("status")).toContainText("Faltam chaves");
+  await page.getByRole("button", { name: "Verificar conexões" }).click();
+  await expect(page.getByRole("status")).toContainText("Conexões pendentes");
   expect(writes.map((w) => w.path)).toEqual(["/connections/verify"]);
   await page.screenshot({
     path: "test-results/missing-connections.png",
@@ -257,23 +264,17 @@ test("manual check confirms connections without results; start does not repeat i
 }) => {
   const { writes } = await interceptApi(page, { allKeyed: true });
   await page.goto("/#run");
-  await expect(page.locator(".model-option input:checked")).toHaveCount(3);
+  await expect(page.locator(".api-choice input:checked")).toHaveCount(3);
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
   expect(writes).toHaveLength(0);
-  await page
-    .getByRole("button", { name: "Verificar conexões selecionadas" })
-    .click();
-  await expect(
-    page.getByText("✓ Pronto para avaliar", { exact: true }),
-  ).toHaveCount(3);
+  await page.getByRole("button", { name: "Verificar conexões" }).click();
+  await expect(page.locator(".connection-indicator.green")).toHaveCount(3);
   await page.getByRole("link", { name: "Resultados", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Nenhum resultado ainda" }),
   ).toBeVisible();
   await page.getByRole("link", { name: /Nova avaliação/ }).click();
-  await expect(
-    page.getByText("✓ Pronto para avaliar", { exact: true }),
-  ).toHaveCount(3);
+  await expect(page.locator(".connection-indicator.green")).toHaveCount(3);
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
   await expect(
     page.getByText("Falhou · nenhum resultado publicado"),
@@ -290,14 +291,25 @@ test("credit error distinguishes a responding API from confirmed generation", as
     creditFailure: true,
   });
   await page.goto("/#run");
-  await page.getByRole("button", { name: "Limpar seleção" }).click();
-  await page.getByRole("checkbox", { name: /GPT-6 Astra/ }).check();
   await page
-    .getByRole("button", { name: "Verificar conexões selecionadas" })
-    .click();
+    .getByRole("checkbox", { name: "Anthropic", exact: true })
+    .uncheck();
+  await page
+    .getByRole("checkbox", { name: "Google Gemini", exact: true })
+    .uncheck();
+  await page.getByRole("button", { name: "Verificar conexões" }).click();
   await expect(
-    page.getByText("Saldo ou faturamento bloqueado", { exact: true }),
+    page.getByRole("button", {
+      name: "Status OpenAI: Cobrança bloqueada",
+      exact: true,
+    }),
   ).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Status OpenAI: Cobrança bloqueada",
+      exact: true,
+    })
+    .click();
   await expect(
     page.getByText("✓ API respondeu", { exact: true }),
   ).toBeVisible();
@@ -305,8 +317,9 @@ test("credit error distinguishes a responding API from confirmed generation", as
     page.getByText("○ Geração confirmada", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Abrir painel do provedor" }),
+    page.getByRole("link", { name: "Painel do provedor" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await page.getByRole("button", { name: "Iniciar avaliação" }).click();
   expect(writes.map((w) => w.path)).toEqual(["/connections/verify"]);
   await page.screenshot({

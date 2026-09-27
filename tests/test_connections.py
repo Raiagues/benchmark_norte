@@ -308,3 +308,79 @@ def test_malformed_provider_envelope_is_an_actionable_error(db, monkeypatch):
     assert c["status"] == "invalid_response" and not c["ready"]
     assert c["api_responded"] and c["diagnostic"]["action"]
     assert not storage.list_runs(db)
+
+
+def test_selected_depth_is_sent_to_probe_and_saved_in_run(db, monkeypatch):
+    put_keys(monkeypatch)
+    sent = mock_connection_api(monkeypatch)
+    selected = connections.select_models(
+        configuration()["models"], [0, 1, 2], {"0": "medium", "1": "low", "2": "medium"}
+    )
+    connections.verify_connections(selected, db)
+    bodies = [json.loads(r.content) for r in sent]
+    assert bodies[0]["reasoning"]["effort"] == "medium"
+    assert bodies[1]["output_config"]["effort"] == "low"
+    assert bodies[2]["generationConfig"]["thinkingConfig"]["thinkingLevel"] == "medium"
+    assert not connections.connection_status(models()[0], db)["ready"]
+    ids = prepare_runs(selected, ["entity_extraction"], repetitions=1, db=db)
+    assert len(sent) == 3
+    for rid, model in zip(ids, selected):
+        record = storage.get_execution(rid, db)
+        assert record["snapshot"]["model_config"] == model
+        assert record["metadata"]["depth"] == model.get(connections.depth_field(model))
+    assert not storage.list_runs(db)
+
+
+def test_depth_selection_rejects_unsupported_or_unselected_settings():
+    catalog = configuration()["models"]
+    for indices, depths in [
+        ([0], {"0": "none"}),
+        ([2], {"2": "max"}),
+        ([0], {"1": "low"}),
+        ([0, 0], {}),
+        ([-1], {}),
+        ([], {}),
+    ]:
+        with pytest.raises(ValueError):
+            connections.select_models(catalog, indices, depths)
+    selected = connections.select_models(catalog, [0], {"0": "max"})[0]
+    assert selected["reasoning_effort"] == "max"
+    assert catalog[0]["reasoning_effort"] == "high"
+
+
+def test_reading_depth_status_never_calls_api_and_invalid_depth_blocks_batch(
+    monkeypatch,
+):
+    from benchmark.api import app
+
+    put_keys(monkeypatch)
+    sent = mock_connection_api(monkeypatch)
+    headers = {"X-Norte-Client": "local-ui"}
+    with TestClient(app) as client:
+        body = {"models": [0, 1, 2], "depths": {"0": "medium", "1": "high", "2": "low"}}
+        result = client.post("/api/connections/status", headers=headers, json=body)
+        assert result.status_code == 200
+        assert [r["depth"] for r in result.json()] == ["medium", "high", "low"]
+        assert all(not r["ready"] for r in result.json())
+        assert not sent
+        for path in ("/api/connections/verify", "/api/runs"):
+            bad = client.post(
+                path, headers=headers, json={"models": [0, 2], "depths": {"2": "max"}}
+            )
+            assert bad.status_code == 400
+            assert bad.json()["detail"] == "invalid_model_depth"
+        assert not sent
+        assert (
+            client.get("/api/runs").json() == client.get("/api/executions").json() == []
+        )
+        assert client.post("/api/connections/status", json=body).status_code == 403
+
+
+def test_modified_depth_does_not_allow_arbitrary_model_configuration(db, monkeypatch):
+    put_keys(monkeypatch)
+    sent = mock_connection_api(monkeypatch)
+    changed = connections.with_depth(models()[0], "medium")
+    changed["temperature"] = 0.9
+    with pytest.raises(ValueError, match="Model must be present"):
+        prepare_runs([changed], db=db)
+    assert not sent

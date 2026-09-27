@@ -15,7 +15,15 @@
       "featured": true,
       "source_url": "https://developers.openai.com/api/docs/models",
       "structured_output": true,
-      "date_checked": "2026-09-27"
+      "date_checked": "2026-09-27",
+      "depth_options": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "depth_source_url": "https://developers.openai.com/api/docs/models/gpt-6-astra"
     },
     {
       "provider": "anthropic",
@@ -26,18 +34,32 @@
       "featured": true,
       "source_url": "https://platform.claude.com/docs/en/models/fable-5-1/overview",
       "structured_output": true,
-      "date_checked": "2026-09-27"
+      "date_checked": "2026-09-27",
+      "depth_options": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "depth_source_url": "https://platform.claude.com/docs/en/build-with-claude/effort"
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-pro-preview",
-      "label": "Gemini 3.1 Pro · Preview",
+      "label": "Gemini 3.1 Pro \u00b7 Preview",
       "temperature": 1,
       "thinking_level": "high",
       "featured": true,
       "source_url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
       "structured_output": true,
-      "date_checked": "2026-09-27"
+      "date_checked": "2026-09-27",
+      "depth_options": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "depth_source_url": "https://ai.google.dev/gemini-api/docs/thinking"
     },
     {
       "provider": "openai",
@@ -48,7 +70,16 @@
       "featured": false,
       "source_url": "https://developers.openai.com/api/docs/models",
       "structured_output": true,
-      "date_checked": "2026-09-27"
+      "date_checked": "2026-09-27",
+      "depth_options": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "depth_source_url": "https://developers.openai.com/api/docs/models/gpt-6-sol"
     },
     {
       "provider": "anthropic",
@@ -59,7 +90,15 @@
       "featured": false,
       "source_url": "https://platform.claude.com/docs/en/models/opus-5-5/overview",
       "structured_output": true,
-      "date_checked": "2026-09-27"
+      "date_checked": "2026-09-27",
+      "depth_options": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "depth_source_url": "https://platform.claude.com/docs/en/build-with-claude/effort"
     },
     {
       "provider": "gemini",
@@ -70,7 +109,13 @@
       "featured": false,
       "source_url": "https://ai.google.dev/gemini-api/docs/models",
       "structured_output": true,
-      "date_checked": "2026-09-27"
+      "date_checked": "2026-09-27",
+      "depth_options": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "depth_source_url": "https://ai.google.dev/gemini-api/docs/thinking"
     }
   ]
 }

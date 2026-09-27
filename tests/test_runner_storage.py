@@ -32,6 +32,7 @@ def test_completed_api_runs_publish_atomically(db, ds, monkeypatch):
     groups = aggregate(db)
     assert {g["difficulty"] for g in groups} == {"L1_DIRECT", "L2_ONE_HOP"}
     one_hop = next(g for g in groups if g["task"] == "one_hop")
+    assert one_hop["depth"] == "high"
     assert one_hop["n"] == 3
     assert one_hop["consistency"] == 1
     assert one_hop["estimated_cost_usd"] is None

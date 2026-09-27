@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import { Modal, Tabs, PagedItems, PagedText } from "./ScreenUI";
+import React, { useEffect, useState } from "react";
 import Icon from "./Icon";
 import { L, t, locale } from "./i18n";
 
@@ -64,71 +65,24 @@ function Tag({ kind = "input", children }) {
     </span>
   );
 }
-function SourceText({ children }) {
+function SourceText({ children, summary }) {
+  const [open, setOpen] = useState(false);
   return (
     <div className="source-text" lang="en" data-source-content>
-      {children}
-    </div>
-  );
-}
-function Modal({ title, children, onClose }) {
-  const dialog = useRef(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => {
-    const previous = document.activeElement;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    if (!dialog.current.contains(document.activeElement))
-      dialog.current.querySelector("button")?.focus();
-    const handler = (e) => {
-      if (e.key === "Escape") closeRef.current();
-      if (e.key === "Tab") {
-        const fields = [
-          ...dialog.current.querySelectorAll(
-            "button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]",
-          ),
-        ];
-        const first = fields[0],
-          last = fields[fields.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => {
-      document.body.style.overflow = overflow;
-      window.removeEventListener("keydown", handler);
-      if (previous?.isConnected) previous.focus();
-    };
-  }, []);
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <section
-        className="workbench-dialog"
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header>
-          <h2>{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={L("Fechar", "Close")}
-          >
-            <Icon name="close" />
-          </button>
-        </header>
-        {children}
-      </section>
+      {!summary && <p>{children}</p>}
+      {(summary || String(children).length > 230) && (
+        <button onClick={() => setOpen(true)}>
+          {summary || L("Ler completo", "Read full text")} ↗
+        </button>
+      )}
+      {open && (
+        <Modal
+          title={L("Conteúdo original", "Original content")}
+          onClose={() => setOpen(false)}
+        >
+          <PagedText text={String(children)} />
+        </Modal>
+      )}
     </div>
   );
 }
@@ -233,7 +187,8 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
     [modal, setModal] = useState(null),
     [category, setCategory] = useState("relationship"),
     [notice, setNotice] = useState(""),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [showHistory, setShowHistory] = useState(false);
   const reload = async () => {
     const b = await api("/benchmark");
     setBench(b);
@@ -357,9 +312,10 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
                 )}
               </span>
               <h2>
-                {L("O mesmo problema.", "The same problem.")}
-                <br />
-                <em>{L("Diferentes modelos.", "Different models.")}</em>
+                {L(
+                  "O mesmo sistema. Diferentes modelos.",
+                  "One system. Different models.",
+                )}
               </h2>
               <p>
                 {L(
@@ -409,25 +365,6 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
               </span>
             </div>
           </section>
-          <div className="bench-section-heading">
-            <div>
-              <p className="eyebrow">
-                {L("DO DOCUMENTO À AVALIAÇÃO", "FROM DOCUMENT TO EVALUATION")}
-              </p>
-              <h2>
-                {L(
-                  "Veja o caminho de cada informação",
-                  "Follow each piece of information",
-                )}
-              </h2>
-            </div>
-            <span>
-              {L(
-                "Clique em um bloco para explorar",
-                "Click a block to explore",
-              )}
-            </span>
-          </div>
           <Pipeline runs={runs} />
           <section className="boundary-note">
             <Icon name="lock" />
@@ -482,52 +419,6 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
               </a>
             ))}
           </section>
-          <div className="bench-section-heading">
-            <div>
-              <p className="eyebrow">{L("REGRAS VISÍVEIS", "VISIBLE RULES")}</p>
-              <h2>
-                {L(
-                  "Sem uma nota única para esconder diferenças",
-                  "Separate measures that show the differences",
-                )}
-              </h2>
-            </div>
-            <a href="#criteria">
-              {L("Ver critérios e fórmulas", "View criteria and formulas")} →
-            </a>
-          </div>
-          <div className="purpose-cards">
-            <article>
-              <Icon name="input" />
-              <h3>{L("Extrair com evidência", "Extract with evidence")}</h3>
-              <p>
-                {L(
-                  "Reconhecer entidades, valores e unidades usando somente os documentos recebidos.",
-                  "Identify entities, values and units using only the supplied documents.",
-                )}
-              </p>
-            </article>
-            <article>
-              <Icon name="graph" />
-              <h3>{L("Conectar corretamente", "Connect correctly")}</h3>
-              <p>
-                {L(
-                  "Encontrar relações direcionadas e citar os trechos que as sustentam.",
-                  "Find directed relationships and cite the supporting passages.",
-                )}
-              </p>
-            </article>
-            <article>
-              <Icon name="change" />
-              <h3>{L("Rever o que foi afetado", "Review what changed")}</h3>
-              <p>
-                {L(
-                  "Identificar requisitos afetados, evitar alarmes falsos e não perder impactos críticos.",
-                  "Identify affected requirements, avoid false alarms and detect critical impacts.",
-                )}
-              </p>
-            </article>
-          </div>
         </>
       )}
       {page === "inputs" && (
@@ -539,16 +430,11 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
           <section className="reference-hero">
             <div>
               <Tag kind="reference" />
-              <h2>
-                {L(
-                  "A resposta esperada também precisa de revisão.",
-                  "Expected answers need review, too.",
-                )}
-              </h2>
+              <h2>{L("Revisão do gabarito", "Reference review")}</h2>
               <p>
                 {L(
-                  "Este gabarito foi definido na implementação, sem usar respostas dos modelos avaliados. A porcentagem mostra as confirmações humanas registradas nesta versão. Você pode confirmar, recusar ou editar cada item.",
-                  "This reference was authored during implementation, independently of the evaluated models’ answers. The percentage shows human confirmations recorded for this version. You can confirm, reject or edit each item.",
+                  "Referência provisória, independente das respostas avaliadas. Confirme, recuse ou edite cada item.",
+                  "Provisional reference, independent of evaluated answers. Confirm, reject or edit each item.",
                 )}
               </p>
               <div className="review-totals">
@@ -617,207 +503,237 @@ export default function Benchmark({ page, api, runs, refresh, datasetHash }) {
                   )}
           </p>
           <div className={`reference-cards reference-${category}`}>
-            {refs[category].map((value) => {
-              const id =
-                category === "relationship" ? edgeKey(value) : value.id;
-              const state = bench.review.items[`${category}:${id}`];
-              return (
-                <article className="reference-card" key={id}>
-                  <div className="reference-card-heading">
-                    <span
-                      className={`review-status ${state?.verdict || "pending"}`}
-                    >
-                      {state?.verdict === "accepted"
-                        ? L("✓ Confirmado", "✓ Confirmed")
-                        : state?.verdict === "rejected"
-                          ? L("× Recusado", "× Rejected")
-                          : L("○ Aguarda revisão", "○ Awaiting review")}
-                    </span>
-                    <code>
-                      {category === "relationship"
-                        ? L("Relação direcionada", "Directed relationship")
-                        : id}
-                    </code>
-                  </div>
-                  {category === "relationship" ? (
-                    <>
-                      <div className="relationship-triplet">
-                        <span>
-                          <small>{value.source}</small>
-                          <strong>{name(value.source)}</strong>
-                        </span>
-                        <span className="relationship-verb">
-                          {t(relNames[value.relationship])}
-                          <Icon name="arrow" />
-                        </span>
-                        <span>
-                          <small>{value.target}</small>
-                          <strong>{name(value.target)}</strong>
-                        </span>
-                      </div>
-                      <SourceText>{value.reason}</SourceText>
-                    </>
-                  ) : category === "parameter" ? (
-                    <>
-                      <h3>{name(value.id)}</h3>
-                      <div className="expected-value">
-                        {pretty(value.values)} <span>{value.unit}</span>
-                      </div>
-                      <span className="subtle-label">
-                        {L("Valor esperado", "Expected value")} ·{" "}
-                        {value.qualifier}
-                      </span>
-                    </>
-                  ) : category === "scenario" ? (
-                    <>
-                      <h3>{t(value.title)}</h3>
-                      <div className="scenario-input-label">
-                        <Tag />
-                        {value.difficulty}
-                      </div>
-                      <SourceText>{value.description}</SourceText>
-                      <div className="expected-impacts">
-                        <strong>
-                          {L("Precisam de revisão", "Need review")}
-                        </strong>
-                        <div>
-                          {value.affected_requirements.length ? (
-                            value.affected_requirements.map((id) => (
-                              <span className="requirement-pill" key={id}>
-                                {id}
-                                {value.critical_requirements.includes(id) &&
-                                  " !"}
-                              </span>
-                            ))
-                          ) : (
-                            <span>
-                              {L("Nenhum requisito", "No requirements")}
-                            </span>
-                          )}
-                        </div>
-                        <strong>
-                          {L("Permanecem sem impacto", "Remain unaffected")}
-                        </strong>
-                        <div>
-                          {value.unaffected_requirements.map((id) => (
-                            <span
-                              className="requirement-pill unaffected"
-                              key={id}
-                            >
-                              {id}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <SourceText>{value.expected_reason}</SourceText>
-                    </>
-                  ) : category === "node" ? (
-                    <>
-                      <h3>{name(value.id)}</h3>
-                      <SourceText>{value.name}</SourceText>
-                      <Fields
-                        entries={[
-                          [L("Tipo esperado", "Expected type"), value.type],
-                          [
-                            L("Origem esperada", "Expected source"),
-                            `${value.source} · ${value.source_reference}`,
-                          ],
-                        ]}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <h3>{name(value.id)}</h3>
-                      <SourceText>{value.text}</SourceText>
+            <PagedItems items={refs[category]} resetKey={category}>
+              {(value) => {
+                const id =
+                  category === "relationship" ? edgeKey(value) : value.id;
+                const state = bench.review.items[`${category}:${id}`];
+                return (
+                  <article className="reference-card" key={id}>
+                    <div className="reference-card-heading">
                       <span
-                        className={
-                          value.critical ? "critical-tag" : "outline-tag"
-                        }
+                        className={`review-status ${state?.verdict || "pending"}`}
                       >
-                        {value.critical
-                          ? L(
-                              "Perder este impacto conta como falha crítica",
-                              "Missing this impact counts as a critical miss",
-                            )
-                          : L(
-                              "Não classificado como crítico",
-                              "Not classified as critical",
-                            )}
+                        {state?.verdict === "accepted"
+                          ? L("✓ Confirmado", "✓ Confirmed")
+                          : state?.verdict === "rejected"
+                            ? L("× Recusado", "× Rejected")
+                            : L("○ Aguarda revisão", "○ Awaiting review")}
                       </span>
-                    </>
-                  )}
-                  {state?.comment && (
-                    <p className="review-comment">
-                      {L("Nota da revisão:", "Review note:")} {state.comment}
-                    </p>
-                  )}
-                  <div className="reference-actions">
-                    <button
-                      disabled={saving}
-                      onClick={() => review(category, value, "accepted")}
-                    >
-                      <Icon name="check" size={16} />
-                      {L("Confirmar", "Confirm")}
-                    </button>
-                    <button
-                      disabled={saving}
-                      onClick={() => review(category, value, "rejected")}
-                    >
-                      <Icon name="close" size={16} />
-                      {L("Recusar", "Reject")}
-                    </button>
-                    <button
-                      disabled={saving}
-                      onClick={() => edit(category, id, value)}
-                    >
-                      <Icon name="edit" size={16} />
-                      {L("Editar", "Edit")}
-                    </button>
-                    {value.source_evidence && (
-                      <button onClick={() => inspect(value.source_evidence)}>
-                        {L("Evidências", "Evidence")} ↗
-                      </button>
+                      <code>
+                        {category === "relationship"
+                          ? L("Relação direcionada", "Directed relationship")
+                          : id}
+                      </code>
+                    </div>
+                    {category === "relationship" ? (
+                      <>
+                        <div className="relationship-triplet">
+                          <span>
+                            <small>{value.source}</small>
+                            <strong>{name(value.source)}</strong>
+                          </span>
+                          <span className="relationship-verb">
+                            {t(relNames[value.relationship])}
+                            <Icon name="arrow" />
+                          </span>
+                          <span>
+                            <small>{value.target}</small>
+                            <strong>{name(value.target)}</strong>
+                          </span>
+                        </div>
+                        <SourceText>{value.reason}</SourceText>
+                      </>
+                    ) : category === "parameter" ? (
+                      <>
+                        <h3>{name(value.id)}</h3>
+                        <div className="expected-value">
+                          {pretty(value.values)} <span>{value.unit}</span>
+                        </div>
+                        <span className="subtle-label">
+                          {L("Valor esperado", "Expected value")} ·{" "}
+                          {value.qualifier}
+                        </span>
+                      </>
+                    ) : category === "scenario" ? (
+                      <>
+                        <h3>{t(value.title)}</h3>
+                        <div className="scenario-input-label">
+                          <Tag />
+                          {value.difficulty}
+                        </div>
+                        <SourceText
+                          summary={L(
+                            "Ver descrição da alteração",
+                            "View change description",
+                          )}
+                        >
+                          {value.description}
+                        </SourceText>
+                        <div className="expected-impacts">
+                          <strong>
+                            {L("Precisam de revisão", "Need review")}
+                          </strong>
+                          <div>
+                            {value.affected_requirements.length ? (
+                              value.affected_requirements.map((id) => (
+                                <span className="requirement-pill" key={id}>
+                                  {id}
+                                  {value.critical_requirements.includes(id) &&
+                                    " !"}
+                                </span>
+                              ))
+                            ) : (
+                              <span>
+                                {L("Nenhum requisito", "No requirements")}
+                              </span>
+                            )}
+                          </div>
+                          <strong>
+                            {L("Permanecem sem impacto", "Remain unaffected")}
+                          </strong>
+                          <div>
+                            {value.unaffected_requirements.map((id) => (
+                              <span
+                                className="requirement-pill unaffected"
+                                key={id}
+                              >
+                                {id}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <SourceText
+                          summary={L(
+                            "Por que esses requisitos?",
+                            "Why these requirements?",
+                          )}
+                        >
+                          {value.expected_reason}
+                        </SourceText>
+                      </>
+                    ) : category === "node" ? (
+                      <>
+                        <h3>{name(value.id)}</h3>
+                        <SourceText>{value.name}</SourceText>
+                        <Fields
+                          entries={[
+                            [L("Tipo esperado", "Expected type"), value.type],
+                            [
+                              L("Origem esperada", "Expected source"),
+                              `${value.source} · ${value.source_reference}`,
+                            ],
+                          ]}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <h3>{name(value.id)}</h3>
+                        <SourceText>{value.text}</SourceText>
+                        <span
+                          className={
+                            value.critical ? "critical-tag" : "outline-tag"
+                          }
+                        >
+                          {value.critical
+                            ? L(
+                                "Perder este impacto conta como falha crítica",
+                                "Missing this impact counts as a critical miss",
+                              )
+                            : L(
+                                "Não classificado como crítico",
+                                "Not classified as critical",
+                              )}
+                        </span>
+                      </>
                     )}
-                  </div>
-                </article>
-              );
-            })}
+                    {state?.comment && (
+                      <p className="review-comment">
+                        {L("Nota da revisão:", "Review note:")} {state.comment}
+                      </p>
+                    )}
+                    <div className="reference-actions">
+                      <button
+                        disabled={saving}
+                        onClick={() => review(category, value, "accepted")}
+                      >
+                        <Icon name="check" size={16} />
+                        {L("Confirmar", "Confirm")}
+                      </button>
+                      <button
+                        disabled={saving}
+                        onClick={() => review(category, value, "rejected")}
+                      >
+                        <Icon name="close" size={16} />
+                        {L("Recusar", "Reject")}
+                      </button>
+                      <button
+                        disabled={saving}
+                        onClick={() => edit(category, id, value)}
+                      >
+                        <Icon name="edit" size={16} />
+                        {L("Editar", "Edit")}
+                      </button>
+                      {value.source_evidence && (
+                        <button onClick={() => inspect(value.source_evidence)}>
+                          {L("Evidências", "Evidence")} ↗
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              }}
+            </PagedItems>
           </div>
-          <section className="revision-history">
-            <div className="bench-section-heading">
-              <h2>
-                <Icon name="history" />
-                {L("Histórico de alterações", "Edit history")}
-              </h2>
-              <span>{ds.manifest.dataset_version}</span>
-            </div>
-            <p>
-              {L(
-                "Edições são salvas localmente como novas versões. Resultados anteriores mantêm seus próprios documentos e gabarito.",
-                "Edits are stored locally as new versions. Previous results retain their own documents and reference.",
-              )}
-            </p>
-            {bench.history.revisions.length ? (
-              <ol>
-                {bench.history.revisions.map((r) => (
-                  <li key={r.id}>
-                    <strong>{r.dataset_version}</strong>
-                    <span>
-                      {r.item_id} · {date(r.created_at)}
-                    </span>
-                    <p>{r.note}</p>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="muted">
-                {L(
-                  "Nenhuma edição local. Versão original do repositório.",
-                  "No local edits. Original repository version.",
+          <button
+            className="history-button"
+            onClick={() => setShowHistory(true)}
+          >
+            <Icon name="history" size={15} />
+            {L("Histórico de alterações", "Edit history")}
+          </button>
+          {showHistory && (
+            <Modal
+              title={L("Histórico de alterações", "Edit history")}
+              onClose={() => setShowHistory(false)}
+            >
+              <section className="revision-history">
+                <div className="bench-section-heading">
+                  <h2>
+                    <Icon name="history" />
+                    {L("Histórico de alterações", "Edit history")}
+                  </h2>
+                  <span>{ds.manifest.dataset_version}</span>
+                </div>
+                <p>
+                  {L(
+                    "Edições são salvas localmente como novas versões. Resultados anteriores mantêm seus próprios documentos e gabarito.",
+                    "Edits are stored locally as new versions. Previous results retain their own documents and reference.",
+                  )}
+                </p>
+                {bench.history.revisions.length ? (
+                  <ol>
+                    {bench.history.revisions.map((r) => (
+                      <li key={r.id}>
+                        <strong>{r.dataset_version}</strong>
+                        <span>
+                          {r.item_id} · {date(r.created_at)}
+                        </span>
+                        <p>{r.note}</p>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="muted">
+                    {L(
+                      "Nenhuma edição local. Versão original do repositório.",
+                      "No local edits. Original repository version.",
+                    )}
+                  </p>
                 )}
-              </p>
-            )}
-          </section>
+              </section>
+            </Modal>
+          )}
         </>
       )}
       {modal && (
@@ -871,14 +787,16 @@ function Inputs({ bench, api, edit, runs }) {
   const [task, setTask] = useState("relationship_extraction"),
     [level, setLevel] = useState("L1_DIRECT"),
     [mode, setMode] = useState("controlled_text"),
-    [tab, setTab] = useState(() => {
-      const requested = sessionStorage.getItem("norte-input-tab") || "received";
-      sessionStorage.removeItem("norte-input-tab");
-      return requested;
-    }),
     [doc, setDoc] = useState("FAN"),
+    [tab, setTab] = useState(() => {
+      const v = sessionStorage.getItem("norte-input-tab") || "received";
+      sessionStorage.removeItem("norte-input-tab");
+      return v;
+    }),
     [preview, setPreview] = useState(null),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [info, setInfo] = useState(null),
+    [promptPart, setPromptPart] = useState("common");
   const effectiveLevel =
     task === "one_hop"
       ? "L2_ONE_HOP"
@@ -886,20 +804,20 @@ function Inputs({ bench, api, edit, runs }) {
         ? level
         : "L1_DIRECT";
   useEffect(() => {
-    let active = true;
+    let live = true;
     setPreview(null);
     setError("");
     api(
       `/benchmark/preview?task=${task}&difficulty=${effectiveLevel}&input_mode=${mode}`,
     )
       .then((p) => {
-        if (active) setPreview(p);
+        if (live) setPreview(p);
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (live) setError(e.message);
       });
     return () => {
-      active = false;
+      live = false;
     };
   }, [task, effectiveLevel, mode, bench.edit_hash]);
   const docs = {
@@ -919,56 +837,18 @@ function Inputs({ bench, api, edit, runs }) {
     SCOPE: [L("Vocabulário e fontes", "Vocabulary and sources"), "graph"],
   };
   const source = bench.dataset.sources.find((s) => s.document_id === doc);
-  const facts = source
-    ? Object.entries(source.parameters).map(([key, value]) => [
-        t(
-          {
-            rated_current_A: "Corrente nominal (A)",
-            current_tolerance_percent: "Tolerância de corrente (%)",
-            speed_rpm: "Velocidade nominal (rpm)",
-            speed_tolerance_percent: "Tolerância de velocidade (%)",
-            rated_voltage_V: "Tensão nominal (V)",
-            operating_voltage_V: "Tensão de operação (V)",
-            full_temperature_supply_V: "Tensão para faixa completa (V)",
-            full_temperature_degC: "Faixa completa (°C)",
-            restricted_temperature_supply_V: "Tensão para faixa restrita (V)",
-            restricted_temperature_degC: "Faixa restrita (°C)",
-            input_voltage_V: "Tensão de entrada (V)",
-            continuous_current_rating_A: "Corrente contínua publicada (A)",
-            ON_high_V: "Nível alto de ON (V)",
-            ON_low_V: "Nível baixo de ON (V)",
-          }[key] || key,
-        ),
-        pretty(value),
-      ])
-    : [];
-  const download = () => {
+  function download(text, filename) {
     const url = URL.createObjectURL(
-      new Blob([preview.prompt], { type: "text/plain;charset=utf-8" }),
+      new Blob([text], { type: "text/plain;charset=utf-8" }),
     );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${task}-${effectiveLevel}-prompt.txt`;
-    link.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
     URL.revokeObjectURL(url);
-  };
+  }
   return (
-    <>
-      <div className="section-intro">
-        <Tag />
-        <h2>
-          {L(
-            "Abra o pedido antes de enviá-lo.",
-            "Inspect the request before sending it.",
-          )}
-        </h2>
-        <p>
-          {L(
-            "Os requisitos são entrada do teste. Os valores dos fabricantes também. O modelo precisa extrair e conectar essa informação — ele não cria as especificações dos componentes.",
-            "Requirements are test inputs. Manufacturer values are inputs, too. The model must extract and connect this information — it does not create component specifications.",
-          )}
-        </p>
-      </div>
+    <div className="inputs-screen">
       <div className="preview-controls">
         <label>
           {L("Tarefa", "Task")}
@@ -977,156 +857,117 @@ function Inputs({ bench, api, edit, runs }) {
             value={task}
             onChange={(e) => setTask(e.target.value)}
           >
-            {Object.entries(taskNames).map(([id, n]) => (
+            {Object.entries(taskNames).map(([id, label]) => (
               <option key={id} value={id}>
-                {t(n)}
+                {t(label)}
               </option>
             ))}
           </select>
         </label>
         {task === "impact_explanation" && (
           <label>
-            {L("Dificuldade", "Difficulty")}
-            <select
-              aria-label={L("Dificuldade da prévia", "Preview difficulty")}
-              value={level}
-              onChange={(e) => setLevel(e.target.value)}
-            >
+            {L("Nível", "Level")}
+            <select value={level} onChange={(e) => setLevel(e.target.value)}>
               <option value="L1_DIRECT">L1</option>
               <option value="L2_ONE_HOP">L2</option>
             </select>
           </label>
         )}
-        <span className="outline-tag">
-          {effectiveLevel === "L1_DIRECT"
-            ? L("L1 · relações explícitas", "L1 · explicit relationships")
-            : L("L2 · sem as pistas diretas", "L2 · direct hints removed")}
-        </span>
         <label>
           {L("Documentos", "Documents")}
           <select value={mode} onChange={(e) => setMode(e.target.value)}>
             <option value="controlled_text">
               {L("Texto controlado", "Controlled text")}
             </option>
-            <option value="pdf_text">
-              {L("Texto dos PDFs locais", "Text from local PDFs")}
-            </option>
+            <option value="pdf_text">{L("Texto dos PDFs", "PDF text")}</option>
           </select>
         </label>
         <span className="preview-free">
-          <Icon name="check" size={15} />
-          {L("Prévia local · não chama APIs", "Local preview · no API calls")}
+          {effectiveLevel === "L1_DIRECT" ? "L1" : "L2"} ·{" "}
+          {L("Prévia sem chamada de API", "Preview without an API call")}
         </span>
       </div>
-      <div
-        className="workbench-tabs"
-        role="tablist"
-        aria-label={L("Pedido ao modelo", "Model request")}
-      >
-        {[
-          ["received", L("O que recebe", "What it receives"), "input"],
-          [
-            "instructions",
-            L("Instruções do modelo", "Model instructions"),
-            "model",
-          ],
-          [
-            "returns",
-            L("O que deve devolver", "What it must return"),
-            "output",
-          ],
-          ["exact", L("Mensagem completa", "Complete message"), "document"],
-        ].map(([id, title, icon]) => (
-          <button
-            role="tab"
-            aria-selected={tab === id}
-            key={id}
-            onClick={() => setTab(id)}
-          >
-            <Icon name={icon} />
-            {title}
-          </button>
-        ))}
-      </div>
-      {error ? (
+      <Tabs
+        label={L("Fluxo de informações", "Information flow")}
+        value={tab}
+        onChange={setTab}
+        items={[
+          ["received", L("O que recebe", "What it receives")],
+          ["instructions", L("Instruções do modelo", "Model instructions")],
+          ["returns", L("O que deve devolver", "What it must return")],
+          ["exact", L("Mensagem completa", "Complete message")],
+        ]}
+      />
+      {error && (
         <p role="alert" className="notice error">
           {t(error)}
         </p>
-      ) : !preview ? (
-        <p>{L("Preparando a prévia…", "Preparing preview…")}</p>
-      ) : (
-        <>
+      )}
+      {preview && (
+        <div className="inputs-stage">
           {tab === "received" && (
             <div className="input-explorer">
               <nav aria-label={L("Documentos de entrada", "Input documents")}>
-                {Object.entries(docs).map(([id, [title, icon]]) => (
+                {Object.entries(docs).map(([id, [label, icon]]) => (
                   <button
                     key={id}
-                    className={doc === id ? "active" : ""}
                     onClick={() => setDoc(id)}
+                    className={doc === id ? "active" : ""}
                   >
-                    <Icon name={icon} />
-                    <span>{title}</span>
-                    <Icon name="arrow" size={14} />
+                    <Icon name={icon} size={18} />
+                    {label}
                   </button>
                 ))}
               </nav>
               <section className="input-content">
-                <div className="input-content-heading">
+                <header className="input-content-heading">
                   <div>
-                    <p className="eyebrow">{doc}</p>
                     <h2>{docs[doc][0]}</h2>
+                    <small>
+                      {source
+                        ? `${source.manufacturer} · ${source.part_number}`
+                        : doc}
+                    </small>
                   </div>
                   <Tag />
-                </div>
-                {source && (
-                  <>
-                    <div className="component-heading">
-                      <span className="component-illustration">
-                        <Icon name={docs[doc][1]} size={64} />
-                      </span>
-                      <div>
-                        <h3>{source.part_number}</h3>
-                        <p>{source.manufacturer}</p>
-                        <a
-                          href={source.official_datasheet_url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {L("Datasheet oficial", "Official datasheet")} ↗
-                        </a>
-                      </div>
-                    </div>
-                    <p className="context-caption">
-                      {L(
-                        "Registro da fonte consultada, anterior à resposta do modelo. O conteúdo exato enviado está nos trechos abaixo.",
-                        "Source registry facts, recorded before the model responds. The exact content sent appears in the passages below.",
-                      )}
-                    </p>
-                    <Fields entries={facts} />
-                    <div className="source-citation">
-                      {source.sections.join(" · ")} ·{" "}
-                      {L("Consultado em", "Accessed")} {source.date_accessed}
-                    </div>
-                    <h3 className="literal-heading">
-                      {L(
-                        "Trechos exatos recebidos pelo modelo",
-                        "Exact passages received by the model",
-                      )}
-                    </h3>
-                  </>
-                )}
-                {doc === "REQUIREMENTS" && (
-                  <p className="context-caption">
-                    {L(
-                      "Regras criadas para este projeto, enviadas ao modelo. Não são medições de hardware nem limites inventados do fabricante. A resposta esperada fica no gabarito, em outra área.",
-                      "Rules created for this project and sent to the model. They are not hardware measurements or invented manufacturer limits. Expected answers belong to the separate reference area.",
-                    )}
-                  </p>
-                )}
-                {preview.input.documents[doc] &&
-                  Object.entries(preview.input.documents[doc]).map(
-                    ([loc, text]) => (
+                  {source && (
+                    <button onClick={() => setInfo("source")}>
+                      {L("Fonte", "Source")} ↗
+                    </button>
+                  )}
+                </header>
+                <p className="input-description">
+                  {doc === "REQUIREMENTS"
+                    ? L(
+                        "Regras do projeto enviadas ao modelo. As respostas esperadas ficam no gabarito.",
+                        "Project rules sent to the model. Expected answers stay in the reference.",
+                      )
+                    : doc === "CONFIG"
+                      ? L(
+                          "Premissas do sistema; não são especificações do fabricante.",
+                          "System assumptions; not manufacturer specifications.",
+                        )
+                      : doc === "CHANGES"
+                        ? L(
+                            "O modelo recebe a alteração; os impactos esperados ficam reservados.",
+                            "The model receives the change; expected impacts are withheld.",
+                          )
+                        : doc === "PROJECT" && effectiveLevel === "L2_ONE_HOP"
+                          ? L(
+                              "L2 não recebe PROJECT-05 e PROJECT-06.",
+                              "L2 does not receive PROJECT-05 and PROJECT-06.",
+                            )
+                          : L(
+                              "Conteúdo exato enviado ao modelo · original em inglês",
+                              "Exact content sent to the model · English original",
+                            )}
+                </p>
+                {preview.input.documents[doc] && (
+                  <PagedItems
+                    resetKey={`${doc}:${task}:${effectiveLevel}:${mode}`}
+                    items={Object.entries(preview.input.documents[doc])}
+                  >
+                    {([loc, text]) => (
                       <article className="input-passage" key={loc}>
                         <header>
                           <code>{loc}</code>
@@ -1144,88 +985,65 @@ function Inputs({ bench, api, edit, runs }) {
                         </header>
                         <SourceText>{text}</SourceText>
                       </article>
-                    ),
-                  )}
-                {doc === "PROJECT" && effectiveLevel === "L2_ONE_HOP" && (
-                  <p className="notice">
-                    {L(
-                      "PROJECT-05 e PROJECT-06 não são enviados em L2. A prévia já mostra essa remoção.",
-                      "PROJECT-05 and PROJECT-06 are not sent in L2. This preview already reflects that removal.",
                     )}
-                  </p>
+                  </PagedItems>
                 )}
                 {doc === "CONFIG" && (
-                  <>
-                    <p className="context-caption">
-                      {L(
-                        "Escolhas assumidas para o sistema, não especificações do fabricante. Nenhum hardware foi verificado.",
-                        "Assumed system settings, not manufacturer specifications. No hardware has been verified.",
-                      )}
-                    </p>
-                    <div className="configuration-cards">
-                      {Object.entries(preview.input.system_config).map(
-                        ([key, value]) => (
-                          <article key={key}>
-                            <span>
-                              {t(
-                                {
-                                  fan_voltage_V: "Tensão do ventilador (V)",
-                                  sensor_voltage_V: "Tensão do sensor (V)",
-                                  activation_threshold_degC:
-                                    "Temperatura de ativação (°C)",
-                                  controller_concept: "Controlador conceitual",
-                                  control: "Tipo de controle",
-                                  hardware_verified: "Hardware verificado",
-                                  kind: "Origem",
-                                  document_id: "Documento",
-                                }[key] || key,
-                              )}
-                            </span>
-                            <strong>
-                              {typeof value === "boolean"
-                                ? value
-                                  ? L("Sim", "Yes")
-                                  : L("Não", "No")
-                                : value === "benchmark_assumption"
-                                  ? L(
-                                      "Premissa do benchmark",
-                                      "Benchmark assumption",
-                                    )
-                                  : value === "on_off"
-                                    ? L("Liga / desliga", "On / off")
-                                    : value}
-                            </strong>
-                            {typeof value === "number" && (
-                              <button
-                                onClick={() =>
-                                  edit("configuration", key, value)
-                                }
-                              >
-                                <Icon name="edit" size={14} />
-                                {L("Editar", "Edit")}
-                              </button>
-                            )}
-                          </article>
-                        ),
-                      )}
-                    </div>
-                  </>
+                  <PagedItems
+                    resetKey="config"
+                    items={Object.entries(preview.input.system_config)}
+                    size={3}
+                  >
+                    {([key, value]) => (
+                      <article className="config-entry" key={key}>
+                        <span>
+                          {t(
+                            {
+                              fan_voltage_V: "Tensão do ventilador (V)",
+                              sensor_voltage_V: "Tensão do sensor (V)",
+                              activation_threshold_degC:
+                                "Temperatura de ativação (°C)",
+                              controller_concept: "Controlador conceitual",
+                              control: "Tipo de controle",
+                              hardware_verified: "Hardware verificado",
+                              kind: "Origem",
+                              document_id: "Documento",
+                            }[key] || key,
+                          )}
+                        </span>
+                        <strong>
+                          {typeof value === "boolean"
+                            ? value
+                              ? L("Sim", "Yes")
+                              : L("Não", "No")
+                            : value === "benchmark_assumption"
+                              ? L(
+                                  "Premissa do benchmark",
+                                  "Benchmark assumption",
+                                )
+                              : value === "on_off"
+                                ? L("Liga / desliga", "On / off")
+                                : value}
+                        </strong>
+                        {typeof value === "number" && (
+                          <button
+                            onClick={() => edit("configuration", key, value)}
+                          >
+                            {L("Editar", "Edit")}
+                          </button>
+                        )}
+                      </article>
+                    )}
+                  </PagedItems>
                 )}
-                {doc === "CHANGES" && (
-                  <>
-                    <p className="context-caption">
-                      {L(
-                        "Somente a descrição, o elemento alterado e a classificação abaixo são enviados. Requisitos afetados e razões esperadas ficam reservados no gabarito.",
-                        "Only the description, changed element and classifications below are sent. Affected requirements and expected reasons remain in the withheld reference.",
-                      )}
-                    </p>
-                    {preview.input.scenarios.length ? (
-                      preview.input.scenarios.map((s) => (
+                {doc === "CHANGES" &&
+                  (preview.input.scenarios.length ? (
+                    <PagedItems resetKey={task} items={preview.input.scenarios}>
+                      {(s) => (
                         <article className="input-passage" key={s.id}>
                           <header>
                             <code>
-                              {s.id} · {s.difficulty} · {s.change_type} ·{" "}
-                              {s.split}
+                              {s.id} · {s.difficulty}
                             </code>
                             <button
                               onClick={() =>
@@ -1235,191 +1053,89 @@ function Inputs({ bench, api, edit, runs }) {
                               {L("Editar alteração", "Edit change")}
                             </button>
                           </header>
-                          <strong>{name(s.changed_entity)}</strong>
+                          <small>
+                            {s.change_type} · {s.split} · {s.changed_entity}
+                          </small>
                           <SourceText>{s.description}</SourceText>
                         </article>
-                      ))
-                    ) : (
-                      <p className="empty-inline">
-                        {L(
-                          "Esta tarefa não recebe cenários de alteração. Selecione Impactos, Explicações ou Raciocínio de um passo para vê-los.",
-                          "This task receives no change scenarios. Select Impacts, Explanations or One-step reasoning to inspect them.",
-                        )}
-                      </p>
-                    )}
-                  </>
-                )}
-                {doc === "SCOPE" && (
-                  <>
-                    <h3>{L("Vocabulário conhecido", "Known vocabulary")}</h3>
-                    <p>
+                      )}
+                    </PagedItems>
+                  ) : (
+                    <p className="quiet-empty">
                       {L(
-                        "O teste fornece IDs e tipos permitidos para evitar diferenças superficiais de nomes. Não é descoberta aberta de entidades.",
-                        "The test supplies IDs and allowed types to avoid superficial name differences. This is not open-ended entity discovery.",
+                        "Esta tarefa não recebe cenários. Selecione Impactos para vê-los.",
+                        "This task receives no scenarios. Select Impacts to view them.",
                       )}
                     </p>
-                    <div className="scope-grid">
-                      {preview.input.scope.nodes.map((n) => (
-                        <span key={n.id}>
-                          <code>{n.id}</code>
-                          <small>{n.type}</small>
-                        </span>
-                      ))}
-                    </div>
-                    <h3>
-                      {L("Parâmetros a extrair", "Parameters to extract")}
-                    </h3>
-                    <div className="chip-list">
-                      {preview.input.scope.parameter_ids.map((id) => (
-                        <code key={id}>{id}</code>
-                      ))}
-                    </div>
-                    <h3>
+                  ))}
+                {doc === "SCOPE" && (
+                  <div className="scope-actions">
+                    <button onClick={() => setInfo("scope")}>
                       {L(
-                        "Tipos de relação permitidos",
-                        "Allowed relationship types",
+                        "Ver vocabulário permitido",
+                        "View allowed vocabulary",
                       )}
-                    </h3>
-                    <div className="chip-list">
-                      {preview.input.scope.relationship_types.map((id) => (
-                        <span key={id}>
-                          {t(relNames[id])}
-                          <code>{id}</code>
-                        </span>
-                      ))}
-                    </div>
-                    <h3>
-                      {L("Registro de fontes enviado", "Source registry sent")}
-                    </h3>
-                    {preview.input.sources.map((s) => (
-                      <article className="input-passage" key={s.document_id}>
-                        <a
-                          href={s.official_datasheet_url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {s.document_id} · {s.manufacturer} · {s.part_number}{" "}
-                          ↗
-                        </a>
-                        <p>
-                          {s.revision} · {s.sections.join(" · ")} ·{" "}
-                          {s.date_accessed}
-                        </p>
-                        {s.parameters && (
-                          <Fields
-                            entries={Object.entries(s.parameters).map(
-                              ([k, v]) => [k, pretty(v)],
-                            )}
-                          />
-                        )}
-                        <p>
-                          {L(
-                            "Documento original não redistribuído.",
-                            "Original document not redistributed.",
-                          )}
-                        </p>
-                      </article>
-                    ))}
-                  </>
+                    </button>
+                    <button onClick={() => setInfo("sources")}>
+                      {L("Registro das fontes", "Source registry")}
+                    </button>
+                  </div>
                 )}
-                <p className="original-language">
-                  <Icon name="document" size={14} />
-                  {L(
-                    "Conteúdo literal em inglês. Trocar o idioma da interface não altera o que os modelos recebem.",
-                    "Verbatim content in English. Changing the interface language does not change model inputs.",
-                  )}
-                </p>
               </section>
             </div>
           )}
           {tab === "instructions" && (
-            <div className="instruction-grid">
-              <section>
-                <span className="role-tag instruction">
-                  <Icon name="model" size={14} />
-                  {L(
-                    "Prompt = instrução escrita",
-                    "Prompt = written instruction",
-                  )}
-                </span>
-                <h2>
-                  {L("Um pedido, duas partes.", "One request, two parts.")}
-                </h2>
-                <p>
-                  {L(
-                    "O servidor junta as regras gerais, a tarefa, o formato exigido e as entradas. Envia o mesmo texto a todos os provedores.",
-                    "The server combines general rules, the task, the required format and inputs. It sends the same text to every provider.",
-                  )}
-                </p>
-                <div className="prompt-order">
-                  <span>1. {L("Regras gerais", "General rules")}</span>
-                  <span>2. {L("Tarefa selecionada", "Selected task")}</span>
-                  <span>3. {L("Formato da resposta", "Response format")}</span>
-                  <span>
-                    4. {L("Documentos e dados", "Documents and data")}
-                  </span>
-                </div>
-                <p>
-                  {L(
-                    "Nesta prévia, nenhuma correção anterior é enviada. O modo com feedback é separado e usa somente correções confirmadas de uma execução real.",
-                    "No previous corrections are sent in this preview. Feedback mode is separate and uses only confirmed corrections from a real run.",
-                  )}
-                </p>
-              </section>
-              <div>
-                {Object.entries(preview.instructions).map(([key, text]) => (
-                  <article className="prompt-card" key={key}>
-                    <header>
-                      <h3>
-                        {key === "common"
-                          ? L("1. Regras gerais", "1. General rules")
-                          : L("2. Tarefa selecionada", "2. Selected task")}
-                      </h3>
-                      <button
-                        onClick={() =>
-                          edit(
-                            "prompt",
-                            key === "common" ? "common" : task,
-                            text,
-                          )
-                        }
-                      >
-                        <Icon name="edit" size={14} />
-                        {L("Editar prompt", "Edit prompt")}
-                      </button>
-                    </header>
-                    <SourceText>{text}</SourceText>
-                  </article>
-                ))}
+            <section className="instructions-screen">
+              <div className="compact-heading">
+                <Tabs
+                  value={promptPart}
+                  onChange={setPromptPart}
+                  items={[
+                    ["common", L("Regras comuns", "Common rules")],
+                    ["task", L("Instruções da tarefa", "Task instructions")],
+                  ]}
+                />
+                <button
+                  onClick={() =>
+                    edit(
+                      "prompt",
+                      promptPart === "common" ? "common" : task,
+                      preview.instructions[promptPart],
+                    )
+                  }
+                >
+                  {L("Editar instruções", "Edit instructions")}
+                </button>
               </div>
-            </div>
+              <p className="input-description">
+                {L(
+                  "Regras + tarefa + formato de resposta + entradas. Sem correções anteriores na primeira passagem.",
+                  "Rules + task + response format + inputs. No previous corrections in first-pass runs.",
+                )}
+              </p>
+              <PagedText
+                text={preview.instructions[promptPart]}
+                label={L("Prompt original", "Original prompt")}
+              />
+            </section>
           )}
           {tab === "returns" && (
-            <>
-              <div className="output-intro">
+            <section className="returns-screen">
+              <header>
                 <Tag kind="output" />
                 <h2>
                   {L(
-                    "O modelo preenche a resposta. O site a desenha.",
-                    "The model fills in the answer. The site renders it.",
+                    "O modelo devolve dados estruturados.",
+                    "The model returns structured data.",
                   )}
                 </h2>
-                <p>
-                  {L(
-                    "Exigimos uma resposta estruturada em JSON para comparar campos de forma objetiva. Estes cartões descrevem o formato exigido; não são respostas de exemplo.",
-                    "We require a structured JSON response to compare fields objectively. These cards describe the required format; they are not example answers.",
-                  )}
-                </p>
-              </div>
+              </header>
               <div className="output-contract">
                 {task === "entity_extraction" ? (
                   <>
                     <Contract
                       icon="model"
-                      title={L(
-                        "Entidades identificadas",
-                        "Identified entities",
-                      )}
+                      title={L("Entidades", "Entities")}
                       fields={[
                         "id",
                         "type",
@@ -1428,23 +1144,22 @@ function Inputs({ bench, api, edit, runs }) {
                         "source_reference",
                       ]}
                       text={L(
-                        "Componentes, requisitos e outros nós com a localização da fonte.",
-                        "Components, requirements and other nodes with their source location.",
+                        "Componentes, requisitos e parâmetros identificados.",
+                        "Identified components, requirements and parameters.",
                       )}
                     />
                     <Contract
-                      icon="config"
-                      title={L("Parâmetros extraídos", "Extracted parameters")}
+                      icon="input"
+                      title={L("Valores e evidências", "Values and evidence")}
                       fields={[
-                        "id",
                         "values",
                         "unit",
                         "qualifier",
                         "source_evidence",
                       ]}
                       text={L(
-                        "Valores numéricos, unidade, condição e trecho de evidência.",
-                        "Numeric values, unit, qualifier and supporting passage.",
+                        "Valores numéricos e trechos que os sustentam.",
+                        "Numerical values and supporting passages.",
                       )}
                     />
                   </>
@@ -1461,16 +1176,13 @@ function Inputs({ bench, api, edit, runs }) {
                         "target",
                       ]}
                       text={L(
-                        "A direção importa: inverter origem e destino conta como erro.",
-                        "Direction matters: reversing source and target counts as an error.",
+                        "O site desenha o grafo a partir desta resposta.",
+                        "The site renders the graph from this answer.",
                       )}
                     />
                     <Contract
-                      icon="document"
-                      title={L(
-                        "Por que a relação existe",
-                        "Why the relationship exists",
-                      )}
+                      icon="reference"
+                      title={L("Justificativa", "Reasoning")}
                       fields={[
                         "reason",
                         "source_evidence",
@@ -1478,8 +1190,8 @@ function Inputs({ bench, api, edit, runs }) {
                         "inferred_or_explicit",
                       ]}
                       text={L(
-                        "Explicação, evidência e confiança declarada. Confiança do modelo não é a nota da avaliação.",
-                        "Explanation, evidence and self-reported confidence. Model confidence is not the evaluation score.",
+                        "Evidência e confiança declarada pelo modelo. Confiança não é nota.",
+                        "Evidence and model-reported confidence. Confidence is not a score.",
                       )}
                     />
                   </>
@@ -1487,10 +1199,7 @@ function Inputs({ bench, api, edit, runs }) {
                   <>
                     <Contract
                       icon="change"
-                      title={L(
-                        "Requisitos que precisam de revisão",
-                        "Requirements that need review",
-                      )}
+                      title={L("Requisitos afetados", "Affected requirements")}
                       fields={[
                         "scenario_id",
                         "impacts",
@@ -1498,14 +1207,14 @@ function Inputs({ bench, api, edit, runs }) {
                         "changed_entity",
                       ]}
                       text={L(
-                        "Uma lista por cenário, inclusive vazia quando não houver impacto.",
-                        "A list for each scenario, empty when there is no impact.",
+                        "Uma lista por cenário, inclusive vazia se não houver impacto.",
+                        "A list per scenario, empty when no requirements are affected.",
                       )}
                     />
                     <Contract
                       icon="reference"
                       title={L(
-                        "Justificativa verificável",
+                        "Explicação verificável",
                         "Checkable explanation",
                       )}
                       fields={[
@@ -1515,70 +1224,108 @@ function Inputs({ bench, api, edit, runs }) {
                         "technical_claims",
                       ]}
                       text={L(
-                        "Dependência, razão e evidência. Afetado significa rever, não necessariamente reprovar o requisito.",
-                        "Dependency, reason and evidence. Affected means review is needed, not necessarily a requirement violation.",
+                        "Qual dependência exige revisão e por quê.",
+                        "Which dependency requires review and why.",
                       )}
                     />
                   </>
                 )}
               </div>
-              <section className="actual-output-link">
-                <Icon name="output" />
-                <div>
-                  <strong>
-                    {runs.length
-                      ? L(
-                          "As respostas reais estão em Resultados.",
-                          "Real responses are in Results.",
-                        )
-                      : L(
-                          "Ainda não existe resposta de modelo.",
-                          "There is no model response yet.",
-                        )}
-                  </strong>
-                  <p>
-                    {L(
-                      "O grafo é renderizado pelo site a partir dos nós e relações devolvidos.",
-                      "The site renders the graph from returned nodes and relationships.",
-                    )}
-                  </p>
-                </div>
-                <a className="button" href={runs.length ? "#results" : "#run"}>
+              <div className="actual-output-link">
+                <strong>
                   {runs.length
-                    ? L("Ver respostas reais", "View real responses")
+                    ? L(
+                        "Respostas reais em Resultados.",
+                        "Real responses are in Results.",
+                      )
+                    : L(
+                        "Ainda não existe resposta de modelo.",
+                        "There is no model response yet.",
+                      )}
+                </strong>
+                <a href={runs.length ? "#results" : "#run"}>
+                  {runs.length
+                    ? L("Ver respostas", "View responses")
                     : L("Preparar avaliação", "Prepare evaluation")}{" "}
                   →
                 </a>
-              </section>
-            </>
+              </div>
+            </section>
           )}
           {tab === "exact" && (
             <section className="exact-request">
               <header>
                 <div>
                   <h2>{L("Texto exato do pedido", "Exact request text")}</h2>
-                  <p>
-                    {L(
-                      "Prévia da primeira passagem, sem feedback. Nenhuma resposta de modelo está incluída aqui.",
-                      "First-pass preview without feedback. No model response is included here.",
-                    )}
-                  </p>
+                  <small>{preview.prompt_hash.slice(0, 16)}</small>
                 </div>
-                <button onClick={download}>
-                  {L("Baixar pedido completo", "Download complete request")} ↓
+                <button
+                  onClick={() => download(preview.prompt, `${task}-prompt.txt`)}
+                >
+                  {L("Baixar mensagem", "Download message")} ↓
                 </button>
               </header>
-              <p className="source-citation">SHA-256 · {preview.prompt_hash}</p>
-              <pre data-source-content lang="en">
-                {preview.prompt}
-              </pre>
+              <PagedText text={preview.prompt} />
             </section>
           )}
-        </>
+        </div>
       )}
-    </>
+      {info && (
+        <Modal
+          title={
+            info === "source"
+              ? L("Fonte oficial", "Official source")
+              : L("Entrada original", "Original input")
+          }
+          onClose={() => setInfo(null)}
+        >
+          {info === "source" ? (
+            <div className="source-info">
+              <div className="component-heading">
+                <Icon name={docs[doc][1]} size={48} />
+                <div>
+                  <h3>{source.part_number}</h3>
+                  <p>{source.manufacturer}</p>
+                  <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href={source.official_datasheet_url}
+                  >
+                    {L("Datasheet oficial", "Official datasheet")} ↗
+                  </a>
+                </div>
+              </div>
+              <p>
+                {L(
+                  "Fatos registrados da fonte, anteriores à resposta do modelo.",
+                  "Source facts recorded before the model responds.",
+                )}
+              </p>
+              <Fields
+                entries={Object.entries(source.parameters).map(([k, v]) => [
+                  k,
+                  pretty(v),
+                ])}
+              />
+              <small>
+                {source.sections.join(" · ")} · {source.date_accessed}
+              </small>
+            </div>
+          ) : (
+            <PagedText
+              text={JSON.stringify(
+                info === "scope" ? preview.input.scope : preview.input.sources,
+                null,
+                2,
+              )}
+            />
+          )}
+        </Modal>
+      )}
+    </div>
   );
 }
+
 function Contract({ icon, title, fields, text }) {
   return (
     <article>
@@ -1594,6 +1341,7 @@ function Contract({ icon, title, fields, text }) {
   );
 }
 function Criteria() {
+  const [view, setView] = useState("metrics");
   const metrics = [
     [
       "Precisão",
@@ -1666,214 +1414,227 @@ function Criteria() {
     ],
   ];
   return (
-    <>
-      <section className="section-intro">
-        <span className="role-tag reference">
-          <Icon name="reference" size={14} />
-          {L("Avaliação por código", "Evaluation by code")}
-        </span>
-        <h2>
-          {L(
-            "Uma resposta válida pode estar errada.",
-            "A valid response can still be wrong.",
-          )}
-        </h2>
-        <p>
-          {L(
-            "Primeiro verificamos se a execução pode ser publicada. Depois medimos o conteúdo contra o gabarito. Não existe uma nota mínima global nem um único vencedor automático.",
-            "First we check whether a run can be published. Then we score its content against the reference. There is no global passing score or automatic overall winner.",
-          )}
-        </p>
-      </section>
-      <div className="bench-section-heading">
-        <h2>
-          {L(
-            "1. Condições para publicar um resultado",
-            "1. Conditions for publishing a result",
-          )}
-        </h2>
-      </div>
-      <div className="publication-gates">
-        {[
-          [
-            L("API concluiu", "API completed"),
-            L(
-              "Todas as chamadas da repetição terminaram sem erro, recusa ou truncamento.",
-              "Every call in the repetition finished without error, refusal or truncation.",
-            ),
-          ],
-          [
-            L("Formato válido", "Valid format"),
-            L(
-              "JSON válido, campos corretos, IDs únicos e relações sem nós inexistentes.",
-              "Valid JSON, correct fields, unique IDs and no dangling relationships.",
-            ),
-          ],
-          [
-            L("Cenários completos", "Complete scenarios"),
-            L(
-              "A resposta cobre todos os cenários pedidos, incluindo os casos sem impacto.",
-              "The answer covers every requested scenario, including no-impact controls.",
-            ),
-          ],
-        ].map(([title, desc], i) => (
-          <article key={title}>
-            <span className="gate-number">0{i + 1}</span>
-            <h3>{title}</h3>
-            <p>{desc}</p>
-            <span className="subtle-label">
+    <div className="criteria-screen">
+      <Tabs
+        value={view}
+        onChange={setView}
+        items={[
+          ["metrics", L("Métricas", "Metrics")],
+          ["publication", L("Publicação", "Publication")],
+          ["evidence", L("Acertos e erros", "Correct and incorrect")],
+          ["details", L("Regras adicionais", "Additional rules")],
+        ]}
+      />
+      <div className="criteria-body">
+        {view === "publication" && (
+          <>
+            <div className="bench-section-heading">
+              <h2>
+                {L(
+                  "1. Condições para publicar um resultado",
+                  "1. Conditions for publishing a result",
+                )}
+              </h2>
+            </div>
+            <div className="publication-gates">
+              {[
+                [
+                  L("API concluiu", "API completed"),
+                  L(
+                    "Todas as chamadas da repetição terminaram sem erro, recusa ou truncamento.",
+                    "Every call in the repetition finished without error, refusal or truncation.",
+                  ),
+                ],
+                [
+                  L("Formato válido", "Valid format"),
+                  L(
+                    "JSON válido, campos corretos, IDs únicos e relações sem nós inexistentes.",
+                    "Valid JSON, correct fields, unique IDs and no dangling relationships.",
+                  ),
+                ],
+                [
+                  L("Cenários completos", "Complete scenarios"),
+                  L(
+                    "A resposta cobre todos os cenários pedidos, incluindo os casos sem impacto.",
+                    "The answer covers every requested scenario, including no-impact controls.",
+                  ),
+                ],
+              ].map(([title, desc], i) => (
+                <article key={title}>
+                  <span className="gate-number">0{i + 1}</span>
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                  <span className="subtle-label">
+                    {L(
+                      "Condição exigida · não é uma medição",
+                      "Required condition · not a measurement",
+                    )}
+                  </span>
+                </article>
+              ))}
+            </div>
+            <p className="boundary-note">
               {L(
-                "Condição exigida · não é uma medição",
-                "Required condition · not a measurement",
+                "Se alguma condição falhar, a tentativa fica em Atividade e não entra em resultados. Se a resposta for válida mas tecnicamente errada, ela é publicada com a pontuação que obteve.",
+                "If any condition fails, the attempt remains in Activity and does not become a result. A valid but technically wrong answer is published with its measured score.",
               )}
-            </span>
-          </article>
-        ))}
-      </div>
-      <p className="boundary-note">
-        {L(
-          "Se alguma condição falhar, a tentativa fica em Atividade e não entra em resultados. Se a resposta for válida mas tecnicamente errada, ela é publicada com a pontuação que obteve.",
-          "If any condition fails, the attempt remains in Activity and does not become a result. A valid but technically wrong answer is published with its measured score.",
+            </p>
+          </>
         )}
-      </p>
-      <div className="bench-section-heading">
-        <h2>
-          {L(
-            "2. O que conta como acerto ou erro",
-            "2. What counts as correct or incorrect",
-          )}
-        </h2>
-      </div>
-      <div className="judgment-grid">
-        {[
-          [
-            "correct",
-            "✓",
-            L("Correto e sustentado", "Correct and supported"),
-            L(
-              "A conclusão está no gabarito e a evidência corresponde à fonte relevante.",
-              "The conclusion matches the reference and cites the relevant source.",
-            ),
-          ],
-          [
-            "warning",
-            "!",
-            L("Correto, evidência inválida", "Correct, invalid evidence"),
-            L(
-              "Pode contar no F1 de relações, mas não no F1 sustentado por evidência.",
-              "May count in relationship F1, but not in evidence-supported F1.",
-            ),
-          ],
-          [
-            "wrong",
-            "+",
-            L("Extra ou incorreto · FP", "Extra or incorrect · FP"),
-            L(
-              "O modelo indicou algo que não pertence à resposta esperada.",
-              "The model predicted something outside the expected answer.",
-            ),
-          ],
-          [
-            "missing",
-            "−",
-            L("Não encontrado · FN", "Missing · FN"),
-            L(
-              "O gabarito exige uma relação ou impacto que o modelo não identificou.",
-              "The reference requires a relationship or impact the model missed.",
-            ),
-          ],
-        ].map(([kind, symbol, title, desc]) => (
-          <article className={kind} key={kind}>
-            <b>{symbol}</b>
-            <h3>{title}</h3>
-            <p>{desc}</p>
-          </article>
-        ))}
-      </div>
-      <div className="bench-section-heading">
-        <h2>{L("3. Como ler as métricas", "3. How to read the metrics")}</h2>
-        <span>
-          TP = {L("acertos", "true positives")} · FP ={" "}
-          {L("extras", "false positives")} · FN ={" "}
-          {L("faltantes", "false negatives")}
-        </span>
-      </div>
-      <div className="criteria-metrics">
-        {metrics.map(([pt, en, formula, desc, direction]) => (
-          <article key={en}>
-            <div>
-              <Icon name="chart" />
-              <span
-                className={direction === "up" ? "metric-up" : "metric-down"}
-              >
-                {direction === "up"
-                  ? L("↑ Maior é melhor", "↑ Higher is better")
-                  : L("↓ Menor é melhor", "↓ Lower is better")}
+        {view === "evidence" && (
+          <>
+            <div className="bench-section-heading">
+              <h2>
+                {L(
+                  "2. O que conta como acerto ou erro",
+                  "2. What counts as correct or incorrect",
+                )}
+              </h2>
+            </div>
+            <div className="judgment-grid">
+              {[
+                [
+                  "correct",
+                  "✓",
+                  L("Correto e sustentado", "Correct and supported"),
+                  L(
+                    "A conclusão está no gabarito e a evidência corresponde à fonte relevante.",
+                    "The conclusion matches the reference and cites the relevant source.",
+                  ),
+                ],
+                [
+                  "warning",
+                  "!",
+                  L("Correto, evidência inválida", "Correct, invalid evidence"),
+                  L(
+                    "Pode contar no F1 de relações, mas não no F1 sustentado por evidência.",
+                    "May count in relationship F1, but not in evidence-supported F1.",
+                  ),
+                ],
+                [
+                  "wrong",
+                  "+",
+                  L("Extra ou incorreto · FP", "Extra or incorrect · FP"),
+                  L(
+                    "O modelo indicou algo que não pertence à resposta esperada.",
+                    "The model predicted something outside the expected answer.",
+                  ),
+                ],
+                [
+                  "missing",
+                  "−",
+                  L("Não encontrado · FN", "Missing · FN"),
+                  L(
+                    "O gabarito exige uma relação ou impacto que o modelo não identificou.",
+                    "The reference requires a relationship or impact the model missed.",
+                  ),
+                ],
+              ].map(([kind, symbol, title, desc]) => (
+                <article className={kind} key={kind}>
+                  <b>{symbol}</b>
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+        {view === "metrics" && (
+          <>
+            <div className="bench-section-heading">
+              <h2>
+                {L("3. Como ler as métricas", "3. How to read the metrics")}
+              </h2>
+              <span>
+                TP = {L("acertos", "true positives")} · FP ={" "}
+                {L("extras", "false positives")} · FN ={" "}
+                {L("faltantes", "false negatives")}
               </span>
             </div>
-            <h3>{L(pt, en)}</h3>
-            <p>{desc}</p>
-            <code>
-              {formula === "2 × precisão × recall / (precisão + recall)"
-                ? L(formula, "2 × precision × recall / (precision + recall)")
-                : formula}
-            </code>
-          </article>
-        ))}
+            <div className="criteria-metrics">
+              {metrics.map(([pt, en, formula, desc, direction]) => (
+                <article key={en}>
+                  <div>
+                    <Icon name="chart" />
+                    <span
+                      className={
+                        direction === "up" ? "metric-up" : "metric-down"
+                      }
+                    >
+                      {direction === "up"
+                        ? L("↑ Maior é melhor", "↑ Higher is better")
+                        : L("↓ Menor é melhor", "↓ Lower is better")}
+                    </span>
+                  </div>
+                  <h3>{L(pt, en)}</h3>
+                  <p>{desc}</p>
+                  <code>
+                    {formula === "2 × precisão × recall / (precisão + recall)"
+                      ? L(
+                          formula,
+                          "2 × precision × recall / (precision + recall)",
+                        )
+                      : formula}
+                  </code>
+                </article>
+              ))}
+            </div>
+            <div className="reading-percents">
+              <strong>{L("100% de recall", "100% recall")}</strong>
+              <span>
+                ={" "}
+                {L(
+                  "todos os impactos esperados foram identificados. É a definição da métrica, não um resultado já obtido.",
+                  "every expected impact was identified. This is the metric definition, not an achieved result.",
+                )}
+              </span>
+            </div>
+          </>
+        )}
+        {view === "details" && (
+          <>
+            <div className="criteria-notes">
+              <article>
+                <h3>{L("Valores e unidades", "Values and units")}</h3>
+                <p>
+                  {L(
+                    "Avaliados separadamente. Não convertemos automaticamente 50 mA em 0,05 A. O prompt exige A, V, rpm e °C.",
+                    "Scored separately. We do not automatically convert 50 mA into 0.05 A. The prompt requires A, V, rpm and °C.",
+                  )}
+                </p>
+              </article>
+              <article>
+                <h3>{L("Evidência verificável", "Verifiable evidence")}</h3>
+                <p>
+                  {L(
+                    "Documento e localização devem existir. O trecho citado precisa ocorrer na fonte e corresponder ao fato ou à relação relevante.",
+                    "Document and location must exist. The quoted passage must occur in the source and match the relevant fact or relationship.",
+                  )}
+                </p>
+              </article>
+              <article>
+                <h3>{L("Explicações", "Explanations")}</h3>
+                <p>
+                  {L(
+                    "Verificamos elemento alterado, requisito, dependência e evidência. A qualidade completa do texto livre ainda exige revisão humana.",
+                    "We check changed element, requirement, dependency and evidence. Full free-text quality still requires human review.",
+                  )}
+                </p>
+              </article>
+              <article>
+                <h3>{L("Comparações justas", "Fair comparisons")}</h3>
+                <p>
+                  {L(
+                    "L1 e L2, texto e PDF, versões e modos com ou sem feedback ficam separados. Média, dispersão e consistência usam somente execuções concluídas.",
+                    "L1 and L2, text and PDF, versions and feedback modes stay separate. Means, dispersion and consistency use completed runs only.",
+                  )}
+                </p>
+              </article>
+            </div>
+          </>
+        )}
       </div>
-      <div className="reading-percents">
-        <strong>{L("100% de recall", "100% recall")}</strong>
-        <span>
-          ={" "}
-          {L(
-            "todos os impactos esperados foram identificados. É a definição da métrica, não um resultado já obtido.",
-            "every expected impact was identified. This is the metric definition, not an achieved result.",
-          )}
-        </span>
-      </div>
-      <div className="criteria-notes">
-        <article>
-          <h3>{L("Valores e unidades", "Values and units")}</h3>
-          <p>
-            {L(
-              "Avaliados separadamente. Não convertemos automaticamente 50 mA em 0,05 A. O prompt exige A, V, rpm e °C.",
-              "Scored separately. We do not automatically convert 50 mA into 0.05 A. The prompt requires A, V, rpm and °C.",
-            )}
-          </p>
-        </article>
-        <article>
-          <h3>{L("Evidência verificável", "Verifiable evidence")}</h3>
-          <p>
-            {L(
-              "Documento e localização devem existir. O trecho citado precisa ocorrer na fonte e corresponder ao fato ou à relação relevante.",
-              "Document and location must exist. The quoted passage must occur in the source and match the relevant fact or relationship.",
-            )}
-          </p>
-        </article>
-        <article>
-          <h3>{L("Explicações", "Explanations")}</h3>
-          <p>
-            {L(
-              "Verificamos elemento alterado, requisito, dependência e evidência. A qualidade completa do texto livre ainda exige revisão humana.",
-              "We check changed element, requirement, dependency and evidence. Full free-text quality still requires human review.",
-            )}
-          </p>
-        </article>
-        <article>
-          <h3>{L("Comparações justas", "Fair comparisons")}</h3>
-          <p>
-            {L(
-              "L1 e L2, texto e PDF, versões e modos com ou sem feedback ficam separados. Média, dispersão e consistência usam somente execuções concluídas.",
-              "L1 and L2, text and PDF, versions and feedback modes stay separate. Means, dispersion and consistency use completed runs only.",
-            )}
-          </p>
-        </article>
-      </div>
-      <a className="button primary" href="#results">
-        {L("Ver métricas medidas", "View measured metrics")}
-        <Icon name="arrow" size={17} />
-      </a>
-    </>
+    </div>
   );
 }
 function RejectForm({ saving, onSave }) {

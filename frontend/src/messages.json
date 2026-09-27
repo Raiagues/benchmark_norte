@@ -90,5 +90,13 @@
   "reference_has_rejected_items": {
     "pt": "Há itens recusados no gabarito. Corrija ou confirme a referência antes de avaliar. Nenhuma chamada foi iniciada.",
     "en": "The reference has rejected items. Correct or confirm it before evaluating. No call was started."
+  },
+  "invalid_model_depth": {
+    "pt": "Esta profundidade não é aceita pelo modelo. Escolha uma opção disponível.",
+    "en": "This depth is not supported by the model. Choose an available option."
+  },
+  "invalid_model_selection": {
+    "pt": "Selecione pelo menos um modelo válido, sem repetições.",
+    "en": "Select at least one valid model, without duplicates."
   }
 }

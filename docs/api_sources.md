@@ -20,7 +20,7 @@ The catalog was checked on 2026-09-27. Featured means a manufacturer-positioned 
 
 The OpenAI models use `reasoning.effort: high`; temperature is omitted because it is incompatible with reasoning on these models. Anthropic uses `output_config.effort: high` and omits temperature; adaptive thinking is left at the provider default. Gemini uses `thinkingLevel: high` and the manufacturer-recommended temperature of 1, since lowering temperature can degrade Gemini 3 reasoning. These are not equivalent randomness controls or compute budgets. Settings are saved in each run; three repetitions measure variability.
 
-Manual connection checks use the same model and structured schema support with a tiny `{ "ok": true }` response, low reasoning effort, at most 2048 output tokens, a 45-second timeout and no retry. This check can cost money, but never creates a benchmark result. Its success confirms small structured generation, not acceptance of every benchmark schema. Confirmations persist per key fingerprint/model/settings; benchmark startup reads them locally with zero probe calls. A credit or access failure later invalidates the confirmation.
+Manual connection checks use the same model and structured schema support with a tiny `{ "ok": true }` response, the selected reasoning depth (not silently lowered), at most 2048 output tokens, a 45-second timeout and no retry. This check can cost money, but never creates a benchmark result. Its success confirms small structured generation, not acceptance of every benchmark schema. Confirmations persist per key fingerprint/model/settings; benchmark startup reads them locally with zero probe calls. A credit or access failure later invalidates the confirmation.
 
 ## Actionable diagnostics
 
@@ -31,3 +31,15 @@ Manual connection checks use the same model and structured schema support with a
 A generic HTTP 429 is **not proof of an empty balance**. The UI reports quotas/rate limits separately and links to the provider panel. The application does not claim to query a reliable credit balance. Error messages are redacted before storage and browser display.
 
 Pricing is intentionally unfilled until someone verifies the chosen model's current tier. No paid model request was used to author the dataset or the reference labels.
+
+
+## Configurable reasoning depth
+
+Checked on 2026-09-27; option lists and their source URLs are in `config/models.json`:
+
+- [GPT-6 Astra](https://developers.openai.com/api/docs/models/gpt-6-astra): `low`, `medium`, `high`, `xhigh`, `max` via `reasoning.effort`.
+- [GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol): the same levels plus `none`.
+- [Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort): both configured models support `low`, `medium`, `high`, `xhigh`, `max` via `output_config.effort`.
+- [Gemini thinking](https://ai.google.dev/gemini-api/docs/thinking): both configured models support `low`, `medium`, `high`; the existing GenerateContent adapter sends `generationConfig.thinkingConfig.thinkingLevel`.
+
+The benchmark keeps its configured `high` default; this is not a claim that all providers have the same API default or effort semantics. High depth can use more tokens and hit the configured timeout or output cap. No automatic depth downgrade is applied. A changed depth requires a compatible manual confirmation. The status endpoint reads local confirmations only. Validation rejects unsupported options before any provider call, and saved run settings keep depth variants in separate statistical groups.

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import storage
-from .connections import statuses, verify_connections
+from .connections import statuses, verify_connections, select_models
 from .dataset import ROOT, TASKS, digest, load_dataset, prompt_bundle
 from .evaluate import compare_graph
 from .runner import aggregate, configuration, execute_run, prepare_runs
@@ -217,6 +217,7 @@ def summary():
 class RunRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     models: list[int] = Field(default_factory=list)
+    depths: dict[str, str] = Field(default_factory=dict)
     tasks: list[str] = Field(default_factory=lambda: TASKS.copy())
     repetitions: int = Field(default=3, ge=1, le=10)
     input_mode: Literal["controlled_text", "pdf_text"] = "controlled_text"
@@ -227,6 +228,7 @@ class RunRequest(BaseModel):
 class ConnectionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     models: list[int] = Field(min_length=1, max_length=50)
+    depths: dict[str, str] = Field(default_factory=dict)
     force: bool = False
 
 
@@ -238,15 +240,24 @@ def check_connections(body: ConnectionRequest):
         )
     try:
         cfg = configuration()
-        if len(set(body.models)) != len(body.models) or any(
-            i < 0 or i >= len(cfg["models"]) for i in body.models
-        ):
-            raise HTTPException(400, "Seleção de modelos inválida.")
-        return verify_connections(
-            [cfg["models"][i] for i in body.models], force=body.force
-        )
+        try:
+            models = select_models(cfg["models"], body.models, body.depths)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from None
+        return verify_connections(models, force=body.force)
     finally:
         RUN_LOCK.release()
+
+
+@app.post("/api/connections/status")
+def selected_connection_status(body: ConnectionRequest):
+    """Local lookup only; changing a selector never calls a provider."""
+    try:
+        return statuses(
+            select_models(configuration()["models"], body.models, body.depths)
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
 
 
 def execute_batch(ids):
@@ -265,11 +276,7 @@ def start_run(body: RunRequest, background: BackgroundTasks):
         )
     try:
         cfg = configuration()
-        if any(i < 0 or i >= len(cfg["models"]) for i in body.models) or len(
-            set(body.models)
-        ) != len(body.models):
-            raise ValueError("Invalid model selection")
-        models = [cfg["models"][i] for i in body.models]
+        models = select_models(cfg["models"], body.models, body.depths)
         ids = prepare_runs(
             models,
             body.tasks,

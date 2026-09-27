@@ -231,6 +231,7 @@ export async function interceptApi(
   const connections = config.models.map((m, i) => ({
     provider: m.provider,
     model: m.model,
+    depth: m.thinking_level || m.reasoning_effort,
     env_name: {
       openai: "OPENAI_API_KEY",
       anthropic: "ANTHROPIC_API_KEY",
@@ -258,7 +259,7 @@ export async function interceptApi(
     const request = route.request();
     const path = new URL(request.url()).pathname.replace("/api", "");
     let response;
-    if (request.method() !== "GET")
+    if (request.method() !== "GET" && path !== "/connections/status")
       writes.push({ path, body: request.postDataJSON() });
     if (path === "/config")
       response = {
@@ -270,8 +271,35 @@ export async function interceptApi(
         },
         connections,
       };
-    else if (path === "/connections/verify") {
-      const selected = request.postDataJSON().models.map((i) => connections[i]);
+    else if (path === "/connections/status") {
+      const { models, depths = {} } = request.postDataJSON();
+      response = models.map((i) => {
+        const c = connections[i],
+          d =
+            depths[i] ||
+            config.models[i].thinking_level ||
+            config.models[i].reasoning_effort;
+        return c.depth === d
+          ? c
+          : {
+              ...c,
+              depth: d,
+              ready: false,
+              generation_confirmed: false,
+              api_responded: false,
+              status: c.key_present ? "unverified" : "missing_api_key",
+            };
+      });
+    } else if (path === "/connections/verify") {
+      const selected = request.postDataJSON().models.map((i) => {
+        const c = connections[i],
+          d =
+            request.postDataJSON().depths?.[i] ||
+            config.models[i].thinking_level ||
+            config.models[i].reasoning_effort;
+        if (c.depth !== d) Object.assign(c, { ready: false, depth: d });
+        return c;
+      });
       const blocked = selected.some((c) => !c.key_present);
       let calls = 0;
       if (!blocked)

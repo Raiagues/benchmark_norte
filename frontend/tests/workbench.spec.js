@@ -33,26 +33,22 @@ test("input documents, requirements, instructions and output contract are clearl
   await expect(
     page.getByRole("heading", { name: "Ventilador", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".fact-grid")).toContainText(
-    "Corrente nominal (A)",
-  );
   await expect(page.locator("pre")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Requisitos do projeto", exact: true })
     .click();
-  await expect(page.locator(".input-passage")).toHaveCount(5);
+  await expect(page.locator(".input-passage")).toHaveCount(1);
   await expect(page.locator(".input-content .role-tag")).toContainText(
     "Entrada do modelo",
   );
   await page
-    .getByRole("tab", { name: "Instruções do modelo", exact: true })
+    .getByRole("button", { name: "Instruções do modelo", exact: true })
     .click();
-  await expect(page.locator(".prompt-card")).toHaveCount(2);
-  await expect(page.locator(".prompt-card").first()).toContainText(
+  await expect(page.locator(".instructions-screen pre")).toContainText(
     "Return one strict JSON object",
   );
   await page
-    .getByRole("tab", { name: "O que deve devolver", exact: true })
+    .getByRole("button", { name: "O que deve devolver", exact: true })
     .click();
   await expect(
     page.getByText("Ainda não existe resposta de modelo.", { exact: true }),
@@ -61,9 +57,14 @@ test("input documents, requirements, instructions and output contract are clearl
     "source_evidence",
   );
   await page
-    .getByRole("tab", { name: "Mensagem completa", exact: true })
+    .getByRole("button", { name: "Mensagem completa", exact: true })
     .click();
-  const raw = await page.locator(".exact-request pre").innerText();
+  const downloadEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Baixar mensagem" }).click();
+  const download = await downloadEvent;
+  const stream = await download.createReadStream();
+  let raw = "";
+  for await (const chunk of stream) raw += chunk;
   expect(raw).toContain('"confirmed_feedback":[]');
   expect(raw).not.toContain('"affected_requirements"');
   expect(raw).not.toContain('"expected_reason"');
@@ -82,7 +83,7 @@ test("human reference decisions and edits have explicit actions, version history
 }) => {
   const { writes } = await interceptApi(page);
   await page.goto("/#reference");
-  await expect(page.locator(".reference-card")).toHaveCount(11);
+  await expect(page.locator(".reference-card")).toHaveCount(1);
   await expect(page.locator("pre")).toHaveCount(0);
   const card = page.locator(".reference-card").first();
   await card.getByRole("button", { name: "Confirmar", exact: true }).click();
@@ -113,9 +114,13 @@ test("human reference decisions and edits have explicit actions, version history
     .click();
   await expect(card).toContainText("Human explanation for isolated UI test.");
   await expect(card).toContainText("○ Aguarda revisão");
+  await page
+    .getByRole("button", { name: "Histórico de alterações", exact: true })
+    .click();
   await expect(page.locator(".revision-history")).toContainText(
     "1.1.0+local.1",
   );
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
   expect(writes.map((w) => w.path)).toEqual([
     "/benchmark/review",
     "/benchmark/review",
@@ -148,7 +153,7 @@ test("language switch covers navigation, benchmark, connections and persists whi
     .getByRole("link", { name: "Evaluation criteria", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "A valid response can still be wrong." }),
+    page.getByRole("heading", { name: "3. How to read the metrics" }),
   ).toBeVisible();
   await expect(page.locator(".criteria-metrics")).toContainText(
     "Unsupported claims",
@@ -164,13 +169,13 @@ test("language switch covers navigation, benchmark, connections and persists whi
   ).toBeVisible();
   await page.getByRole("link", { name: "New evaluation", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "1. Choose models" }),
+    page.getByRole("heading", { name: "Which APIs do you want to compare?" }),
   ).toBeVisible();
-  await expect(page.getByText("Key missing", { exact: true })).toHaveCount(3);
+  await expect(page.locator(".connection-indicator.red")).toHaveCount(3);
   await page
     .getByRole("button", { name: "Start evaluation", exact: false })
     .click();
-  await expect(page.getByRole("alert")).toContainText("Evaluation blocked");
+  await expect(page.getByRole("status")).toContainText("Connections pending");
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "New evaluation",

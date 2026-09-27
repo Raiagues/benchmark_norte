@@ -2,8 +2,8 @@
 
 Versão 1.1: resultados publicados somente após uma execução real e completa das APIs.
 
-- 86 testes Python passaram. Incluem precisão/recall/F1, evidências, relações direcionadas, impactos críticos, parsing, normalização dos provedores, feedback, publicação atômica e rejeição de respostas inválidas.
-- 14 testes de navegador passaram na interface compilada: estado vazio; falha sem resultado; seleção de modelo e grafos lado a lado; métricas e respostas originais; layout móvel; bloqueio de todos os modelos quando falta uma chave; confirmação manual persistente; diagnóstico de crédito sem confundir resposta HTTP com geração confirmada.
+- 90 testes Python passaram. Incluem precisão/recall/F1, evidências, relações direcionadas, impactos críticos, parsing, normalização dos provedores, feedback, publicação atômica e rejeição de respostas inválidas.
+- 19 testes de navegador passaram na interface compilada: estado vazio; falha sem resultado; seleção de modelo e grafos lado a lado; métricas e respostas originais; layout móvel; bloqueio de todos os modelos quando falta uma chave; confirmação manual persistente; diagnóstico de crédito sem confundir resposta HTTP com geração confirmada.
 - As confirmações são testadas em bancos temporários: ausência/rotação de chave, configuração alterada, crédito, cota, rate limit, acesso negado e resposta malformada. Iniciar não repete o teste de conexão e uma única pendência bloqueia o lote antes de qualquer chamada.
 - `./setup`, `./start` repetido, `./stop` repetido e reabertura imediata passaram no ambiente Linux. O instalador criou apenas um `.env` vazio e preserva arquivos existentes. O servidor atende interface e API em uma única porta.
 - A compilação de produção do frontend passou. O Vite informa que ignora a diretiva `use client` da dependência React Flow; isso não impede a compilação.
@@ -27,3 +27,11 @@ A suíte Python informa uma depreciação do uso de httpx no TestClient do Starl
 - Testes cobrem revisão humana, recusa que bloqueia chamadas, versões de entradas/prompts/gabarito, conflito de edição, evidências inválidas, prevenção de credenciais e preservação de snapshots antigos.
 - Testes de navegador cobrem os dois idiomas, persistência da preferência, conteúdo original inalterado, edição sem JSON, histórico e layout móvel. Ícones são ilustrações de interface, não fotografias dos componentes.
 - A inspeção visual no servidor real foi somente de leitura. Não confirmou gabaritos, não criou edições locais nem chamou modelos.
+
+
+## Seleção compacta e visual Norte
+
+- Três linhas de provedores substituem o catálogo de cartões. Seleção, profundidade, indicadores e detalhes sob demanda foram testados nos dois idiomas.
+- A seleção de profundidade chega ao corpo HTTP dos três adaptadores. Configurações não permitidas são rejeitadas antes de chamadas e a confirmação é específica da configuração selecionada.
+- Testes de navegador verificam limites reais dos elementos em 1366×768 e 390×844, além de paginação, alternância de abas, acesso por teclado e leitura integral sem perda de caracteres. Detalhes e editores em diálogos podem ter rolagem própria.
+- O estilo foi baseado na paleta do repositório `Raiagues/norte`, commit `a2945d8`. Não foram importadas dependências ou executados scripts daquele projeto.

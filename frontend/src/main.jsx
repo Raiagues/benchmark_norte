@@ -1,3 +1,12 @@
+import RunPage from "./RunPage";
+import {
+  Tabs,
+  PagedItems,
+  Modal,
+  PagedText,
+  MetricGrid,
+  DetailButton,
+} from "./ScreenUI";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -12,6 +21,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./style.css";
 import "./workbench.css";
+import "./norte.css";
 import Benchmark from "./Benchmark";
 import Icon from "./Icon";
 import { t as tr, L, getLanguage, setLanguage, locale } from "./i18n";
@@ -49,6 +59,18 @@ const pageIcons = {
   run: "run",
 };
 
+const depthLabel = (value) =>
+  ({
+    none: L("sem raciocínio", "no reasoning"),
+    low: L("baixa", "low"),
+    medium: L("média", "medium"),
+    high: L("alta", "high"),
+    xhigh: L("muito alta", "extra high"),
+    max: L("máxima", "maximum"),
+  })[value] || value;
+const displayModel = (r) =>
+  r.model + (r.depth ? ` · ${depthLabel(r.depth)}` : "");
+
 const levels = {
   L1_DIRECT: "L1 · Relações explícitas",
   L2_ONE_HOP: "L2 · Um passo de raciocínio",
@@ -60,23 +82,23 @@ const relations = {
   verified_by: "Verificado por",
 };
 const statuses = {
-  correct: { label: "Correta", symbol: "✓", color: "#147463", dash: undefined },
+  correct: { label: "Correta", symbol: "✓", color: "#33d4a0", dash: undefined },
   correct_bad_evidence: {
     label: "Evidência inválida",
     symbol: "!",
-    color: "#986b17",
+    color: "#e5b95f",
     dash: "9 3 2 3",
   },
   false_positive: {
     label: "Extra / incorreta",
     symbol: "+",
-    color: "#bc454b",
+    color: "#e5767f",
     dash: "3 4",
   },
   missing: {
     label: "Não identificada",
     symbol: "−",
-    color: "#65738d",
+    color: "#9fb9dc",
     dash: "9 5",
   },
 };
@@ -257,7 +279,7 @@ function App() {
     <>
       <aside className="sidebar">
         <a className="brand" href="#documents">
-          <span className="brand-icon">{tr("n")}</span>
+          <span className="brand-mark" aria-hidden="true" />
           {tr("Norte")}
           <span className="brand-caption">{tr("/ benchmark")}</span>
         </a>
@@ -301,24 +323,10 @@ function App() {
           <Icon name="run" size={17} />
           {L("Nova avaliação", "New evaluation")}
         </a>
-        <div className="sidebar-note">
-          <Icon name="lock" size={17} />
-          <span>
-            {L(
-              "APIs no servidor. Chaves no seu .env.",
-              "Server-side APIs. Keys in your .env.",
-            )}
-          </span>
-        </div>
       </aside>
       <div className="workspace">
         <header className="workspace-topbar">
-          <span>
-            {L(
-              "ENGENHARIA, EVIDÊNCIA E MODELOS",
-              "ENGINEERING, EVIDENCE AND MODELS",
-            )}
-          </span>
+          <span>NORTE / BENCHMARK</span>
           <div
             className="language-switch"
             aria-label={L("Idioma da interface", "Interface language")}
@@ -339,7 +347,7 @@ function App() {
             </button>
           </div>
         </header>
-        <main>
+        <main className={`page-${page}`}>
           <div className="page-heading">
             <div>
               <p className="eyebrow">{tr("COMPREENSÃO DE ENGENHARIA")}</p>
@@ -378,6 +386,7 @@ function App() {
               )}
               {page === "run" && (
                 <RunPage
+                  api={api}
                   config={config}
                   runs={runs}
                   executions={executions}
@@ -386,15 +395,6 @@ function App() {
               )}
             </>
           )}
-          <footer>
-            {tr("Norte · Avaliação local de modelos")}
-            {config && (
-              <span>
-                {tr("Referência documental · ")}
-                {tr(config.manifest.dataset_version)}
-              </span>
-            )}
-          </footer>
         </main>
       </div>
     </>
@@ -464,7 +464,8 @@ function RunPicker({ selection }) {
               <option key={r.id} value={r.id}>
                 {tr(date(r.created_at))}
                 {tr(" · repetição ")}
-                {tr(r.repetition)} ·{tr(" ")}
+                {tr(r.repetition)} ·{r.depth ? `${depthLabel(r.depth)} · ` : ""}
+                {tr(" ")}
                 {tr(
                   r.experiment === "first_pass"
                     ? "sem correções"
@@ -496,6 +497,7 @@ function RunPicker({ selection }) {
 }
 
 function Results({ runs, summary }) {
+  const [view, setView] = useState("charts");
   const [cohort, setCohort] = useState(""),
     [level, setLevel] = useState("L1_DIRECT"),
     [task, setTask] = useState("relationship_extraction"),
@@ -538,7 +540,17 @@ function Results({ runs, summary }) {
     rows.find((r) => modelKey(r) === modelKey(m) && r.task === t)?.metrics[key]
       ?.mean;
   return (
-    <>
+    <div className="results-screen">
+      <Tabs
+        value={view}
+        onChange={setView}
+        items={[
+          ["charts", L("Gráficos", "Charts")],
+          ["overview", L("Resumo", "Overview")],
+          ["usage", L("Uso e custo", "Usage and cost")],
+          ["raw", L("Respostas", "Responses")],
+        ]}
+      />
       <div className="toolbar comparison-controls">
         {cohorts.length > 1 && (
           <label>
@@ -608,208 +620,237 @@ function Results({ runs, summary }) {
               }
             />
             <span className="provider-dot" />
-            {tr(m.model)}
+            {tr(displayModel(m))}
           </label>
         ))}
       </div>
       {rows.length ? (
         <>
-          <section className="panel overview-panel">
-            <SectionHeading title={tr("Visão geral")}>
-              <span className="muted">
-                {tr("Médias das execuções concluídas")}
-              </span>
-            </SectionHeading>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{tr("Modelo")}</th>
-                    {level === "L1_DIRECT" && (
-                      <>
-                        <th>{tr("Extração F1 ↑")}</th>
-                        <th>{tr("Relações F1 ↑")}</th>
-                      </>
-                    )}
-                    <th>{tr("Recall de impacto ↑")}</th>
-                    <th>{tr("Falhas críticas ↓")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allModels
-                    .filter((m) => !hidden.includes(modelKey(m)))
-                    .map((m) => {
-                      const impact =
-                        level === "L1_DIRECT" ? "change_impact" : "one_hop";
-                      return (
-                        <tr key={modelKey(m)}>
-                          <td>
-                            <strong>{tr(m.model)}</strong>
-                            <small>{tr(providers[m.provider])}</small>
-                          </td>
-                          {level === "L1_DIRECT" && (
-                            <>
-                              <td>
-                                {tr(
-                                  pct(
-                                    metric(m, "entity_extraction", "entity_f1"),
-                                  ),
-                                )}
-                              </td>
-                              <td>
-                                {tr(
-                                  pct(
-                                    metric(
-                                      m,
-                                      "relationship_extraction",
-                                      "relationship_f1",
-                                    ),
-                                  ),
-                                )}
-                              </td>
-                            </>
-                          )}
-                          <td>{tr(pct(metric(m, impact, "impact_recall")))}</td>
-                          <td>
-                            {tr(
-                              pct(
-                                metric(m, impact, "critical_impact_miss_rate"),
-                              ),
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          <section className="comparison-section">
-            <SectionHeading title={tr("Comparar métricas")}>
-              <label className="inline-label">
-                {tr("Tarefa")}
-                <select
-                  aria-label={tr("Tarefa")}
-                  value={activeTask}
-                  onChange={(e) => setTask(e.target.value)}
-                >
-                  {options.map((t) => (
-                    <option key={t} value={t}>
-                      {tr(tasks[t])}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </SectionHeading>
-            <div className="chart-grid">
-              <MetricChart
-                title={tr("Precisão")}
-                hint="Acertos entre as previsões · maior é melhor"
-                rows={series}
-                metric={`${family}_precision`}
-              />
-              <MetricChart
-                title={tr("Recall")}
-                hint="Dependências encontradas · maior é melhor"
-                rows={series}
-                metric={`${family}_recall`}
-              />
-              <MetricChart
-                title={tr("F1")}
-                hint="Equilíbrio entre precisão e recall · maior é melhor"
-                rows={series}
-                metric={`${family}_f1`}
-              />
-              <MetricChart
-                title={
-                  family === "impact"
-                    ? "Impactos críticos perdidos"
-                    : "Afirmações sem suporte"
-                }
-                hint="Menor é melhor"
-                rows={series}
-                metric={unsupported}
-              />
-              <MetricChart
-                title={tr("Consistência")}
-                hint="Respostas iguais entre repetições · maior é melhor"
-                rows={series}
-                field="consistency"
-              />
-              <MetricChart
-                title={tr("Tempo por chamada")}
-                hint="Média em segundos · menor é melhor"
-                rows={series}
-                field="latency_seconds"
-                seconds
-              />
-            </div>
-            <p className="chart-caption">
-              {tr(
-                "Barras: média. Traços: mínimo e máximo. — = sem medição disponível.",
-              )}
-            </p>
-          </section>
-          <section className="panel">
-            <SectionHeading title={tr("Uso da API")} />
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{tr("Modelo")}</th>
-                    <th>{tr("Repetições")}</th>
-                    <th>{tr("Tokens de entrada / saída")}</th>
-                    <th>{tr("Custo por tarefa")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {series.map((r) => (
-                    <tr key={modelKey(r)}>
-                      <td>{tr(r.model)}</td>
-                      <td>{tr(r.n)}</td>
-                      <td>
-                        {tr(
-                          r.token_usage_complete
-                            ? `${decimal(r.known_input_tokens)} / ${decimal(r.known_output_tokens)}`
-                            : "Não disponível",
-                        )}
-                      </td>
-                      <td>{tr(usd(r.average_cost_per_task_usd))}</td>
+          {view === "overview" && (
+            <section className="panel overview-panel">
+              <SectionHeading title={tr("Visão geral")}>
+                <span className="muted">
+                  {tr("Médias das execuções concluídas")}
+                </span>
+              </SectionHeading>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{tr("Modelo")}</th>
+                      {level === "L1_DIRECT" && (
+                        <>
+                          <th>{tr("Extração F1 ↑")}</th>
+                          <th>{tr("Relações F1 ↑")}</th>
+                        </>
+                      )}
+                      <th>{tr("Recall de impacto ↑")}</th>
+                      <th>{tr("Falhas críticas ↓")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <details>
-              <summary>{tr("Estatísticas completas")}</summary>
-              <Json
-                value={series.map(
-                  ({ model, n, metrics, consistency, latency_seconds }) => ({
-                    model,
-                    n,
-                    metrics,
-                    consistency,
-                    latency_seconds,
-                  }),
+                  </thead>
+                  <tbody>
+                    {allModels
+                      .filter((m) => !hidden.includes(modelKey(m)))
+                      .map((m) => {
+                        const impact =
+                          level === "L1_DIRECT" ? "change_impact" : "one_hop";
+                        return (
+                          <tr key={modelKey(m)}>
+                            <td>
+                              <strong>{tr(displayModel(m))}</strong>
+                              <small>{tr(providers[m.provider])}</small>
+                            </td>
+                            {level === "L1_DIRECT" && (
+                              <>
+                                <td>
+                                  {tr(
+                                    pct(
+                                      metric(
+                                        m,
+                                        "entity_extraction",
+                                        "entity_f1",
+                                      ),
+                                    ),
+                                  )}
+                                </td>
+                                <td>
+                                  {tr(
+                                    pct(
+                                      metric(
+                                        m,
+                                        "relationship_extraction",
+                                        "relationship_f1",
+                                      ),
+                                    ),
+                                  )}
+                                </td>
+                              </>
+                            )}
+                            <td>
+                              {tr(pct(metric(m, impact, "impact_recall")))}
+                            </td>
+                            <td>
+                              {tr(
+                                pct(
+                                  metric(
+                                    m,
+                                    impact,
+                                    "critical_impact_miss_rate",
+                                  ),
+                                ),
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+          {view === "charts" && (
+            <section className="comparison-section">
+              <SectionHeading title={tr("Comparar métricas")}>
+                <label className="inline-label">
+                  {tr("Tarefa")}
+                  <select
+                    aria-label={tr("Tarefa")}
+                    value={activeTask}
+                    onChange={(e) => setTask(e.target.value)}
+                  >
+                    {options.map((t) => (
+                      <option key={t} value={t}>
+                        {tr(tasks[t])}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </SectionHeading>
+              <MetricGrid>
+                <MetricChart
+                  title={tr("Precisão")}
+                  hint="Acertos entre as previsões · maior é melhor"
+                  rows={series}
+                  metric={`${family}_precision`}
+                />
+                <MetricChart
+                  title={tr("Recall")}
+                  hint="Dependências encontradas · maior é melhor"
+                  rows={series}
+                  metric={`${family}_recall`}
+                />
+                <MetricChart
+                  title={tr("F1")}
+                  hint="Equilíbrio entre precisão e recall · maior é melhor"
+                  rows={series}
+                  metric={`${family}_f1`}
+                />
+                <MetricChart
+                  title={
+                    family === "impact"
+                      ? "Impactos críticos perdidos"
+                      : "Afirmações sem suporte"
+                  }
+                  hint="Menor é melhor"
+                  rows={series}
+                  metric={unsupported}
+                />
+                <MetricChart
+                  title={tr("Consistência")}
+                  hint="Respostas iguais entre repetições · maior é melhor"
+                  rows={series}
+                  field="consistency"
+                />
+                <MetricChart
+                  title={tr("Tempo por chamada")}
+                  hint="Média em segundos · menor é melhor"
+                  rows={series}
+                  field="latency_seconds"
+                  seconds
+                />
+              </MetricGrid>
+              <p className="chart-caption">
+                {tr(
+                  "Barras: média. Traços: mínimo e máximo. — = sem medição disponível.",
                 )}
-              />
-            </details>
-          </section>
+              </p>
+            </section>
+          )}
+          {view === "usage" && (
+            <section className="panel usage-panel">
+              <SectionHeading title={tr("Uso da API")} />
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{tr("Modelo")}</th>
+                      <th>{tr("Repetições")}</th>
+                      <th>{tr("Tokens de entrada / saída")}</th>
+                      <th>{tr("Custo por tarefa")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {series.map((r) => (
+                      <tr key={modelKey(r)}>
+                        <td>{tr(displayModel(r))}</td>
+                        <td>{tr(r.n)}</td>
+                        <td>
+                          {tr(
+                            r.token_usage_complete
+                              ? `${decimal(r.known_input_tokens)} / ${decimal(r.known_output_tokens)}`
+                              : "Não disponível",
+                          )}
+                        </td>
+                        <td>{tr(usd(r.average_cost_per_task_usd))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <DetailButton label={tr("Estatísticas completas")}>
+                <PagedText
+                  text={JSON.stringify(
+                    series.map(
+                      ({
+                        model,
+                        depth,
+                        n,
+                        metrics,
+                        consistency,
+                        latency_seconds,
+                      }) => ({
+                        model,
+                        depth,
+                        n,
+                        metrics,
+                        consistency,
+                        latency_seconds,
+                      }),
+                    ),
+                    null,
+                    2,
+                  )}
+                />
+              </DetailButton>
+            </section>
+          )}
         </>
       ) : (
         <div className="empty-inline">
           {tr("Não há medições para esta seleção.")}
         </div>
       )}
-      <section className="panel">
-        <SectionHeading title={tr("Inspecionar uma execução")} />
-        <RunPicker selection={selection} />
-        {selection.error && <p role="alert">{tr(selection.error)}</p>}
-        {selection.run && (
-          <RunInspector key={selection.run.id} run={selection.run} />
-        )}
-      </section>
-    </>
+      {view === "raw" && (
+        <section className="panel raw-panel">
+          <SectionHeading title={tr("Inspecionar uma execução")} />
+          <RunPicker selection={selection} />
+          {selection.error && <p role="alert">{tr(selection.error)}</p>}
+          {selection.run && (
+            <RunInspector key={selection.run.id} run={selection.run} />
+          )}
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -819,7 +860,7 @@ function MetricChart({ title, hint, rows, metric, field, seconds = false }) {
     const stats = typeof raw === "number" ? { mean: raw } : raw || {};
     return {
       ...stats,
-      model: r.model,
+      model: displayModel(r),
       provider: r.provider,
       n: r.n,
       key: modelKey(r),
@@ -838,7 +879,7 @@ function MetricChart({ title, hint, rows, metric, field, seconds = false }) {
         {values.map((v) => (
           <div className={`chart-row ${v.provider}`} key={v.key}>
             <div className="chart-row-label">
-              <span>{tr(v.model)}</span>
+              <span title={v.model}>{tr(v.model)}</span>
               <strong>{tr(format(v.mean))}</strong>
             </div>
             <div
@@ -881,10 +922,7 @@ function RunInspector({ run }) {
     ? costs.reduce((a, b) => a + b, 0)
     : null;
   return (
-    <details className="run-details">
-      <summary>
-        {tr("Resposta original, métricas e informações da execução")}
-      </summary>
+    <div className="run-details">
       <div className="toolbar">
         <label>
           {tr("Tarefa da resposta")}
@@ -908,6 +946,7 @@ function RunInspector({ run }) {
             onChange={(e) => setTab(e.target.value)}
           >
             {Object.entries({
+              trace: "Versões e rastreabilidade",
               raw_response: "Resposta original da API",
               parsed_output: "Dados extraídos",
               metrics: "Métricas",
@@ -926,24 +965,27 @@ function RunInspector({ run }) {
           {tr(usd(total))}
         </span>
       </div>
-      {result &&
-        (tab === "prompt" ? (
-          <pre>{result.prompt}</pre>
-        ) : (
-          <Json value={result[tab] ?? "Não disponível para esta tarefa"} />
-        ))}
-      <details>
-        <summary>{tr("Versões e rastreabilidade")}</summary>
-        <Json
-          value={{
-            run_id: run.id,
-            metadata: run.metadata,
-            prompt_hash: result?.prompt_hash,
-            dataset_hash: result?.dataset_hash,
-          }}
+      {result && (
+        <PagedText
+          text={
+            tab === "prompt"
+              ? result.prompt
+              : JSON.stringify(
+                  tab === "trace"
+                    ? {
+                        run_id: run.id,
+                        metadata: run.metadata,
+                        prompt_hash: result.prompt_hash,
+                        dataset_hash: result.dataset_hash,
+                      }
+                    : (result[tab] ?? L("Não disponível", "Unavailable")),
+                  null,
+                  2,
+                )
+          }
         />
-      </details>
-    </details>
+      )}
+    </div>
   );
 }
 
@@ -955,7 +997,8 @@ function Graphs({ runs }) {
     [error, setError] = useState(""),
     [view, setView] = useState("side"),
     [focus, setFocus] = useState("requirements"),
-    [item, setItem] = useState(null);
+    [item, setItem] = useState(null),
+    [listOpen, setListOpen] = useState(false);
   useEffect(() => {
     let active = true;
     setGraph(null);
@@ -1006,7 +1049,7 @@ function Graphs({ runs }) {
     ]),
   );
   return (
-    <>
+    <div className="graphs-screen">
       <RunPicker selection={selection} />
       {(error || selection.error) && (
         <p role="alert">{tr(error || selection.error)}</p>
@@ -1104,46 +1147,64 @@ function Graphs({ runs }) {
             )}
           </p>
           {item && selection.run && (
-            <GraphInspector
-              key={`${item.kind}-${item.node?.id || item.edge?.key.join("-")}-${selection.run.id}`}
-              item={item}
-              run={selection.run}
+            <Modal
+              title={L("Detalhes do grafo", "Graph details")}
               onClose={() => setItem(null)}
-            />
+            >
+              <GraphInspector
+                key={`${item.kind}-${item.node?.id || item.edge?.key.join("-")}-${selection.run.id}`}
+                item={item}
+                run={selection.run}
+                onClose={() => setItem(null)}
+              />
+            </Modal>
           )}
-          <details className="panel">
-            <summary>{tr("Ver relações em lista")}</summary>
-            <div className="relationship-list">
-              {relevant.map((d) => {
-                const e = d.model_edge || d.ground_truth_edge;
-                return (
-                  <button
-                    key={d.key.join("|")}
-                    onClick={() => setItem({ kind: "comparison", edge: d })}
-                  >
-                    <span className={`status-mark ${d.status}`}>
-                      {tr(statuses[d.status].symbol)}
-                    </span>
-                    <span>
-                      {tr(e.source)}
-                      {tr(" ")}
-                      <small>
-                        {tr(relations[e.relationship] || e.relationship)}
-                      </small>
-                      {tr(" ")}
-                      {tr(e.target)}
-                    </span>
-                    <span className="muted">
-                      {tr(statuses[d.status].label)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </details>
+          <button
+            className="graph-list-button"
+            onClick={() => setListOpen(true)}
+          >
+            {tr("Ver relações em lista")}
+          </button>
+          {listOpen && (
+            <Modal
+              title={tr("Ver relações em lista")}
+              onClose={() => setListOpen(false)}
+            >
+              <div className="relationship-list">
+                {relevant.map((d) => {
+                  const e = d.model_edge || d.ground_truth_edge;
+                  return (
+                    <button
+                      key={d.key.join("|")}
+                      onClick={() => {
+                        setListOpen(false);
+                        setItem({ kind: "comparison", edge: d });
+                      }}
+                    >
+                      <span className={`status-mark ${d.status}`}>
+                        {tr(statuses[d.status].symbol)}
+                      </span>
+                      <span>
+                        {tr(e.source)}
+                        {tr(" ")}
+                        <small>
+                          {tr(relations[e.relationship] || e.relationship)}
+                        </small>
+                        {tr(" ")}
+                        {tr(e.target)}
+                      </span>
+                      <span className="muted">
+                        {tr(statuses[d.status].label)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Modal>
+          )}
         </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -1337,7 +1398,7 @@ function GraphCanvas({ title, subtitle, kind, graph, focus, setItem }) {
             onEdgeClick={(_, e) => setItem({ kind, edge: e.data.detail })}
             proOptions={{ hideAttribution: true }}
           >
-            <Background gap={24} size={1} color="#e3e8ed" />
+            <Background gap={24} size={1} color="#29445c" />
             <LocalizedGraphControls />
           </ReactFlow>
         </div>
@@ -1601,6 +1662,7 @@ function Impacts({ runs }) {
       ["change_impact", "one_hop", "impact_explanation"].includes(t),
     ),
   );
+  const [detail, setDetail] = useState(null);
   const [level, setLevel] = useState("L1_DIRECT"),
     [type, setType] = useState("all"),
     [task, setTask] = useState("change_impact");
@@ -1631,7 +1693,7 @@ function Impacts({ runs }) {
     parameter: "Parâmetro",
   };
   return (
-    <>
+    <div className="impacts-screen">
       <RunPicker selection={selection} />
       <div className="toolbar">
         <label>
@@ -1694,9 +1756,14 @@ function Impacts({ runs }) {
               <span>{tr("Modelo")}</span>
               <span>{tr("Comparação")}</span>
             </div>
-            {cases
-              .filter((s) => type === "all" || s.change_type === type)
-              .map((s) => {
+            <PagedItems
+              items={cases.filter(
+                (s) => type === "all" || s.change_type === type,
+              )}
+              resetKey={`${type}:${level}:${run.id}`}
+              size={3}
+            >
+              {(s) => {
                 const answer = result.parsed_output.scenarios.find(
                   (a) => normalize(a.scenario_id) === s.id,
                 );
@@ -1716,8 +1783,12 @@ function Impacts({ runs }) {
                   (id) => !s.affected_requirements.includes(id),
                 );
                 return (
-                  <details className="scenario" key={s.id}>
-                    <summary>
+                  <article className="scenario" key={s.id}>
+                    <button
+                      type="button"
+                      className="scenario-summary"
+                      onClick={() => setDetail(s.id)}
+                    >
                       <span>
                         <strong>{tr(s.id)}</strong>
                         <small>{s.title || s.description}</small>
@@ -1746,84 +1817,96 @@ function Impacts({ runs }) {
                           </span>
                         )}
                       </span>
-                    </summary>
-                    <div className="scenario-body">
-                      <p className="muted">{s.description}</p>
-                      <div className="evidence-columns">
-                        <div>
-                          <h3>{tr("Por que precisa de revisão")}</h3>
-                          <p>{tr(s.expected_reason)}</p>
-                          {missed.length > 0 && (
-                            <p className="false_positive">
-                              {tr("Não identificados: ")}
-                              {tr(missed.join(", "))}
-                            </p>
-                          )}
-                          {extra.length > 0 && (
-                            <p>
-                              {tr("Previsões extras: ")}
-                              {tr(extra.join(", "))}
-                            </p>
-                          )}
+                    </button>
+                    {detail === s.id && (
+                      <Modal
+                        title={`${s.id} · ${s.title || ""}`}
+                        onClose={() => setDetail(null)}
+                      >
+                        <div className="scenario-body">
+                          <p className="muted">{s.description}</p>
+                          <div className="evidence-columns">
+                            <div>
+                              <h3>{tr("Por que precisa de revisão")}</h3>
+                              <p>{tr(s.expected_reason)}</p>
+                              {missed.length > 0 && (
+                                <p className="false_positive">
+                                  {tr("Não identificados: ")}
+                                  {tr(missed.join(", "))}
+                                </p>
+                              )}
+                              {extra.length > 0 && (
+                                <p>
+                                  {tr("Previsões extras: ")}
+                                  {tr(extra.join(", "))}
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <h3>{tr("Explicação do modelo")}</h3>
+                              {answer?.impacts.length ? (
+                                answer.impacts.map((i, ix) => (
+                                  <div key={ix}>
+                                    <strong>{tr(i.requirement_id)}</strong>
+                                    <p>{i.explanation}</p>
+                                    <Evidence items={i.source_evidence} />
+                                  </div>
+                                ))
+                              ) : (
+                                <p>
+                                  {tr(
+                                    "Nenhum requisito apontado como afetado.",
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <details>
+                            <summary>{tr("Verificação da explicação")}</summary>
+                            <Json value={check?.explanation_checks || []} />
+                          </details>
+                          <ExplanationReview
+                            run={run}
+                            result={result}
+                            scenario={s}
+                          />
                         </div>
-                        <div>
-                          <h3>{tr("Explicação do modelo")}</h3>
-                          {answer?.impacts.length ? (
-                            answer.impacts.map((i, ix) => (
-                              <div key={ix}>
-                                <strong>{tr(i.requirement_id)}</strong>
-                                <p>{i.explanation}</p>
-                                <Evidence items={i.source_evidence} />
-                              </div>
-                            ))
-                          ) : (
-                            <p>
-                              {tr("Nenhum requisito apontado como afetado.")}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <details>
-                        <summary>{tr("Verificação da explicação")}</summary>
-                        <Json value={check?.explanation_checks || []} />
-                      </details>
-                      <ExplanationReview
-                        run={run}
-                        result={result}
-                        scenario={s}
-                      />
-                    </div>
-                  </details>
+                      </Modal>
+                    )}
+                  </article>
                 );
-              })}
+              }}
+            </PagedItems>
           </section>
         )
       )}
       {result?.feedback_metrics && (
-        <section className="panel">
-          <SectionHeading title={tr("Efeito das correções")} />
-          <dl className="edge-facts">
-            {[
-              ["correction_retention_rate", "Correções mantidas"],
-              ["repeated_error_rate", "Erros repetidos"],
-              ["new_error_rate", "Erros novos"],
-              ["performance_improvement", "Variação do F1"],
-            ].map(([key, label]) => (
-              <div key={key}>
-                <dt>{tr(label)}</dt>
-                <dd>{tr(pct(result.feedback_metrics[key]))}</dd>
-              </div>
-            ))}
-          </dl>
-          <details>
-            <summary>
-              {tr("Separar casos conhecidos e casos de transferência")}
-            </summary>
-            <Json value={result.feedback_transfer_metrics} />
-          </details>
-        </section>
+        <DetailButton label={tr("Efeito das correções")}>
+          <section className="panel">
+            <SectionHeading title={tr("Efeito das correções")} />
+            <dl className="edge-facts">
+              {[
+                ["correction_retention_rate", "Correções mantidas"],
+                ["repeated_error_rate", "Erros repetidos"],
+                ["new_error_rate", "Erros novos"],
+                ["performance_improvement", "Variação do F1"],
+              ].map(([key, label]) => (
+                <div key={key}>
+                  <dt>{tr(label)}</dt>
+                  <dd>{tr(pct(result.feedback_metrics[key]))}</dd>
+                </div>
+              ))}
+            </dl>
+            <details>
+              <summary>
+                {tr("Separar casos conhecidos e casos de transferência")}
+              </summary>
+              <Json value={result.feedback_transfer_metrics} />
+            </details>
+          </section>
+        </DetailButton>
       )}
-    </>
+    </div>
   );
 }
 function ExplanationReview({ run, result, scenario }) {
@@ -1897,522 +1980,6 @@ function ExplanationReview({ run, result, scenario }) {
         {message && <p role="status">{tr(message)}</p>}
       </form>
     </details>
-  );
-}
-
-function RunPage({ config, runs, executions, refresh }) {
-  const [models, setModels] = useState(
-      config.models.flatMap((m, i) => (m.featured ? [i] : [])),
-    ),
-    [selectedTasks, setSelectedTasks] = useState(config.tasks),
-    [repetitions, setRepetitions] = useState(config.defaults.repetitions),
-    [mode, setMode] = useState("controlled_text"),
-    [experiment, setExperiment] = useState("first_pass"),
-    [baseline, setBaseline] = useState(""),
-    [busy, setBusy] = useState(false),
-    [checking, setChecking] = useState(false),
-    [message, setMessage] = useState(""),
-    [checkMessage, setCheckMessage] = useState("");
-  const toggle = (list, value) =>
-    list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
-  const active = executions.some((e) =>
-    ["pending", "running"].includes(e.status),
-  );
-  const locked = busy || checking || active;
-  const checks = models.map((i) => ({
-    ...config.connections[i],
-    index: i,
-    label: config.models[i].label || config.models[i].model,
-  }));
-  const pending = checks.filter((c) => !c.ready);
-  const calls =
-    selectedTasks.reduce(
-      (sum, t) => sum + (t === "impact_explanation" ? 2 : 1),
-      0,
-    ) *
-    repetitions *
-    models.length;
-  async function verify(indices = models, force = false) {
-    setChecking(true);
-    setCheckMessage("");
-    setMessage("");
-    try {
-      const r = await api("/connections/verify", "POST", {
-        models: indices,
-        force,
-      });
-      const failed = r.checks.filter((c) => !c.ready);
-      setCheckMessage(
-        failed.length
-          ? r.blocked
-            ? r.message
-            : "Verificação concluída com pendências. Veja abaixo como resolver."
-          : "Conexões confirmadas. Você já pode iniciar a avaliação.",
-      );
-      await refresh();
-    } catch (e) {
-      setCheckMessage(e.message);
-    } finally {
-      setChecking(false);
-    }
-  }
-  async function start(e) {
-    e.preventDefault();
-    setMessage("");
-    if (pending.length) {
-      setMessage(
-        "Avaliação bloqueada: resolva as pendências de conexão abaixo. Nenhuma chamada de benchmark foi enviada.",
-      );
-      await refresh();
-      return;
-    }
-    setBusy(true);
-    try {
-      await api("/runs", "POST", {
-        models,
-        tasks: selectedTasks,
-        repetitions: Number(repetitions),
-        input_mode: mode,
-        experiment,
-        baseline_run_id: baseline || null,
-      });
-      await refresh();
-    } catch (e) {
-      setMessage(e.message);
-      await refresh();
-    } finally {
-      setBusy(false);
-    }
-  }
-  function chooseBaseline(id) {
-    setBaseline(id);
-    const b = runs.find((r) => r.id === id);
-    if (b) {
-      setModels(
-        config.models.flatMap((m, i) =>
-          m.provider === b.provider && m.model === b.model ? [i] : [],
-        ),
-      );
-      setSelectedTasks(b.tasks);
-      setMode(b.input_mode);
-    }
-  }
-  return (
-    <>
-      <form className="panel run-form" onSubmit={start}>
-        <SectionHeading title={tr("1. Escolha os modelos")} />
-        <div className="model-selection-actions">
-          <button
-            type="button"
-            disabled={locked || experiment === "feedback_assisted"}
-            onClick={() =>
-              setModels(
-                config.models.flatMap((m, i) => (m.featured ? [i] : [])),
-              )
-            }
-          >
-            {tr("Destaques")}
-          </button>
-          <button
-            type="button"
-            disabled={locked || experiment === "feedback_assisted"}
-            onClick={() => setModels(config.models.map((_, i) => i))}
-          >
-            {tr("Todos os modelos")}
-          </button>
-          <button
-            type="button"
-            disabled={locked || experiment === "feedback_assisted"}
-            onClick={() => setModels([])}
-          >
-            {tr("Limpar seleção")}
-          </button>
-          <span className="muted">
-            {models.length}{" "}
-            {L(
-              models.length === 1 ? "selecionado" : "selecionados",
-              "selected",
-            )}
-          </span>
-        </div>
-        <div className="model-catalog">
-          {Object.entries(providers).map(([provider, name]) => (
-            <div className="provider-group" key={provider}>
-              <h3>
-                <span className={`provider-logo ${provider}`}>
-                  {tr(name[0])}
-                </span>
-                {tr(name)}
-              </h3>
-              {config.models.map(
-                (m, i) =>
-                  m.provider === provider && (
-                    <label
-                      key={i}
-                      className={`model-option ${m.featured ? "featured" : ""} ${models.includes(i) ? "selected" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={models.includes(i)}
-                        disabled={locked || experiment === "feedback_assisted"}
-                        onChange={() => setModels(toggle(models, i))}
-                      />
-                      <span>
-                        <strong>{tr(m.label || m.model)}</strong>
-                        <small>
-                          {tr(
-                            m.featured
-                              ? "Destaque · raciocínio"
-                              : "Alternativa",
-                          )}
-                        </small>
-                      </span>
-                    </label>
-                  ),
-              )}
-            </div>
-          ))}
-        </div>
-        <p className="setup-note">
-          {tr(
-            "Destaques seguem a proposta dos fabricantes; a comparação real virá das suas avaliações.",
-          )}
-        </p>
-        <section
-          className="connection-section"
-          aria-label={tr("Checklist de conexões")}
-        >
-          <div className="connection-heading">
-            <SectionHeading title={tr("2. Confira as conexões")} />
-            <button type="button" disabled={locked} onClick={refresh}>
-              {tr("Atualizar status")}
-            </button>
-          </div>
-          <p className="muted">
-            {tr("Preencha as chaves no ")}
-            <code>{tr(".env")}</code>
-            {tr(". A mesma chave permite escolher os modelos do seu provedor.")}
-          </p>
-          <div className="connection-list">
-            {checks.map((c) => (
-              <div
-                key={c.index}
-                className={`connection-row ${c.ready ? "connection-ready" : "connection-pending"}`}
-              >
-                <div className="connection-name">
-                  <strong>{tr(c.label)}</strong>
-                  <span>
-                    {tr(
-                      c.ready ? "✓ Pronto para avaliar" : c.diagnostic?.title,
-                    )}
-                  </span>
-                </div>
-                <ul className="connection-checks">
-                  <li
-                    className={c.key_present ? "check-done" : "check-pending"}
-                  >
-                    {tr(c.key_present ? "✓" : "○")}
-                    {tr(" Chave no .env")}
-                    {tr(" ")}
-                    <code>{tr(c.env_name)}</code>
-                  </li>
-                  <li
-                    className={c.api_responded ? "check-done" : "check-pending"}
-                  >
-                    {tr(c.api_responded ? "✓" : "○")}
-                    {tr(" API respondeu")}
-                  </li>
-                  <li
-                    className={
-                      c.generation_confirmed ? "check-done" : "check-pending"
-                    }
-                  >
-                    {tr(c.generation_confirmed ? "✓" : "○")}
-                    {tr(" Geração confirmada")}
-                  </li>
-                </ul>
-                {!c.ready && (
-                  <p className="connection-action">
-                    {tr(c.diagnostic?.action)}
-                  </p>
-                )}
-                {c.diagnostic?.detail && (
-                  <details className="connection-detail">
-                    <summary>{tr("Detalhe da API")}</summary>
-                    <p>{tr(c.diagnostic.detail)}</p>
-                    {c.diagnostic.http_status && (
-                      <small>
-                        {tr("HTTP ")}
-                        {tr(c.diagnostic.http_status)} ·{tr(" ")}
-                        {tr(c.diagnostic.provider_code)}
-                      </small>
-                    )}
-                  </details>
-                )}
-                <div className="connection-tools">
-                  {c.checked_at && (
-                    <small>
-                      {tr("Verificado em ")}
-                      {tr(date(c.checked_at))}
-                    </small>
-                  )}
-                  {c.key_present && (
-                    <button
-                      type="button"
-                      disabled={locked}
-                      onClick={() => verify([c.index], true)}
-                    >
-                      {tr(
-                        c.ready ? "Verificar novamente" : "Verificar conexão",
-                      )}
-                      <span className="sr-only"> {tr(c.label)}</span>
-                    </button>
-                  )}
-                  {!c.ready &&
-                    c.diagnostic?.help_url &&
-                    c.status !== "missing_api_key" &&
-                    c.status !== "unverified" && (
-                      <a
-                        href={c.diagnostic.help_url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {tr("Abrir painel do provedor ↗")}
-                      </a>
-                    )}
-                </div>
-              </div>
-            ))}
-          </div>
-          {!checks.length && (
-            <p className="muted">{tr("Selecione pelo menos um modelo.")}</p>
-          )}
-          <div className="connection-verify">
-            <button
-              type="button"
-              disabled={locked || !models.length}
-              onClick={() => verify()}
-            >
-              {tr(
-                checking
-                  ? "Verificando conexões…"
-                  : "Verificar conexões selecionadas",
-              )}
-            </button>
-            <small>
-              {tr(
-                "Envio curto à API, com possível cobrança. A confirmação fica salva; iniciar uma avaliação não repete este teste.",
-              )}
-            </small>
-          </div>
-          {checkMessage && (
-            <p
-              role="status"
-              className={`notice ${pending.length ? "warning" : "success"}`}
-            >
-              {tr(checkMessage)}
-            </p>
-          )}
-        </section>
-        <SectionHeading title={tr("3. Inicie a avaliação")} />
-        <div className="run-settings">
-          <label>
-            {tr("Repetições por modelo")}
-            <input
-              type="number"
-              required
-              min="1"
-              max="10"
-              disabled={locked}
-              value={repetitions}
-              onChange={(e) => setRepetitions(e.target.value)}
-            />
-          </label>
-          <p>{tr("Cada modelo recebe os mesmos documentos e tarefas.")}</p>
-        </div>
-        <details className="advanced-settings">
-          <summary>{tr("Ajustar tarefas e modo de avaliação")}</summary>
-          <div className="task-choices">
-            {config.tasks.map((t) => (
-              <label className="check" key={t}>
-                <input
-                  type="checkbox"
-                  checked={selectedTasks.includes(t)}
-                  onChange={() => setSelectedTasks(toggle(selectedTasks, t))}
-                />
-                {tr(tasks[t])}
-              </label>
-            ))}
-          </div>
-          <div className="toolbar">
-            <label>
-              {tr("Documentos")}
-              <select
-                aria-label={tr("Documentos")}
-                value={mode}
-                onChange={(e) => setMode(e.target.value)}
-              >
-                <option value="controlled_text">
-                  {tr("Texto controlado")}
-                </option>
-                <option value="pdf_text" disabled={!config.pdf_ready}>
-                  {tr("Texto dos PDFs")}
-                  {tr(" ")}
-                  {tr(config.pdf_ready ? "" : "(arquivos locais necessários)")}
-                </option>
-              </select>
-            </label>
-            <label>
-              {tr("Modo")}
-              <select
-                aria-label={tr("Modo")}
-                value={experiment}
-                onChange={(e) => setExperiment(e.target.value)}
-              >
-                <option value="first_pass">
-                  {tr("Sem correções prévias")}
-                </option>
-                <option value="feedback_assisted">
-                  {tr("Com correções confirmadas")}
-                </option>
-              </select>
-            </label>
-            {experiment === "feedback_assisted" && (
-              <label>
-                {tr("Execução de referência")}
-                <select
-                  aria-label={tr("Execução de referência")}
-                  required
-                  value={baseline}
-                  onChange={(e) => chooseBaseline(e.target.value)}
-                >
-                  <option value="">{tr("Selecione uma execução")}</option>
-                  {runs
-                    .filter((r) => r.experiment === "first_pass")
-                    .map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {tr(r.model)} · {tr(date(r.created_at))} ·{" "}
-                        {tr(r.id.slice(0, 6))}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            )}
-          </div>
-        </details>
-
-        <div className="run-submit">
-          <span>
-            <strong>
-              {tr(calls)}
-              {tr(" chamadas de benchmark")}
-            </strong>
-            <small>
-              {tr(
-                "Sujeitas à cobrança dos provedores. Retentativas podem aumentar esse total.",
-              )}
-            </small>
-          </span>
-          <button
-            className="primary"
-            disabled={
-              locked ||
-              !models.length ||
-              !selectedTasks.length ||
-              (experiment === "feedback_assisted" && !baseline)
-            }
-            type="submit"
-          >
-            {tr(
-              busy
-                ? "Iniciando…"
-                : active
-                  ? "Avaliação em andamento"
-                  : "Iniciar avaliação →",
-            )}
-          </button>
-        </div>
-        {!!pending.length && (
-          <p className="setup-note">
-            {tr("Faltam ")}
-            {tr(pending.length)}
-            {tr(
-              " confirmações. Todas as conexões selecionadas precisam estar prontas antes de qualquer chamada de benchmark.",
-            )}
-          </p>
-        )}
-        {message && (
-          <p role="alert" className="notice error">
-            {tr(message)}
-          </p>
-        )}
-      </form>
-      {!!executions.length && (
-        <section className="panel execution-panel">
-          <SectionHeading title={tr("Atividade")} />
-          {executions.slice(0, 12).map((e) => (
-            <div className="execution-row" key={e.id}>
-              <div>
-                <strong>{tr(e.model)}</strong>
-                <small>
-                  {tr(date(e.created_at))}
-                  {tr(" · repetição ")}
-                  {tr(e.repetition)}
-                </small>
-              </div>
-              <div className="execution-status">
-                {["pending", "running"].includes(e.status) ? (
-                  <>
-                    <span>
-                      {tr(
-                        e.status === "pending"
-                          ? "Aguardando"
-                          : L(
-                              `${e.completed_calls} de ${e.total_calls} tarefas concluídas`,
-                              `${e.completed_calls} of ${e.total_calls} tasks completed`,
-                            ),
-                      )}
-                    </span>
-                    <progress value={e.completed_calls} max={e.total_calls} />
-                  </>
-                ) : e.status === "completed" ? (
-                  <span className="correct">{tr("✓ Avaliação concluída")}</span>
-                ) : (
-                  <>
-                    <span className="false_positive">
-                      {tr(
-                        e.status === "interrupted" ? "Interrompida" : "Falhou",
-                      )}
-                      {tr(" · nenhum resultado publicado")}
-                    </span>
-                    <strong>
-                      {tr(
-                        e.failure?.diagnostic?.title ||
-                          (e.status === "interrupted"
-                            ? "O servidor foi reiniciado."
-                            : "Não foi possível concluir a avaliação."),
-                      )}
-                    </strong>
-                    <small>{tr(e.failure?.diagnostic?.action)}</small>
-                    {e.failure?.diagnostic?.detail && (
-                      <details>
-                        <summary>{tr("Detalhe da API")}</summary>
-                        <p>{tr(e.failure.diagnostic.detail)}</p>
-                      </details>
-                    )}
-                  </>
-                )}
-              </div>
-              {e.status === "completed" && (
-                <a className="text-link" href="#results">
-                  {tr("Ver resultados →")}
-                </a>
-              )}
-            </div>
-          ))}
-        </section>
-      )}
-    </>
   );
 }
 

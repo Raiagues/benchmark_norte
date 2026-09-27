@@ -29,6 +29,32 @@ REQUEST_FIELDS = (
 )
 
 
+def depth_field(model):
+    return "thinking_level" if model["provider"] == "gemini" else "reasoning_effort"
+
+
+def with_depth(model, depth=None):
+    selected = dict(model)
+    if depth is not None:
+        field = depth_field(model)
+        if depth not in model.get("depth_options", [model.get(field)]):
+            raise ValueError("invalid_model_depth")
+        selected[field] = depth
+    return selected
+
+
+def select_models(catalog, indices, depths=None):
+    depths = depths or {}
+    if (
+        not indices
+        or len(set(indices)) != len(indices)
+        or any(type(i) is not int or i < 0 or i >= len(catalog) for i in indices)
+        or any(key not in {str(i) for i in indices} for key in depths)
+    ):
+        raise ValueError("invalid_model_selection")
+    return [with_depth(catalog[i], depths.get(str(i))) for i in indices]
+
+
 def config_hash(model):
     return digest({k: model.get(k) for k in REQUEST_FIELDS})
 
@@ -58,6 +84,7 @@ def connection_status(model, db=None):
         "provider": model["provider"],
         "model": model["model"],
         "env_name": KEY_NAMES[model["provider"]],
+        "depth": model.get(depth_field(model)),
         "key_present": bool(key),
         "ready": False,
         "checked_at": None,
@@ -120,10 +147,6 @@ def verify_connections(models, db=None, force=False):
             continue
         key = get_key(model["provider"])
         probe_model = dict(model)
-        if probe_model.get("reasoning_effort"):
-            probe_model["reasoning_effort"] = "low"
-        if probe_model.get("thinking_level"):
-            probe_model["thinking_level"] = "low"
         call = call_provider(
             probe_model,
             PROBE_PROMPT,

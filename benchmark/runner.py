@@ -29,7 +29,7 @@ from .evaluate import (
 )
 from .providers import call_provider, utcnow
 from .security import get_key
-from .connections import require_ready, note_provider_failure
+from .connections import require_ready, note_provider_failure, with_depth, depth_field
 from .diagnostics import describe
 from .schemas import (
     load_strict_json,
@@ -84,7 +84,15 @@ def prepare_runs(
     if not models:
         raise ValueError("Select at least one model")
     for model in models:
-        if model not in cfg["models"]:
+        base = next(
+            (
+                m
+                for m in cfg["models"]
+                if m["provider"] == model["provider"] and m["model"] == model["model"]
+            ),
+            None,
+        )
+        if not base or with_depth(base, model.get(depth_field(base))) != model:
             raise ValueError("Model must be present in config/models.json")
     require_ready(models, db)
     ds, prompts = load_dataset(input_mode, db=db), prompt_bundle(db=db)
@@ -158,6 +166,7 @@ def prepare_runs(
             metadata = {
                 "provider": model["provider"],
                 "model": model["model"],
+                "depth": model.get(depth_field(model)),
                 "repetition": repetition,
                 "batch_id": batch,
                 "tasks": tasks,
@@ -390,6 +399,7 @@ def execute_run(run_id, db=None):
 
 def aggregate(db=None):
     groups = defaultdict(list)
+    depths = {}
     for info in storage.list_runs(db):
         run = storage.get_run(info["id"], db)
         m = run["metadata"]
@@ -406,6 +416,8 @@ def aggregate(db=None):
                 r["difficulty"],
             )
             groups[key].append(r)
+            model_config = run["snapshot"]["model_config"]
+            depths[key] = model_config.get(depth_field(model_config))
     rows = []
     for key, results in groups.items():
         (
@@ -434,6 +446,7 @@ def aggregate(db=None):
                 "input_mode": mode,
                 "comparison_hash": fingerprint,
                 "settings_hash": settings_hash,
+                "depth": depths[key],
                 "feedback_hash": feedback_hash,
                 "task": task,
                 "difficulty": level,

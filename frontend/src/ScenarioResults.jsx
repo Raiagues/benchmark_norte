@@ -1,14 +1,23 @@
 import React, { useState } from "react";
 import { L } from "./i18n";
 import { issueLabel } from "./liveLabels";
-const dependency = (e) =>
-  e ? `${e.source} → ${e.relationship} → ${e.target}` : "—";
+import ResultReview from "./ResultReview";
+import {
+  relationName,
+  relationMeaning,
+  itemName,
+  rowStatus,
+  statusText,
+  statusClass,
+} from "./resultPresentation";
 const impact = (yes) =>
   yes ? L("Precisa de revisão", "Needs review") : L("Sem impacto", "No impact");
 export default function ScenarioResults({ detail, scenario, onScenario }) {
   const cases = detail.inspection || [];
   const selected = cases.find((s) => s.id === scenario) || cases[0];
-  const [expanded, setExpanded] = useState("");
+  const [expanded, setExpanded] = useState(""),
+    [query, setQuery] = useState(""),
+    [filter, setFilter] = useState("");
   if (!selected)
     return (
       <p>
@@ -18,6 +27,13 @@ export default function ScenarioResults({ detail, scenario, onScenario }) {
         )}
       </p>
     );
+  const counts = selected.rows.reduce(
+    (a, r) => {
+      a[rowStatus(r)]++;
+      return a;
+    },
+    { correct: 0, partial: 0, incorrect: 0 },
+  );
   return (
     <section className="scenario-browser">
       <label className="scenario-selector">
@@ -48,13 +64,32 @@ export default function ScenarioResults({ detail, scenario, onScenario }) {
           <p lang="en">{selected.description}</p>
         </div>
         <div className="scenario-totals">
-          <span className="answer-good">
-            ✓ {selected.correct} {L("corretas", "correct")}
-          </span>
-          <span className={selected.incorrect ? "answer-bad" : "muted"}>
-            × {selected.incorrect} {L("com erro", "with errors")}
-          </span>
+          {Object.entries(counts).map(([k, n]) => (
+            <span key={k} className={statusClass(k)}>
+              {n} {statusText(k)}
+            </span>
+          ))}
         </div>
+      </div>
+      <div className="result-filters">
+        <input
+          aria-label={L("Buscar requisito", "Search requirement")}
+          placeholder={L("Buscar requisito…", "Search requirement…")}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select
+          aria-label={L("Filtrar resultado", "Filter result")}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <option value="">{L("Todos os resultados", "All outcomes")}</option>
+          {Object.keys(counts).map((k) => (
+            <option key={k} value={k}>
+              {statusText(k)}
+            </option>
+          ))}
+        </select>
       </div>
       <p className="table-explanation">
         {L(
@@ -77,71 +112,74 @@ export default function ScenarioResults({ detail, scenario, onScenario }) {
             </tr>
           </thead>
           <tbody>
-            {selected.rows.map((row) => (
-              <React.Fragment key={row.requirement_id}>
-                <tr
-                  className={
-                    row.status === "correct"
-                      ? "answer-row-good"
-                      : "answer-row-bad"
-                  }
-                >
-                  <th>
-                    <button
-                      className="requirement-expand"
-                      aria-expanded={expanded === row.requirement_id}
-                      onClick={() =>
-                        setExpanded(
-                          expanded === row.requirement_id
-                            ? ""
-                            : row.requirement_id,
-                        )
-                      }
-                    >
-                      <span>
-                        {expanded === row.requirement_id ? "▾" : "▸"}{" "}
-                        {row.requirement_id}
-                      </span>
-                      <small>
-                        {row.requirement_text ||
-                          L(
-                            "ID fora dos requisitos do projeto",
-                            "ID outside the project requirements",
-                          )}
-                      </small>
-                    </button>
-                  </th>
-                  <td>{impact(row.expected_affected)}</td>
-                  <td>{impact(row.predicted_affected)}</td>
-                  <td>
-                    <strong
-                      className={
-                        row.status === "correct" ? "answer-good" : "answer-bad"
-                      }
-                    >
-                      {row.status === "correct"
-                        ? L("✓ Resposta correta", "✓ Correct answer")
-                        : L("× Resposta com erro", "× Answer has errors")}
-                    </strong>
-                    {row.issues.map((k) => (
-                      <small className="answer-bad" key={k}>
-                        {issueLabel(k)}
-                      </small>
-                    ))}
-                  </td>
-                </tr>
-                {expanded === row.requirement_id && (
-                  <tr>
-                    <td colSpan="4">
-                      <RequirementDetail
-                        row={row}
-                        changed={selected.changed_entity}
-                      />
+            {selected.rows
+              .filter(
+                (r) =>
+                  (!filter || rowStatus(r) === filter) &&
+                  `${r.requirement_id} ${r.requirement_text}`
+                    .toLowerCase()
+                    .includes(query.toLowerCase()),
+              )
+              .map((row) => (
+                <React.Fragment key={row.requirement_id}>
+                  <tr
+                    className={`answer-row-${rowStatus(row) === "correct" ? "good" : rowStatus(row) === "partial" ? "partial" : "bad"}`}
+                  >
+                    <th>
+                      <button
+                        className="requirement-expand"
+                        aria-expanded={expanded === row.requirement_id}
+                        onClick={() =>
+                          setExpanded(
+                            expanded === row.requirement_id
+                              ? ""
+                              : row.requirement_id,
+                          )
+                        }
+                      >
+                        <span>
+                          {expanded === row.requirement_id ? "▾" : "▸"}{" "}
+                          {row.requirement_id}
+                        </span>
+                        <small title={row.requirement_text}>
+                          {row.requirement_text ||
+                            L(
+                              "ID fora dos requisitos do projeto",
+                              "ID outside the project requirements",
+                            )}
+                        </small>
+                      </button>
+                    </th>
+                    <td>{impact(row.expected_affected)}</td>
+                    <td>{impact(row.predicted_affected)}</td>
+                    <td>
+                      <strong className={statusClass(rowStatus(row))}>
+                        {statusText(rowStatus(row))}
+                      </strong>
+                      {row.issues.map((k) => (
+                        <small className="answer-bad" key={k}>
+                          {issueLabel(k)}
+                        </small>
+                      ))}
                     </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
+                  {expanded === row.requirement_id && (
+                    <tr>
+                      <td colSpan="4">
+                        <RequirementDetail
+                          detail={detail}
+                          row={row}
+                          changed={selected.changed_entity}
+                        />
+                        <ResultReview
+                          detail={detail}
+                          target={`${selected.id}/${row.requirement_id}`}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
           </tbody>
         </table>
       </div>
@@ -149,7 +187,7 @@ export default function ScenarioResults({ detail, scenario, onScenario }) {
   );
 }
 
-function RequirementDetail({ row, changed }) {
+function RequirementDetail({ row, changed, detail }) {
   const answer = row.answer;
   return (
     <div className="requirement-verdict-detail">
@@ -185,14 +223,74 @@ function RequirementDetail({ row, changed }) {
             >
               {row.checks.correct_dependency ? "✓" : "×"}{" "}
               {L("Dependência", "Dependency")}
-              <div>
-                {L("Modelo", "Model")}:{" "}
-                <code>{dependency(answer.dependency)}</code>
-              </div>
-              <div>
-                {L("Aceitas pelo gabarito", "Accepted by the reference")}:{" "}
-                {row.expected_dependencies.map(dependency).join("; ") || "—"}
-              </div>
+              <table className="field-comparison">
+                <thead>
+                  <tr>
+                    <th>{L("Campo", "Field")}</th>
+                    <th>{L("Resposta do modelo", "Model output")}</th>
+                    <th>
+                      {L("Esperado pelo avaliador", "Expected by evaluator")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {["source", "relationship", "target"].map((k) => (
+                    <tr
+                      key={k}
+                      className={
+                        row.expected_dependencies.some(
+                          (e) => e[k] === answer.dependency?.[k],
+                        )
+                          ? "answer-good"
+                          : "answer-bad"
+                      }
+                    >
+                      <th>
+                        {
+                          {
+                            source: L("Origem", "Source"),
+                            relationship: L(
+                              "Tipo da relação",
+                              "Relationship type",
+                            ),
+                            target: L("Destino", "Target"),
+                          }[k]
+                        }
+                      </th>
+                      <td>
+                        {k === "relationship"
+                          ? relationName(answer.dependency?.[k])
+                          : itemName(detail, answer.dependency?.[k])}
+                      </td>
+                      <td>
+                        {row.expected_dependencies
+                          .map((e) =>
+                            k === "relationship"
+                              ? relationName(e[k])
+                              : itemName(detail, e[k]),
+                          )
+                          .join(" / ") || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p>
+                {L("O modelo declarou:", "The model declared:")}{" "}
+                {relationMeaning(answer.dependency?.relationship)}
+              </p>
+              {!row.checks.correct_dependency && (
+                <p>
+                  {L("O gabarito exige:", "The reference requires:")}{" "}
+                  {[
+                    ...new Set(
+                      row.expected_dependencies.map((e) =>
+                        relationMeaning(e.relationship),
+                      ),
+                    ),
+                  ].join(" / ")}
+                </p>
+              )}
             </li>
             <li
               className={
@@ -203,6 +301,28 @@ function RequirementDetail({ row, changed }) {
               {L(
                 "Citações verificadas pela regra",
                 "Citations checked by the rule",
+              )}
+              {!row.checks.valid_evidence &&
+                row.dependency_in_reference === false && (
+                  <p>
+                    {L(
+                      "A relação declarada não existe no gabarito. Por isso, o avaliador não conseguiu associar suas citações à relação esperada; essa falha de evidência decorre da divergência da relação.",
+                      "The declared relationship is absent from the reference. The evaluator therefore could not associate its citations with the expected relationship; this evidence failure follows from the relationship mismatch.",
+                    )}
+                  </p>
+                )}
+              {!!row.expected_evidence_locations?.length && (
+                <p>
+                  {L(
+                    "Fontes aceitas para a relação esperada",
+                    "Accepted sources for the expected relationship",
+                  )}
+                  : {row.expected_evidence_locations.join("; ")}.{" "}
+                  {L(
+                    "A regra também exige uma citação do cenário de mudança.",
+                    "The rule also requires a citation of the change scenario.",
+                  )}
+                </p>
               )}
             </li>
           </>

@@ -48,7 +48,21 @@ async def local_mutations(request: Request, call_next):
         and request.headers.get("x-norte-client") != "local-ui"
     ):
         return JSONResponse({"detail": "Local client header required"}, status_code=403)
-    return await call_next(request)
+    response = await call_next(request)
+    # The HTML entry point must pick up the current hashed bundle on navigation.
+    # Persisted run state also must not be reused from a browser's HTTP cache.
+    # Hashed assets and the existing SSE transport retain their own semantics.
+    content_type = response.headers.get("content-type", "")
+    if (
+        request.url.path in ("/", "/index.html")
+        or content_type.startswith("text/html")
+        or (
+            request.url.path.startswith("/api/")
+            and content_type.startswith("application/json")
+        )
+    ):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/api/health")
@@ -87,13 +101,15 @@ def source_registry():
 
 
 @app.get("/api/sources/{document_id}/pdf")
-def source_pdf(document_id: str):
+def source_pdf(document_id: str, expected_hash: str | None = None):
     from .artifacts import find_source, source_path
 
     source = find_source(document_id)
     path = source_path(source) if source else None
     if not path:
         raise HTTPException(404, "Original PDF is not available locally")
+    if expected_hash and digest(path.read_bytes()) != expected_hash:
+        raise HTTPException(409, "Local PDF differs from the preserved execution")
     return FileResponse(
         path,
         media_type="application/pdf",
@@ -203,20 +219,36 @@ def live_history():
 
 
 @app.get("/api/live/{batch_id}")
-def live_snapshot(batch_id: str):
-    result = live.snapshot(batch_id)
+def live_snapshot(batch_id: str, study: bool = False):
+    from .studies import snapshot
+
+    try:
+        result = snapshot(batch_id) if study else live.snapshot(batch_id)
+    except ValueError:
+        result = None
     if result is None:
         raise HTTPException(404, "Run not found")
     return result
 
 
 @app.get("/api/live/{batch_id}/events")
-def live_events(batch_id: str, after: int = 0):
+def live_events(batch_id: str, after: int = 0, study: bool = False):
+    if study:
+        from .studies import family
+
+        with storage.connect() as con:
+            _, batches = family(batch_id, con)
+        return sorted(
+            [e for b in batches for e in live.events(b["id"], after)],
+            key=lambda e: e["id"],
+        )
     return live.events(batch_id, after)
 
 
 @app.get("/api/live/{batch_id}/stream")
-async def live_stream(batch_id: str, request: Request):
+async def live_stream(batch_id: str, request: Request, study: bool = False):
+    from .studies import snapshot as study_snapshot
+
     if not live.snapshot(batch_id):
         raise HTTPException(404, "Run not found")
 
@@ -225,7 +257,9 @@ async def live_stream(batch_id: str, request: Request):
         previous = None
         heartbeat = 0
         while not await request.is_disconnected():
-            data = await asyncio.to_thread(live.snapshot, batch_id)
+            data = await asyncio.to_thread(
+                study_snapshot if study else live.snapshot, batch_id
+            )
             version = (data["last_event_id"], data["status"])
             if version != previous:
                 yield f"id: {data['last_event_id']}\nevent: snapshot\ndata: {json.dumps(redact(data), ensure_ascii=False)}\n\n"
@@ -247,12 +281,18 @@ class StopRequest(BaseModel):
 
 
 @app.post("/api/live/{batch_id}/stop")
-def stop_live(batch_id: str, body: StopRequest):
+def stop_live(batch_id: str, body: StopRequest, study: bool = False):
+    from .studies import snapshot
+
     try:
-        live.stop_batch(batch_id)
+        if study:
+            for active_id in snapshot(batch_id)["active_batch_ids"]:
+                live.stop_batch(active_id)
+        else:
+            live.stop_batch(batch_id)
     except ValueError:
         raise HTTPException(404, "Run not found") from None
-    return live.snapshot(batch_id)
+    return snapshot(batch_id) if study else live.snapshot(batch_id)
 
 
 @app.get("/api/live/{batch_id}/resume")
@@ -279,6 +319,41 @@ def resume_live(batch_id: str, body: ResumeRequest, background: BackgroundTasks)
         raise HTTPException(409, "An operation is already running")
     try:
         ids = prepare(batch_id, body.token)
+    except ValueError as exc:
+        RUN_LOCK.release()
+        raise HTTPException(400, str(exc)) from None
+    except Exception:
+        RUN_LOCK.release()
+        raise
+    background.add_task(execute_batch, ids)
+    return {
+        "run_ids": ids,
+        "batch_id": storage.get_execution(ids[0])["metadata"]["batch_id"],
+    }
+
+
+@app.get("/api/live/{batch_id}/retry")
+def retry_preview(batch_id: str):
+    from .retry import public_plan
+
+    try:
+        return public_plan(batch_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+
+
+class RetryRequest(ResumeRequest):
+    selected: list[str] = Field(min_length=1, max_length=1000)
+
+
+@app.post("/api/live/{batch_id}/retry", status_code=202)
+def retry_live(batch_id: str, body: RetryRequest, background: BackgroundTasks):
+    from .retry import prepare
+
+    if not RUN_LOCK.acquire(blocking=False):
+        raise HTTPException(409, "An operation is already running")
+    try:
+        ids = prepare(batch_id, body.token, body.selected)
     except ValueError as exc:
         RUN_LOCK.release()
         raise HTTPException(400, str(exc)) from None
@@ -345,8 +420,8 @@ def graph(run_id: str):
 
 
 @app.get("/api/summary")
-def summary():
-    return aggregate()
+def summary(by_study: bool = False):
+    return aggregate(by_study=by_study)
 
 
 class RunRequest(BaseModel):
@@ -490,6 +565,46 @@ def review_create(body: ExplanationReview):
 def reviews(run_id: str):
     require_run(run_id)
     return storage.list_reviews(run_id)
+
+
+class ResultReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    result_id: str
+    target: str = Field(min_length=1, max_length=300)
+    verdict: Literal["agree", "disagree", "prompt_suggestion", "too_verbose", "note"]
+    comment: str = Field(min_length=1, max_length=2000)
+
+
+@app.get("/api/result-reviews/{result_id}")
+def result_reviews(result_id: str):
+    detail = live.call_detail(result_id)
+    if not detail:
+        raise HTTPException(404, "Execution not found")
+    return [
+        r
+        for r in storage.list_reviews(detail["run_id"])
+        if r.get("result_id") == result_id
+    ]
+
+
+@app.post("/api/result-reviews")
+def result_review_create(body: ResultReview):
+    detail = live.call_detail(body.result_id)
+    if not detail or not detail.get("result"):
+        raise HTTPException(400, "A preserved response is required for review")
+    if not body.comment.strip():
+        raise HTTPException(422, "Review comment is required")
+    return storage.save_review(
+        {
+            **body.model_dump(),
+            "run_id": detail["run_id"],
+            "task": detail["task"],
+            "prompt_hash": detail["prompt_hash"],
+            "dataset_hash": detail["snapshot_metadata"]["dataset_hash"],
+            "kind": "result_annotation",
+            "confirmed": False,
+        }
+    )
 
 
 if (ROOT / "frontend/dist").exists():

@@ -617,6 +617,9 @@ def operational(calls):
         "planned": len(calls),
         "started": started,
         "evaluated": len(evaluated),
+        "excluded_from_comparison": sum(
+            c.get("comparison_eligible") is False for c in evaluated
+        ),
         "correct": sum(c.get("quality") == "correct" for c in evaluated),
         "partial": sum(c.get("quality") == "partial" for c in evaluated),
         "incorrect": sum(c.get("quality") == "incorrect" for c in evaluated),
@@ -673,6 +676,13 @@ def snapshot(batch_id, db=None):
             ).fetchone()[0]
             or 0
         )
+    return snapshot_from_rows(batch_id, batch, rows, last_event)
+
+
+def snapshot_from_rows(batch_id, batch, rows, last_event):
+    from .result_validity import annotation, exclusions
+
+    rules = exclusions()
     calls = [
         dict(
             json.loads(r["data"]),
@@ -682,6 +692,7 @@ def snapshot(batch_id, db=None):
             status=r["status"],
             stage=r["stage"],
             result=json.loads(r["result"]) if r["result"] else None,
+            **annotation(r["run_id"], rules),
         )
         for r in rows
     ]
@@ -691,20 +702,39 @@ def snapshot(batch_id, db=None):
     models = []
     for (provider, model, depth), items in grouped.items():
         valid = [
-            c["result"]
+            dict(
+                c["result"],
+                protocol_key=c.get("protocol_key"),
+                dataset_version=c.get("dataset_version"),
+            )
             for c in items
-            if c["status"] in EVALUATED and valid_result(c["result"])
+            if c["status"] in EVALUATED
+            and valid_result(c["result"])
+            and c["comparison_eligible"]
         ]
         by_task = defaultdict(list)
         for r in valid:
             by_task[(r["task"], r["difficulty"])].append(r)
         quality = []
         for (task, level), results in by_task.items():
+            # A study may span revisions. Quality uses the most recent compatible
+            # protocol for this task; older attempts remain inspectable.
+            newest = max(results, key=lambda r: (r.get("end_time") or "", r["id"]))
+            excluded = sum(
+                r.get("protocol_key") != newest.get("protocol_key") for r in results
+            )
+            results = [
+                r
+                for r in results
+                if r.get("protocol_key") == newest.get("protocol_key")
+            ]
             ordered = sorted(results, key=lambda r: (r.get("end_time") or "", r["id"]))
             quality.append(
                 {
                     "task": task,
                     "difficulty": level,
+                    "protocol_key": newest.get("protocol_key"),
+                    "excluded_other_protocol": excluded,
                     "metrics": quality_metrics(results),
                     "history": [
                         {
@@ -769,6 +799,9 @@ def snapshot(batch_id, db=None):
                 "depth": depth,
                 "status": state,
                 "last_error": active_error,
+                "protocols": sorted(
+                    {c["dataset_version"] for c in items if c.get("dataset_version")}
+                ),
                 "operations": ops,
                 "quality": quality,
                 "repetitions": reps,
@@ -873,6 +906,8 @@ def events(batch_id, after=0, db=None):
 
 
 def call_detail(cid, db=None):
+    from .result_validity import annotation
+
     with storage.connect(db) as con:
         row = con.execute("SELECT * FROM live_calls WHERE id=?", (cid,)).fetchone()
     if not row:
@@ -902,6 +937,7 @@ def call_detail(cid, db=None):
     )
     return {
         **info,
+        **annotation(run["id"]),
         "id": cid,
         "run_id": run["id"],
         "batch_id": row["batch_id"],
@@ -912,6 +948,9 @@ def call_detail(cid, db=None):
         "input": json.loads(prompt.split("\nINPUT\n", 1)[1]),
         "result": result,
         "failure_counts": failure_counts(result["metrics"]) if result else {},
+        "metric_explanations": quality_metrics([result])
+        if result and valid_result(result)
+        else {},
         "inspection": inspect_impacts(result, snap["dataset"])
         if result and "scenarios" in result["metrics"]
         else [],
@@ -919,6 +958,7 @@ def call_detail(cid, db=None):
             "input_policy", "legacy_explicit_context"
         ),
         "ground_truth": snap["dataset"]["ground_truth"],
+        "pdf_hashes": snap["dataset"].get("pdf_hashes", {}),
         "schema": snap["schemas"][info["task"]],
         "comparison": compare_graph(result["parsed_output"], snap["dataset"])
         if result and info["task"] == "relationship_extraction"

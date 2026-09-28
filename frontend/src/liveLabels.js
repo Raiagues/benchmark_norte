@@ -1,4 +1,20 @@
 import { L, locale } from "./i18n";
+// Display only: historical statuses and saved scores remain unchanged.
+export const displayState = (item) => {
+  if (!item) return "QUEUED";
+  if (item.status === "COMPLETED_INCORRECT" && item.quality === "partial")
+    return "COMPLETED_PARTIAL";
+  if (
+    ["COMPLETED", "Completed", "Completed with answer errors"].includes(
+      item.status,
+    ) &&
+    item.operations?.partial &&
+    !item.operations.incorrect &&
+    !item.operations.technical_errors
+  )
+    return "COMPLETED_WITH_PARTIALS";
+  return item.status;
+};
 export const taskLabel = (v) =>
   ({
     entity_extraction: L("Dados e parâmetros", "Entities and parameters"),
@@ -13,6 +29,11 @@ export const statusLabel = (v) =>
     RUNNING: L("Em execução", "Running"),
     STOPPING: L("Encerrando", "Stopping"),
     COMPLETED: L("Concluída", "Completed"),
+    COMPLETED_PARTIAL: L("Parcialmente correta", "Partially correct"),
+    COMPLETED_WITH_PARTIALS: L(
+      "Concluída · respostas parciais",
+      "Finished · partial answers",
+    ),
     COMPLETED_WITH_ANSWER_ERRORS: L(
       "Concluída · respostas com erros",
       "Finished · answer errors",
@@ -157,23 +178,25 @@ export const elapsed = (from, to = Date.now()) =>
 export const money = (v) =>
   v == null ? L("Indisponível", "Unavailable") : `$${v.toFixed(4)}`;
 export const tone = (state) =>
-  ["COMPLETED_CORRECT", "COMPLETED", "Completed"].includes(state)
-    ? "good"
-    : [
-          "TECHNICAL_ERROR",
-          "COMPLETED_INCORRECT",
-          "COMPLETED_WITH_ANSWER_ERRORS",
-          "Completed with answer errors",
-          "COMPLETED_WITH_ERRORS",
-          "Completed with errors",
-          "Provider error",
-          "Quota error",
-          "Rate limited",
-        ].includes(state)
-      ? "bad"
-      : ["RUNNING", "Running"].includes(state)
-        ? "active"
-        : "neutral";
+  ["COMPLETED_PARTIAL", "COMPLETED_WITH_PARTIALS"].includes(state)
+    ? "partial"
+    : ["COMPLETED_CORRECT", "COMPLETED", "Completed"].includes(state)
+      ? "good"
+      : [
+            "TECHNICAL_ERROR",
+            "COMPLETED_INCORRECT",
+            "COMPLETED_WITH_ANSWER_ERRORS",
+            "Completed with answer errors",
+            "COMPLETED_WITH_ERRORS",
+            "Completed with errors",
+            "Provider error",
+            "Quota error",
+            "Rate limited",
+          ].includes(state)
+        ? "bad"
+        : ["RUNNING", "Running"].includes(state)
+          ? "active"
+          : "neutral";
 
 export const issueLabel = (code) =>
   ({

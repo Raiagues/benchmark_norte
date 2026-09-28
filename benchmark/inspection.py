@@ -2,8 +2,8 @@
 
 from collections import Counter
 
-from .evaluate import fact_checks
-from .schemas import normalize_id
+from .evaluate import fact_checks, PDF_PAGES
+from .schemas import normalize_id, edge_key
 
 
 def failure_counts(metrics):
@@ -140,6 +140,33 @@ def inspect_impacts(result, dataset):
                     "checks": check,
                     "answer": answer,
                     "claims": claims,
+                    "dependency_in_reference": bool(
+                        answer
+                        and any(
+                            edge_key(e) == edge_key(answer["dependency"])
+                            for e in gt["relationships"]
+                        )
+                    ),
+                    "expected_evidence_locations": sorted(
+                        {
+                            f"{citation['document_id']} · {location}"
+                            for e in gt["relationships"]
+                            if any(
+                                edge_key(e) == edge_key(expected_dep)
+                                for expected_dep in case["affected_relationships"]
+                                if expected_dep["source"] == req
+                            )
+                            for citation in e["source_evidence"]
+                            for location in (
+                                PDF_PAGES.get(
+                                    (citation["document_id"], citation["location"]),
+                                    [citation["location"]],
+                                )
+                                if dataset["input_mode"] == "pdf_text"
+                                else [citation["location"]]
+                            )
+                        }
+                    ),
                     "expected_dependencies": [
                         e for e in case["affected_relationships"] if e["source"] == req
                     ],

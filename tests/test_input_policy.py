@@ -82,6 +82,39 @@ def test_controlled_text_cannot_start_any_new_run(db):
         )
 
 
+def test_new_impact_prompts_explain_uniqueness_and_old_snapshots_stay_literal(
+    ds, db, monkeypatch
+):
+    from benchmark import live, retry
+
+    install_mock_api(monkeypatch, ds, db=db)
+    models = [runner.configuration()["models"][0]]
+    for task in ("change_impact", "impact_explanation", "one_hop"):
+        instructions = prompt_bundle(db=db)[task]
+        assert "requirement_id at most once" in instructions
+        assert "dependency field contains one object" in instructions
+    # Create a historical attempt under its original prompt, including the journal.
+    old_prompts = deepcopy(prompt_bundle(db=db))
+    old_prompts["impact_explanation"] = "Isolated historical instruction."
+    with monkeypatch.context() as historical_config:
+        historical_config.setattr(runner, "prompt_bundle", lambda **kw: old_prompts)
+        ids = runner.prepare_runs(models, ["impact_explanation"], 1, db=db)
+    archived = storage.get_execution(ids[0], db)
+    bid = archived["metadata"]["batch_id"]
+    live.stop_batch(bid, db)
+    call = live.snapshot(bid, db)["calls"][0]
+    historical = live.call_detail(call["id"], db)
+    assert "Isolated historical instruction." in historical["prompt"]
+    assert "Impact output contract v1:" not in historical["prompt"]
+    plan = retry.public_plan(bid, db)
+    new_ids = retry.prepare(bid, plan["token"], [call["id"]], db)
+    new = storage.get_execution(new_ids[0], db)
+    assert (
+        "Impact output contract v1:" in new["snapshot"]["prompts"]["impact_explanation"]
+    )
+    assert storage.get_execution(ids[0], db) == archived
+
+
 def test_missing_pdf_blocks_every_model_before_any_provider_request(
     ds, db, monkeypatch, tmp_path
 ):

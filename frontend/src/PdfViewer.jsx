@@ -11,7 +11,7 @@ export default function PdfViewer({ source, onDownload, downloading }) {
     [text, setText] = useState(""),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
-  const url = `/api/sources/${encodeURIComponent(source.document_id)}/pdf`;
+  const url = `/api/sources/${encodeURIComponent(source.document_id)}/pdf${source.expected_hash ? `?expected_hash=${encodeURIComponent(source.expected_hash)}` : ""}`;
   useEffect(() => {
     let mounted = true;
     setDoc(null);
@@ -44,7 +44,7 @@ export default function PdfViewer({ source, onDownload, downloading }) {
       // cleanup, not a document error; don't leave its rejected promise unhandled.
       job.destroy().catch(() => {});
     };
-  }, [source.document_id, source.available]);
+  }, [source.document_id, source.available, source.expected_hash]);
   useEffect(() => {
     if (!doc) return;
     let mounted = true,

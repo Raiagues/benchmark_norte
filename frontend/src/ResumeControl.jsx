@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { L } from "./i18n";
 import { Modal } from "./ScreenUI";
+import ResumeConnectionCheck from "./ResumeConnectionCheck";
 export default function ResumeControl({ api, run }) {
   const [plan, setPlan] = useState(null),
     [open, setOpen] = useState(false),
@@ -109,6 +110,13 @@ export default function ResumeControl({ api, run }) {
                 {error}
               </p>
             )}
+            <ResumeConnectionCheck
+              api={api}
+              models={plan.models}
+              busy={busy}
+              onBusy={setBusy}
+              onReady={() => setError("")}
+            />
             <div className="inline-actions">
               <button disabled={busy} onClick={() => setOpen(false)}>
                 {L("Voltar", "Back")}

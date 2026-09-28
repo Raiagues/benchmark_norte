@@ -9,6 +9,7 @@ from pathlib import Path
 from .dataset import ROOT
 from .providers import utcnow
 from .security import redact
+from .result_validity import annotation, exclusions
 
 
 def connect(db=None):
@@ -142,7 +143,12 @@ def list_runs(db=None):
                     **run["metadata"],
                 }
             )
-    return sorted(published, key=lambda r: r["created_at"], reverse=True)
+    rules = exclusions()
+    return sorted(
+        ({**r, **annotation(r["id"], rules)} for r in published),
+        key=lambda r: r["created_at"],
+        reverse=True,
+    )
 
 
 def get_run(run_id, db=None):

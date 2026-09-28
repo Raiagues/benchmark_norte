@@ -55,3 +55,31 @@ def test_portable_schema_is_closed_and_inlined():
             '"confidence"'
         )[-1]
     )
+
+
+@pytest.mark.parametrize("task", ["change_impact", "impact_explanation", "one_hop"])
+def test_multiple_dependencies_do_not_allow_duplicate_requirement_entries(task):
+    impact = {
+        "requirement_id": "REQ-002",
+        "changed_entity": "REQ-002",
+        "dependency": {
+            "source": "REQ-002",
+            "relationship": "depends_on",
+            "target": "TEST-PARAMETER",
+        },
+        "explanation": "Isolated validation case",
+        "source_evidence": [],
+        "technical_claims": [],
+    }
+    answer = {"scenarios": [{"scenario_id": "CHG-004", "impacts": [impact]}]}
+    assert parse_output(task, json.dumps(answer)) == answer
+    duplicate = copy.deepcopy(impact)
+    duplicate["requirement_id"] = "req_2"
+    duplicate["dependency"] = {
+        "source": "REQ-002",
+        "relationship": "verified_by",
+        "target": "TEST-VERIFICATION",
+    }
+    answer["scenarios"][0]["impacts"].append(duplicate)
+    with pytest.raises(ValueError, match="duplicate_impact"):
+        parse_output(task, json.dumps(answer))

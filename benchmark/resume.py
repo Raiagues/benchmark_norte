@@ -8,25 +8,32 @@ from .dataset import ROOT, PDF_DOCUMENTS, digest, load_dataset, prompt_bundle
 
 
 def candidate_calls(batch_id, con):
-    batch = con.execute("SELECT * FROM live_batches WHERE id=?", (batch_id,)).fetchone()
-    if not batch:
-        raise ValueError("Run not found")
-    if batch["status"] in ("QUEUED", "RUNNING", "STOPPING"):
-        raise ValueError("Wait until this benchmark stops before resuming")
-    rows = con.execute(
-        "SELECT c.*,e.status AS original_status,e.snapshot AS execution_snapshot,e.metadata AS execution_metadata FROM live_calls c JOIN executions e ON e.id=c.run_id WHERE c.batch_id=? ORDER BY c.rowid",
-        (batch_id,),
-    ).fetchall()
-    linked = {
-        r[0]
-        for r in con.execute(
-            "SELECT source_call_id FROM live_continuations WHERE source_batch_id=?",
-            (batch_id,),
+    from .studies import leaves
+
+    _, batches, _, current = leaves(batch_id, con)
+    if any(b["status"] in ("QUEUED", "RUNNING", "STOPPING") for b in batches):
+        if any(
+            b["id"] == batch_id and b["status"] in ("QUEUED", "RUNNING", "STOPPING")
+            for b in batches
+        ):
+            raise ValueError("Wait until this benchmark stops before resuming")
+        return [], []
+    rows = []
+    for row in current:
+        execution = con.execute(
+            "SELECT * FROM executions WHERE id=?", (row["run_id"],)
+        ).fetchone()
+        rows.append(
+            dict(
+                row,
+                original_status=execution["status"],
+                execution_snapshot=execution["snapshot"],
+                execution_metadata=execution["metadata"],
+            )
         )
-    }
     safe, uncertain = [], []
     for row in rows:
-        if row["id"] in linked or row["status"] != "INTERRUPTED":
+        if row["status"] != "INTERRUPTED":
             continue
         info = json.loads(row["data"])
         # API_REQUEST_SENT is durably recorded before dispatch. A lost response
@@ -50,6 +57,7 @@ def candidate_calls(batch_id, con):
                     info,
                     id=row["id"],
                     run_id=row["run_id"],
+                    source_batch_id=row["batch_id"],
                     snapshot=json.loads(row["execution_snapshot"]),
                     metadata=json.loads(row["execution_metadata"]),
                 )
@@ -167,7 +175,14 @@ def persist(records, proposal, db=None):
     # cannot reserve the same source task twice. No source row is updated.
     with storage.connect(db) as con:
         con.execute("BEGIN IMMEDIATE")
-        safe, _ = candidate_calls(proposal["batch_id"], con)
+        if proposal.get("kind") == "retry":
+            from .retry import candidates
+
+            _, available = candidates(proposal["batch_id"], con)
+            selected = {c["id"] for c in proposal["work"]}
+            safe = [c for c in available if c["id"] in selected]
+        else:
+            safe, _ = candidate_calls(proposal["batch_id"], con)
         if [c["id"] for c in safe] != [c["id"] for c in proposal["work"]]:
             raise ValueError(
                 "Pending work was already continued. Open its continuation."
@@ -195,7 +210,17 @@ def persist(records, proposal, db=None):
             ):
                 con.execute(
                     "INSERT INTO live_continuations VALUES (?,?,?,?,?)",
-                    (source, target["id"], proposal["batch_id"], bid, r["created_at"]),
+                    (
+                        source,
+                        target["id"],
+                        next(
+                            c.get("source_batch_id", proposal["batch_id"])
+                            for c in proposal["work"]
+                            if c["id"] == source
+                        ),
+                        bid,
+                        r["created_at"],
+                    ),
                 )
         live._event(
             con,

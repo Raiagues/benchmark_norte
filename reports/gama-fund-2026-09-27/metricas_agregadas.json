@@ -1,0 +1,2946 @@
+[
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "80d646cb75c74572a6f9d1aa8575dc27"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "7f007fd23f467480aeed356c23c3779e5fd98f01e9cb8a7332a63a2fee0a4b6a",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "one_hop",
+    "difficulty": "L2_ONE_HOP",
+    "origin": "provider_api",
+    "n": 1,
+    "execution_ids": [
+      "bd18947e15e545489f6665cbe4e55b58"
+    ],
+    "incomplete_batch_ids": [],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_total": {
+        "mean": 2,
+        "min": 2,
+        "max": 2,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.5,
+        "min": 0.5,
+        "max": 0.5,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      }
+    },
+    "consistency": null,
+    "latency_seconds": {
+      "mean": 82.40608355600853,
+      "min": 82.40608355600853,
+      "max": 82.40608355600853,
+      "stddev": 0.0,
+      "n": 1
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 93120,
+    "known_output_tokens": 8399,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "5f5bb6493fcf434c872c1b87dcbff784",
+      "ce875b7643394c63aaac0a54a7782a33",
+      "d313d8ec964a4cfea946aa7659cdadb2"
+    ],
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "f34d135eb50eaf9502f4b8fd1d08e0be6931dbf939363b62b9856e4952729a02",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "entity_extraction",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "78361fcd9e8c4492b6f91a7a8050d8f7",
+      "ec6eb703a31e488898a6ce916a8a0f3a",
+      "5b987b313f9a415b97cf51a1a1da4e15"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "ebab04462b1f44c088aad22bec5d18c3"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "entity_f1": {
+        "mean": 0.8437728937728938,
+        "min": 0.8095238095238095,
+        "max": 0.8717948717948718,
+        "stddev": 0.025800567669005237,
+        "n": 3
+      },
+      "entity_precision": {
+        "mean": 0.7306192358366271,
+        "min": 0.68,
+        "max": 0.7727272727272727,
+        "stddev": 0.03833116362685466,
+        "n": 3
+      },
+      "entity_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "parameter_f1": {
+        "mean": 0.919400352733686,
+        "min": 0.8666666666666666,
+        "max": 0.962962962962963,
+        "stddev": 0.03984407646574538,
+        "n": 3
+      },
+      "parameter_precision": {
+        "mean": 0.8533146591970121,
+        "min": 0.7647058823529411,
+        "max": 0.9285714285714286,
+        "stddev": 0.067560769617548,
+        "n": 3
+      },
+      "parameter_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "source_attribution_accuracy": {
+        "mean": 0.779030910609858,
+        "min": 0.7142857142857143,
+        "max": 0.8333333333333334,
+        "stddev": 0.04915873974912206,
+        "n": 3
+      },
+      "supported_fact_recall": {
+        "mean": 0.9230769230769231,
+        "min": 0.9230769230769231,
+        "max": 0.9230769230769231,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unit_accuracy": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unsupported_fact_rate": {
+        "mean": 0.2123249299719888,
+        "min": 0.14285714285714285,
+        "max": 0.29411764705882354,
+        "stddev": 0.062363787339275056,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "value_accuracy": {
+        "mean": 0.9230769230769231,
+        "min": 0.9230769230769231,
+        "max": 0.9230769230769231,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 0.0,
+    "latency_seconds": {
+      "mean": 92.99212237133179,
+      "min": 70.84419185196748,
+      "max": 127.79486071999418,
+      "stddev": 24.91255094694579,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 169953,
+    "known_output_tokens": 17156,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "5f5bb6493fcf434c872c1b87dcbff784",
+      "ce875b7643394c63aaac0a54a7782a33",
+      "d313d8ec964a4cfea946aa7659cdadb2"
+    ],
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "f34d135eb50eaf9502f4b8fd1d08e0be6931dbf939363b62b9856e4952729a02",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "relationship_extraction",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "3ff3bf2a4f714c6e865a18f15b8b9fde",
+      "9019606916254d9595d6f182aebfcf8a",
+      "f315a1ee4a5c4f9fb392db8407dd3ed8"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "ebab04462b1f44c088aad22bec5d18c3"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "correct_with_bad_evidence": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "correct_with_evidence": {
+        "mean": 11,
+        "min": 11,
+        "max": 11,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "relationship_f1": {
+        "mean": 0.6016511867905057,
+        "min": 0.5789473684210525,
+        "max": 0.6470588235294118,
+        "stddev": 0.03210804785573596,
+        "n": 3
+      },
+      "relationship_precision": {
+        "mean": 0.4310252281266774,
+        "min": 0.4074074074074074,
+        "max": 0.4782608695652174,
+        "stddev": 0.03340064237488793,
+        "n": 3
+      },
+      "relationship_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_relationship_f1": {
+        "mean": 0.6016511867905057,
+        "min": 0.5789473684210525,
+        "max": 0.6470588235294118,
+        "stddev": 0.03210804785573596,
+        "n": 3
+      },
+      "unsupported_relationship_rate": {
+        "mean": 0.5689747718733226,
+        "min": 0.5217391304347826,
+        "max": 0.5925925925925926,
+        "stddev": 0.03340064237488791,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 0.3333333333333333,
+    "latency_seconds": {
+      "mean": 155.08817040365344,
+      "min": 133.47296031197766,
+      "max": 172.96732709096977,
+      "stddev": 16.338498974274604,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 170085,
+    "known_output_tokens": 30285,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "5f5bb6493fcf434c872c1b87dcbff784",
+      "ce875b7643394c63aaac0a54a7782a33",
+      "d313d8ec964a4cfea946aa7659cdadb2"
+    ],
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "f34d135eb50eaf9502f4b8fd1d08e0be6931dbf939363b62b9856e4952729a02",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "change_impact",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "d75e6938e2f84b04b95082c408ccf171",
+      "28a028efaf6649c99a8edb111f61ca2e",
+      "8d197f04b1034030b87cfc6a6cab2460"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "ebab04462b1f44c088aad22bec5d18c3"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.31555555555555553,
+        "min": 0.28,
+        "max": 0.3333333333333333,
+        "stddev": 0.025141574442188334,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 116.16992037066181,
+      "min": 106.97036741802003,
+      "max": 128.62091114697978,
+      "stddev": 9.132922018018975,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 172461,
+    "known_output_tokens": 23727,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "ce875b7643394c63aaac0a54a7782a33",
+      "d313d8ec964a4cfea946aa7659cdadb2"
+    ],
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "f34d135eb50eaf9502f4b8fd1d08e0be6931dbf939363b62b9856e4952729a02",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "impact_explanation",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 2,
+    "execution_ids": [
+      "a0b8e6e99ca2445091f62848a8a50552",
+      "c38eb2bf940747568918c23b30c56359"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0625,
+        "min": 0.0,
+        "max": 0.125,
+        "stddev": 0.0625,
+        "n": 2
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "supported_impact_recall": {
+        "mean": 0.0625,
+        "min": 0.0,
+        "max": 0.125,
+        "stddev": 0.0625,
+        "n": 2
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.28,
+        "min": 0.28,
+        "max": 0.28,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 141.73217743850546,
+      "min": 135.4388791169622,
+      "max": 148.02547576004872,
+      "stddev": 6.293298321543261,
+      "n": 2
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 115010,
+    "known_output_tokens": 19167,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "b772e53ba2d946dd8e6a49c1cd0ea750",
+      "ce875b7643394c63aaac0a54a7782a33",
+      "d313d8ec964a4cfea946aa7659cdadb2"
+    ],
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "f34d135eb50eaf9502f4b8fd1d08e0be6931dbf939363b62b9856e4952729a02",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "impact_explanation",
+    "difficulty": "L2_ONE_HOP",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "250f01411ed54d129ca5e29bff1d950a",
+      "17a7bcc0a6c04a40ae30712b99ec7c92",
+      "9cfc958dc3c742498d92f7130f26f41e"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 2,
+        "min": 2,
+        "max": 2,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.35714285714285715,
+        "min": 0.35714285714285715,
+        "max": 0.35714285714285715,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 85.0807667876749,
+      "min": 80.34147049702005,
+      "max": 89.57024126400938,
+      "stddev": 3.771768875173551,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 171711,
+    "known_output_tokens": 16816,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "b772e53ba2d946dd8e6a49c1cd0ea750",
+      "ce875b7643394c63aaac0a54a7782a33",
+      "d313d8ec964a4cfea946aa7659cdadb2"
+    ],
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "f34d135eb50eaf9502f4b8fd1d08e0be6931dbf939363b62b9856e4952729a02",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "one_hop",
+    "difficulty": "L2_ONE_HOP",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "b05e0f995108483aa057e00208cb22e0",
+      "fe6444e4597844c6bbf71681c61eacf3",
+      "63f2136d3c114da3967476293ad44631"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 2,
+        "min": 2,
+        "max": 2,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.08333333333333333,
+        "min": 0.0,
+        "max": 0.25,
+        "stddev": 0.11785113019775792,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.08333333333333333,
+        "min": 0.0,
+        "max": 0.25,
+        "stddev": 0.11785113019775792,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 71.90638688198912,
+      "min": 68.79221229196992,
+      "max": 73.8900944510242,
+      "stddev": 2.229434515903156,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 171705,
+    "known_output_tokens": 13654,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "78c2db605f464cfdb6ff1c0cd054c552"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "change_impact",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 1,
+    "execution_ids": [
+      "8634ec6540c14eff81e1d0e0adfaabb6"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.4,
+        "min": 0.4,
+        "max": 0.4,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      }
+    },
+    "consistency": null,
+    "latency_seconds": {
+      "mean": 123.97618566697929,
+      "min": 123.97618566697929,
+      "max": 123.97618566697929,
+      "stddev": 0.0,
+      "n": 1
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 93380,
+    "known_output_tokens": 13127,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "78c2db605f464cfdb6ff1c0cd054c552"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "impact_explanation",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 1,
+    "execution_ids": [
+      "3a7a79c49b38439fa2f5481893708af1"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.5,
+        "min": 0.5,
+        "max": 0.5,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      }
+    },
+    "consistency": null,
+    "latency_seconds": {
+      "mean": 115.52155766397482,
+      "min": 115.52155766397482,
+      "max": 115.52155766397482,
+      "stddev": 0.0,
+      "n": 1
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 93411,
+    "known_output_tokens": 12403,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "e3e45f4159af45378be77e8787bda2f8"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "678f30b959fa3617be1b3207a4f6cc6a02696f39331571245bef2bcc126c5074",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "impact_explanation",
+    "difficulty": "L2_ONE_HOP",
+    "origin": "provider_api",
+    "n": 1,
+    "execution_ids": [
+      "bdb4da2c5780462dafa3f57798aaac62"
+    ],
+    "incomplete_batch_ids": [
+      "3b72fee47d0a4a0bad444a152aa065ec"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_total": {
+        "mean": 2,
+        "min": 2,
+        "max": 2,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.5625,
+        "min": 0.5625,
+        "max": 0.5625,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      }
+    },
+    "consistency": null,
+    "latency_seconds": {
+      "mean": 101.62364541296847,
+      "min": 101.62364541296847,
+      "max": 101.62364541296847,
+      "stddev": 0.0,
+      "n": 1
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 92961,
+    "known_output_tokens": 7735,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "4d8e5a8af2324d548c4753396ebf3e70",
+      "ce68fa7dffd749bfb13fb20a570be231",
+      "f32a6cd9debd436798e6fa9790a000bb"
+    ],
+    "provider": "gemini",
+    "model": "gemini-3.1-pro-preview",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "d68e2a5b45f534d1ca1be074afe8e88835b8c9a10ba899cff1c5219e06b74165",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "entity_extraction",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "49f133e6ecb34ef581fd3d2fa16dc895",
+      "0ead7ce95cb74145b3509c4e042b208b",
+      "b71e084e76be42dd88837e257b19e02c"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "entity_f1": {
+        "mean": 0.8292682926829268,
+        "min": 0.8292682926829268,
+        "max": 0.8292682926829268,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "entity_precision": {
+        "mean": 0.7083333333333334,
+        "min": 0.7083333333333334,
+        "max": 0.7083333333333334,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "entity_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "parameter_f1": {
+        "mean": 0.8387096774193548,
+        "min": 0.8387096774193548,
+        "max": 0.8387096774193548,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "parameter_precision": {
+        "mean": 0.7222222222222222,
+        "min": 0.7222222222222222,
+        "max": 0.7222222222222222,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "parameter_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "source_attribution_accuracy": {
+        "mean": 0.6190476190476191,
+        "min": 0.6190476190476191,
+        "max": 0.6190476190476191,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_fact_recall": {
+        "mean": 0.7692307692307693,
+        "min": 0.7692307692307693,
+        "max": 0.7692307692307693,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unit_accuracy": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unsupported_fact_rate": {
+        "mean": 0.4444444444444444,
+        "min": 0.4444444444444444,
+        "max": 0.4444444444444444,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "value_accuracy": {
+        "mean": 0.9230769230769231,
+        "min": 0.9230769230769231,
+        "max": 0.9230769230769231,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 73.28622982032054,
+      "min": 59.136682930984534,
+      "max": 89.67205782799283,
+      "stddev": 12.565906120806455,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 195495,
+    "known_output_tokens": 34115,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "4d8e5a8af2324d548c4753396ebf3e70",
+      "ce68fa7dffd749bfb13fb20a570be231",
+      "f32a6cd9debd436798e6fa9790a000bb"
+    ],
+    "provider": "gemini",
+    "model": "gemini-3.1-pro-preview",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "d68e2a5b45f534d1ca1be074afe8e88835b8c9a10ba899cff1c5219e06b74165",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "relationship_extraction",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "386f14ec3cfe43a384941a7b089b449e",
+      "c87779f3e623442fa8097bd6c22bb51e",
+      "397e93c4fdae4e6cbc82f617816b4c74"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "correct_with_bad_evidence": {
+        "mean": 1.3333333333333333,
+        "min": 1,
+        "max": 2,
+        "stddev": 0.4714045207910317,
+        "n": 3
+      },
+      "correct_with_evidence": {
+        "mean": 7.666666666666667,
+        "min": 4,
+        "max": 10,
+        "stddev": 2.6246692913372702,
+        "n": 3
+      },
+      "relationship_f1": {
+        "mean": 0.6499790532048597,
+        "min": 0.45454545454545453,
+        "max": 0.7857142857142858,
+        "stddev": 0.14163596500692704,
+        "n": 3
+      },
+      "relationship_precision": {
+        "mean": 0.5505347593582888,
+        "min": 0.45454545454545453,
+        "max": 0.6470588235294118,
+        "stddev": 0.0785941634180163,
+        "n": 3
+      },
+      "relationship_recall": {
+        "mean": 0.8181818181818181,
+        "min": 0.45454545454545453,
+        "max": 1.0,
+        "stddev": 0.25712973861329,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_relationship_f1": {
+        "mean": 0.5528557464041335,
+        "min": 0.36363636363636365,
+        "max": 0.7142857142857143,
+        "stddev": 0.14449436081843098,
+        "n": 3
+      },
+      "unsupported_relationship_rate": {
+        "mean": 0.5327094474153298,
+        "min": 0.4117647058823529,
+        "max": 0.6363636363636364,
+        "stddev": 0.0925036658727517,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 0.0,
+    "latency_seconds": {
+      "mean": 79.89207935601007,
+      "min": 58.57683521101717,
+      "max": 97.37814680300653,
+      "stddev": 16.07031198521093,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 195588,
+    "known_output_tokens": 36527,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "4d8e5a8af2324d548c4753396ebf3e70",
+      "ce68fa7dffd749bfb13fb20a570be231",
+      "f32a6cd9debd436798e6fa9790a000bb"
+    ],
+    "provider": "gemini",
+    "model": "gemini-3.1-pro-preview",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "d68e2a5b45f534d1ca1be074afe8e88835b8c9a10ba899cff1c5219e06b74165",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "change_impact",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "7cfe1db802ec4cb090de3ebb2581313b",
+      "32ed27ced2b548ed8394432b75c08e77",
+      "fa854422c61f4370b7a5288e2ca6c0c7"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.1111111111111111,
+        "min": 0.0,
+        "max": 0.16666666666666666,
+        "stddev": 0.07856742013183861,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 74.96210321066125,
+      "min": 70.22721633396577,
+      "max": 80.6414309850079,
+      "stddev": 4.3037149190253645,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 197928,
+    "known_output_tokens": 35100,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "4d8e5a8af2324d548c4753396ebf3e70",
+      "ce68fa7dffd749bfb13fb20a570be231",
+      "f32a6cd9debd436798e6fa9790a000bb"
+    ],
+    "provider": "gemini",
+    "model": "gemini-3.1-pro-preview",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "d68e2a5b45f534d1ca1be074afe8e88835b8c9a10ba899cff1c5219e06b74165",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "impact_explanation",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "16f9e3ed800341d787a16ff50d5be0e8",
+      "3b246c61a1d14a5186859200e4a2950e",
+      "03b1d0c62d8b47e5af68ff23e719f81b"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.08333333333333333,
+        "min": 0.0,
+        "max": 0.25,
+        "stddev": 0.11785113019775792,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.08333333333333333,
+        "min": 0.0,
+        "max": 0.25,
+        "stddev": 0.11785113019775792,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.3146825396825397,
+        "min": 0.125,
+        "max": 0.5333333333333333,
+        "stddev": 0.16795514794383792,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 73.56558402530693,
+      "min": 68.37664944998687,
+      "max": 78.5705817049602,
+      "stddev": 4.16368733143569,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 197985,
+    "known_output_tokens": 34110,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "4d8e5a8af2324d548c4753396ebf3e70",
+      "ce68fa7dffd749bfb13fb20a570be231",
+      "f32a6cd9debd436798e6fa9790a000bb"
+    ],
+    "provider": "gemini",
+    "model": "gemini-3.1-pro-preview",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "d68e2a5b45f534d1ca1be074afe8e88835b8c9a10ba899cff1c5219e06b74165",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "impact_explanation",
+    "difficulty": "L2_ONE_HOP",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "480e9050f4a64eca9a423b1770c1e5e4",
+      "892bfb654b56467fa9b0b078ca2b0a55",
+      "c84fe72c2d5540df9d63dd67c91f1b71"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 2,
+        "min": 2,
+        "max": 2,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.08333333333333333,
+        "min": 0.0,
+        "max": 0.25,
+        "stddev": 0.11785113019775792,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.08333333333333333,
+        "min": 0.0,
+        "max": 0.25,
+        "stddev": 0.11785113019775792,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.30952380952380953,
+        "min": 0.0,
+        "max": 0.5,
+        "stddev": 0.22080044036894533,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 53.03453117467385,
+      "min": 35.36490943201352,
+      "max": 67.03060401999392,
+      "stddev": 13.185857943536204,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 197085,
+    "known_output_tokens": 24219,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "4d8e5a8af2324d548c4753396ebf3e70",
+      "ce68fa7dffd749bfb13fb20a570be231",
+      "f32a6cd9debd436798e6fa9790a000bb"
+    ],
+    "provider": "gemini",
+    "model": "gemini-3.1-pro-preview",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "d68e2a5b45f534d1ca1be074afe8e88835b8c9a10ba899cff1c5219e06b74165",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "one_hop",
+    "difficulty": "L2_ONE_HOP",
+    "origin": "provider_api",
+    "n": 3,
+    "execution_ids": [
+      "aa28efe4e70e48f7b8ae183acaa10ad2",
+      "c13cc3844f8f40f48a0426b6bd94424b",
+      "9abc326218b94142a252488da7d303e7"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "critical_total": {
+        "mean": 2,
+        "min": 2,
+        "max": 2,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 3
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.23333333333333334,
+        "min": 0.2,
+        "max": 0.25,
+        "stddev": 0.02357022603955158,
+        "n": 3
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 3
+      }
+    },
+    "consistency": 1.0,
+    "latency_seconds": {
+      "mean": 46.08431502767295,
+      "min": 35.74408625700744,
+      "max": 53.02221162500791,
+      "stddev": 7.452753505532727,
+      "n": 3
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 197073,
+    "known_output_tokens": 18901,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "e82d138c188a4911b96033ba7b2d59a7",
+      "ee45f79946a346af9c72118884b79fb0"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "entity_extraction",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 2,
+    "execution_ids": [
+      "fbd1d92a1d1548bf8066313fdee897bf",
+      "d022d5e3598f480788c2a2fdf69b6b0d"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "entity_f1": {
+        "mean": 0.7011054421768708,
+        "min": 0.6938775510204082,
+        "max": 0.7083333333333333,
+        "stddev": 0.007227891156462551,
+        "n": 2
+      },
+      "entity_precision": {
+        "mean": 0.5398185483870968,
+        "min": 0.53125,
+        "max": 0.5483870967741935,
+        "stddev": 0.008568548387096753,
+        "n": 2
+      },
+      "entity_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "parameter_f1": {
+        "mean": 0.8387096774193548,
+        "min": 0.8387096774193548,
+        "max": 0.8387096774193548,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "parameter_precision": {
+        "mean": 0.7222222222222222,
+        "min": 0.7222222222222222,
+        "max": 0.7222222222222222,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "parameter_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "source_attribution_accuracy": {
+        "mean": 0.6061224489795918,
+        "min": 0.6,
+        "max": 0.6122448979591837,
+        "stddev": 0.006122448979591855,
+        "n": 2
+      },
+      "supported_fact_recall": {
+        "mean": 0.9230769230769231,
+        "min": 0.9230769230769231,
+        "max": 0.9230769230769231,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "unit_accuracy": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "unsupported_fact_rate": {
+        "mean": 0.3333333333333333,
+        "min": 0.3333333333333333,
+        "max": 0.3333333333333333,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 2
+      },
+      "value_accuracy": {
+        "mean": 0.9230769230769231,
+        "min": 0.9230769230769231,
+        "max": 0.9230769230769231,
+        "stddev": 0.0,
+        "n": 2
+      }
+    },
+    "consistency": 0.0,
+    "latency_seconds": {
+      "mean": 69.67195657151751,
+      "min": 56.49819832498906,
+      "max": 82.84571481804596,
+      "stddev": 13.17375824652845,
+      "n": 2
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 183520,
+    "known_output_tokens": 12345,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "e82d138c188a4911b96033ba7b2d59a7"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "relationship_extraction",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 1,
+    "execution_ids": [
+      "30bcd2c886084cccae38194954d1c53e"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "correct_with_bad_evidence": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "correct_with_evidence": {
+        "mean": 11,
+        "min": 11,
+        "max": 11,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "relationship_f1": {
+        "mean": 0.6875000000000001,
+        "min": 0.6875000000000001,
+        "max": 0.6875000000000001,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "relationship_precision": {
+        "mean": 0.5238095238095238,
+        "min": 0.5238095238095238,
+        "max": 0.5238095238095238,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "relationship_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "supported_relationship_f1": {
+        "mean": 0.6875000000000001,
+        "min": 0.6875000000000001,
+        "max": 0.6875000000000001,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "unsupported_relationship_rate": {
+        "mean": 0.47619047619047616,
+        "min": 0.47619047619047616,
+        "max": 0.47619047619047616,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      }
+    },
+    "consistency": null,
+    "latency_seconds": {
+      "mean": 116.09643146401504,
+      "min": 116.09643146401504,
+      "max": 116.09643146401504,
+      "stddev": 0.0,
+      "n": 1
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 91871,
+    "known_output_tokens": 9421,
+    "token_usage_complete": true
+  },
+  {
+    "study_id": "a66272eaf0c24305b11bd3c368db4798",
+    "study_created_at": "2026-09-27T18:18:56.542196+00:00",
+    "study_batch_ids": [
+      "a66272eaf0c24305b11bd3c368db4798",
+      "cf73fb2248e14823879c4208368229ce",
+      "ebab04462b1f44c088aad22bec5d18c3",
+      "3b72fee47d0a4a0bad444a152aa065ec",
+      "b2fd0da6d6d44769882154dbf589a8f6"
+    ],
+    "run_ids": [
+      "e82d138c188a4911b96033ba7b2d59a7"
+    ],
+    "provider": "anthropic",
+    "model": "claude-fable-5-1",
+    "experiment": "first_pass",
+    "input_mode": "pdf_text",
+    "comparison_hash": "b43c00b2184540337c550c684c2890cd9cf13092edeef6237acd86d9c18d83dd",
+    "settings_hash": "a35c9292e99bc10e61b3c1e857a9cc6221eb969cc2354e510b2b299564a42f64",
+    "depth": "high",
+    "feedback_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "task": "change_impact",
+    "difficulty": "L1_DIRECT",
+    "origin": "provider_api",
+    "n": 1,
+    "execution_ids": [
+      "3e8fa7bd22fd4055922cff6df462648e"
+    ],
+    "incomplete_batch_ids": [
+      "cf73fb2248e14823879c4208368229ce"
+    ],
+    "metrics": {
+      "call_success_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "contract_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_impact_miss_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_missed": {
+        "mean": 0,
+        "min": 0,
+        "max": 0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "critical_total": {
+        "mean": 5,
+        "min": 5,
+        "max": 5,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "explanation_rule_pass_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_negative_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "false_positive_impact_rate": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_f1": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_precision": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "impact_recall": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "scenario_coverage": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "schema_compliance_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "supported_impact_recall": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "unsupported_explanation_claim_rate": {
+        "mean": 0.5,
+        "min": 0.5,
+        "max": 0.5,
+        "stddev": 0.0,
+        "n": 1
+      },
+      "valid_json_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "stddev": 0.0,
+        "n": 1
+      }
+    },
+    "consistency": null,
+    "latency_seconds": {
+      "mean": 109.7130929530249,
+      "min": 109.7130929530249,
+      "max": 109.7130929530249,
+      "stddev": 0.0,
+      "n": 1
+    },
+    "estimated_cost_usd": null,
+    "average_cost_per_task_usd": null,
+    "known_input_tokens": 93380,
+    "known_output_tokens": 11704,
+    "token_usage_complete": true
+  }
+]

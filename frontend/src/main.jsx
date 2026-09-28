@@ -1,3 +1,4 @@
+import { downloadDiagram } from "./ResultExport";
 import RunPage from "./RunPage";
 import LiveExecution, { RunHistory, ExecutionDetail } from "./LiveExecution";
 import InputExplorer from "./InputExplorer";
@@ -257,7 +258,7 @@ function App() {
     try {
       const [r, s, e, c, d] = await Promise.all([
         api("/runs"),
-        api("/summary"),
+        api("/summary?by_study=true"),
         api("/executions"),
         api("/config"),
         api("/documents"),
@@ -466,8 +467,7 @@ function App() {
 }
 
 function LiveGraph({ detail }) {
-  const [view, setView] = useState("side"),
-    [item, setItem] = useState(null);
+  const [item, setItem] = useState(null);
   const graph = {
     model: detail.result.parsed_output,
     ground_truth: {
@@ -476,22 +476,32 @@ function LiveGraph({ detail }) {
     },
     comparison: detail.comparison,
   };
+  const visible = new Set(
+    detail.comparison.edges.flatMap((e) => [e.key[0], e.key[2]]),
+  );
+  graph.model = {
+    ...graph.model,
+    nodes: graph.model.nodes.filter((n) => visible.has(n.id)),
+  };
+  graph.ground_truth = {
+    ...graph.ground_truth,
+    nodes: graph.ground_truth.nodes.filter((n) => visible.has(n.id)),
+  };
   return (
     <div className="live-graphs">
-      <Tabs
-        value={view}
-        onChange={setView}
-        items={[
-          ["side", L("Lado a lado", "Side by side")],
-          ["model", L("Modelo", "Model")],
-          ["reference", L("Gabarito", "Ground truth")],
-          ["diff", L("Comparação", "Comparison")],
-        ]}
-      />
-      <div
-        className={view === "side" ? "live-graph-pair" : "live-graph-single"}
-      >
-        {(view === "side" ? ["reference", "model"] : [view]).map((kind) => (
+      <div className="inline-actions">
+        <button onClick={() => downloadDiagram(detail, "model")}>
+          {L("Baixar diagrama do modelo (SVG)", "Download model diagram (SVG)")}
+        </button>
+        <button onClick={() => downloadDiagram(detail, "reference")}>
+          {L(
+            "Baixar diagrama do gabarito (SVG)",
+            "Download reference diagram (SVG)",
+          )}
+        </button>
+      </div>
+      <div className="live-graph-pair">
+        {["reference", "model"].map((kind) => (
           <GraphCanvas
             key={kind}
             title={
@@ -525,7 +535,9 @@ function LiveGraph({ detail }) {
 }
 
 function useRun(runs, eligible = () => true) {
-  const available = runs.filter(eligible);
+  const available = runs.filter(
+    (run) => run.comparison_eligible !== false && eligible(run),
+  );
   const [id, setId] = useState(""),
     [run, setRun] = useState(null),
     [error, setError] = useState("");
@@ -621,19 +633,56 @@ function RunPicker({ selection }) {
 
 function Results({ runs, summary }) {
   const [view, setView] = useState("charts");
-  const [cohort, setCohort] = useState(""),
+  const [study, setStudy] = useState(""),
     [level, setLevel] = useState("L1_DIRECT"),
     [task, setTask] = useState("relationship_extraction"),
     [hidden, setHidden] = useState([]);
-  const selection = useRun(runs);
+  const studyKey = (row) => row.study_id || "legacy";
+  const studies = [
+    ...new Map(summary.map((row) => [studyKey(row), row])).values(),
+  ].sort((a, b) =>
+    (b.study_created_at || "").localeCompare(a.study_created_at || ""),
+  );
+  const chosen = studies.find((row) => studyKey(row) === study) || studies[0];
+  const studyRows = summary.filter(
+    (row) => studyKey(row) === studyKey(chosen || {}),
+  );
+  const studyRuns = new Set(studyRows.flatMap((row) => row.run_ids || []));
+  const studyBatches = new Set(
+    studyRows.flatMap((row) => row.study_batch_ids || []),
+  );
+  const selection = useRun(
+    runs,
+    (run) =>
+      !chosen?.study_id ||
+      studyRuns.has(run.id) ||
+      studyBatches.has(run.batch_id),
+  );
   if (!runs.length) return <Empty />;
   if (!summary.length)
-    return <p className="loading">{tr("Carregando métricas…")}</p>;
+    return (
+      <p>
+        {L(
+          "Sem resultados válidos para comparação. As respostas anteriores permanecem no Histórico.",
+          "No valid results for comparison. Earlier responses remain in History.",
+        )}
+      </p>
+    );
   const cohorts = [
-    ...new Map(summary.map((row) => [cohortKey(row), row])).values(),
+    ...new Map(studyRows.map((row) => [cohortKey(row), row])).values(),
   ];
-  const chosen = cohorts.find((row) => cohortKey(row) === cohort) || cohorts[0];
-  const same = summary.filter((row) => cohortKey(row) === cohortKey(chosen));
+  const same = studyRows.map((row) => ({
+    ...row,
+    // Versions distinguish repeated measurements of the same model, not studies.
+    model: studyRows.some(
+      (other) =>
+        modelKey(other) === modelKey(row) &&
+        cohortKey(other) !== cohortKey(row),
+    )
+      ? `${row.model} · ${L("versão", "version")} ${row.comparison_hash.slice(0, 6)}`
+      : row.model,
+    settings_hash: `${row.settings_hash || ""}|${cohortKey(row)}`,
+  }));
   const allModels = [
     ...new Map(same.map((row) => [modelKey(row), row])).values(),
   ];
@@ -675,35 +724,27 @@ function Results({ runs, summary }) {
         ]}
       />
       <div className="toolbar comparison-controls">
-        {cohorts.length > 1 && (
-          <label>
-            {tr("Avaliação comparável")}
-            <select
-              aria-label={tr("Avaliação comparável")}
-              value={cohortKey(chosen)}
-              onChange={(e) => {
-                setCohort(e.target.value);
-                setHidden([]);
-              }}
-            >
-              {cohorts.map((c, i) => (
-                <option key={cohortKey(c)} value={cohortKey(c)}>
-                  {tr(i + 1)}.{tr(" ")}
-                  {tr(c.input_mode === "controlled_text" ? "Texto" : "PDF")} ·
-                  {tr(" ")}
-                  {tr(
-                    c.experiment === "first_pass"
-                      ? "Sem correções"
-                      : "Com correções",
-                  )}
-                  {tr(" ")}
-                  {tr("· versão ")}
-                  {tr(c.comparison_hash.slice(0, 6))}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <label>
+          {L("Estudo", "Study")}
+          <select
+            aria-label={L("Estudo", "Study")}
+            value={studyKey(chosen)}
+            onChange={(e) => {
+              setStudy(e.target.value);
+              setHidden([]);
+            }}
+          >
+            {studies.map((c) => (
+              <option key={studyKey(c)} value={studyKey(c)}>
+                {L("Estudo", "Study")} ·{" "}
+                {c.study_id?.slice(0, 8) || L("Histórico", "History")}
+                {(c.study_batch_ids?.length || 0) > 1
+                  ? ` · ${L("inclui continuações", "includes continuations")}`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           {tr("Dificuldade")}
           <select
@@ -728,6 +769,69 @@ function Results({ runs, summary }) {
           )}
         </span>
       </div>
+      <div
+        className="study-notice study-summary"
+        aria-label={L("Etapas do estudo", "Study stages")}
+      >
+        <strong>
+          {studyBatches.size > 1
+            ? L(
+                "Execução original e continuações reunidas",
+                "Original run and continuations together",
+              )
+            : L("Resultados deste estudo", "Results in this study")}
+        </strong>
+        {" · "}
+        {new Set(studyRows.map((r) => `${r.provider}|${r.model}`)).size}{" "}
+        {L("modelos", "models")}
+        {" · "}
+        {studyRows.reduce((n, r) => n + r.n, 0)}{" "}
+        {L("respostas avaliadas", "evaluated responses")}
+        {runs.some(
+          (r) =>
+            r.comparison_eligible === false && studyBatches.has(r.batch_id),
+        ) && (
+          <p className="comparison-exclusion-notice">
+            {L(
+              "Versões excluídas por decisão da usuária (fora dos gráficos, médias e seleção de respostas; histórico preservado):",
+              "Versions excluded by user decision (removed from charts, averages and response selection; history preserved):",
+            )}{" "}
+            {[
+              ...new Set(
+                runs
+                  .filter(
+                    (r) =>
+                      r.comparison_eligible === false &&
+                      studyBatches.has(r.batch_id),
+                  )
+                  .map((r) => `${r.model} · ${r.comparison_hash.slice(0, 6)}`),
+              ),
+            ].join(", ")}
+          </p>
+        )}
+        <details>
+          <summary>
+            {L("Proveniência dos resultados", "Result provenance")} ·{" "}
+            {cohorts.map((c) => c.comparison_hash.slice(0, 6)).join(" + ")}
+          </summary>
+          {cohorts.length > 1 && (
+            <p>
+              {L(
+                "As etapas pertencem ao mesmo estudo. Os protocolos usados ficam registrados abaixo; cada modelo mantém as métricas e a amostra das respostas originais. Diferenças de protocolo devem ser consideradas ao comparar os modelos.",
+                "These stages belong to the same study. Their protocols are recorded below; each model keeps the metrics and sample from its original responses. Consider protocol differences when comparing models.",
+              )}
+            </p>
+          )}
+          <ul>
+            {allModels.map((m) => (
+              <li key={modelKey(m)}>
+                {displayModel(m)} · {L("protocolo", "protocol")}{" "}
+                {m.comparison_hash.slice(0, 6)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </div>
       {series.some((r) => r.incomplete_batch_ids?.length) && (
         <div className="partial-result-note">
           <span>
@@ -737,7 +841,7 @@ function Results({ runs, summary }) {
             )}
           </span>
           <a
-            href={`#live/${series.find((r) => r.incomplete_batch_ids?.length).incomplete_batch_ids[0]}`}
+            href={`#live/${chosen.study_id || series.find((r) => r.incomplete_batch_ids?.length).incomplete_batch_ids[0]}`}
           >
             {L("Ver contagens e interrupções", "See counts and interruptions")}{" "}
             →

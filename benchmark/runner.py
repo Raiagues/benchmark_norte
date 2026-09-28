@@ -516,20 +516,47 @@ def execute_run(run_id, db=None):
     return storage.get_execution(run_id, db)
 
 
-def aggregate(db=None):
+def aggregate(db=None, *, by_study=False):
+    """Keep protocol statistics intact; optionally scope each group to its study."""
     groups = defaultdict(list)
     depths = {}
     provenance = defaultdict(list)
+    study_info = {}
     with storage.connect(db) as con:
         batch_states = {
             r["id"]: r["status"]
             for r in con.execute("SELECT id,status FROM live_batches")
         }
+        if by_study:
+            from .studies import family
+
+            for batch_id in batch_states:
+                if batch_id in study_info:
+                    continue
+                root, batches = family(batch_id, con)
+                root_batch = next(b for b in batches if b["id"] == root)
+                info = {
+                    "study_id": root,
+                    "study_created_at": root_batch["created_at"],
+                    "study_batch_ids": [b["id"] for b in batches],
+                }
+                study_info.update({b["id"]: info for b in batches})
     for info in storage.list_runs(db):
+        if not info["comparison_eligible"]:
+            continue
         run = storage.get_run(info["id"], db)
         m = run["metadata"]
+        study = study_info.get(
+            m.get("batch_id"),
+            {
+                "study_id": m.get("batch_id") or run["id"],
+                "study_created_at": run["created_at"],
+                "study_batch_ids": [m["batch_id"]] if m.get("batch_id") else [],
+            },
+        )
         for r in run["results"]:
             key = (
+                study["study_id"] if by_study else None,
                 m["provider"],
                 m["model"],
                 m["experiment"],
@@ -545,6 +572,7 @@ def aggregate(db=None):
                 {
                     "run_id": run["id"],
                     "batch_id": m.get("batch_id"),
+                    "study": study,
                     "incomplete": run["status"] != "completed"
                     or batch_states.get(m.get("batch_id"))
                     not in (None, "COMPLETED", "COMPLETED_WITH_ERRORS"),
@@ -555,6 +583,7 @@ def aggregate(db=None):
     rows = []
     for key, results in groups.items():
         (
+            study_id,
             provider,
             model,
             experiment,
@@ -574,6 +603,14 @@ def aggregate(db=None):
         costs = [r["cost_usd"] for r in results]
         rows.append(
             {
+                **(
+                    {
+                        **provenance[key][0]["study"],
+                        "run_ids": sorted({p["run_id"] for p in provenance[key]}),
+                    }
+                    if by_study
+                    else {}
+                ),
                 "provider": provider,
                 "model": model,
                 "experiment": experiment,

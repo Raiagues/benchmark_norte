@@ -194,11 +194,11 @@ test("metric charts compare real-record shapes, keep levels apart, and expose ra
   });
   await page.getByRole("button", { name: "Respostas", exact: true }).click();
   await expect(
-    page.locator(".run-details .inspector-story-grid > button"),
-  ).toHaveCount(3);
+    page.locator(".run-details .result-workbench"),
+  ).toBeVisible();
   await page
     .locator(".run-details")
-    .getByRole("button", { name: "Resposta", exact: true })
+    .getByRole("button", { name: "Resposta e avaliação", exact: true })
     .click();
   await expect(
     page.locator(".run-details .inspector-table").first(),

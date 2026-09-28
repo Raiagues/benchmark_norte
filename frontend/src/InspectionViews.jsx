@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { L } from "./i18n";
+import PdfViewer from "./PdfViewer";
+import { Tabs } from "./ScreenUI";
 import {
   taskLabel,
   taskPurpose,
@@ -197,7 +199,8 @@ export function InputView({ detail: d }) {
   const docs = d.input?.documents || {},
     keys = Object.keys(docs);
   const [chosen, setChosen] = useState(keys[0]),
-    [location, setLocation] = useState("");
+    [location, setLocation] = useState(""),
+    [documentView, setDocumentView] = useState("pdf");
   const id = keys.includes(chosen) ? chosen : keys[0],
     entries = Object.entries(docs[id] || {}),
     passage = entries.find(([k]) => k === location) || entries[0];
@@ -249,31 +252,101 @@ export function InputView({ detail: d }) {
           ))}
         </nav>
         <article className="document-sheet">
-          <header>
-            <h3>{documentName(id)}</h3>
-            {entries.length > 1 && (
-              <select
-                aria-label={L("Página ou trecho", "Page or passage")}
-                value={passage?.[0]}
-                onChange={(e) => setLocation(e.target.value)}
-              >
-                {entries.map(([key]) => (
-                  <option key={key}>{key}</option>
-                ))}
-              </select>
-            )}
-          </header>
-          <p className="document-source-label">
-            {id} · {passage?.[0]}
-          </p>
-          <div className="source-prose" lang="en">
-            {passage?.[1] ||
-              L("Documento indisponível", "Document unavailable")}
-          </div>
+          {id && (
+            <Tabs
+              value={documentView}
+              onChange={setDocumentView}
+              items={[
+                ["pdf", L("Documento original", "Original document")],
+                [
+                  "text",
+                  L("Texto enviado ao modelo", "Text sent to the model"),
+                ],
+              ]}
+            />
+          )}
+          {documentView === "pdf" ? (
+            d.pdf_hashes?.[id] ? (
+              <>
+                <p className="muted">
+                  {L(
+                    "PDF local conferido com o hash preservado nesta execução. O provedor recebeu o texto integral extraído das páginas.",
+                    "Local PDF verified against this execution’s saved hash. The provider received the full extracted page text.",
+                  )}
+                </p>
+                <PdfViewer
+                  source={{
+                    document_id: id,
+                    available: true,
+                    expected_hash: d.pdf_hashes[id],
+                    part_number: documentName(id),
+                  }}
+                />
+              </>
+            ) : (
+              <div className="inspector-empty">
+                <h3>
+                  {L(
+                    "Original PDF não preservado para este documento",
+                    "Original PDF not preserved for this document",
+                  )}
+                </h3>
+                <p>
+                  {["PROJECT", "REQUIREMENTS"].includes(id)
+                    ? L(
+                        "Este documento do projeto é textual. Não é uma extração de datasheet.",
+                        "This project document is text. It is not a datasheet extraction.",
+                      )
+                    : L(
+                        "Esta execução não guardou o hash do PDF. Não substituímos seu original por um arquivo atual.",
+                        "This execution did not save a PDF hash. We do not substitute a current file for its original.",
+                      )}
+                </p>
+                <button onClick={() => setDocumentView("text")}>
+                  {L("Ler conteúdo preservado", "Read preserved content")}
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              <header>
+                <h3>{documentName(id)}</h3>
+                {entries.length > 1 && (
+                  <select
+                    aria-label={L("Página ou trecho", "Page or passage")}
+                    value={passage?.[0]}
+                    onChange={(e) => setLocation(e.target.value)}
+                  >
+                    {entries.map(([key]) => (
+                      <option key={key}>{key}</option>
+                    ))}
+                  </select>
+                )}
+              </header>
+              <p className="document-source-label">
+                {id} · {passage?.[0]}
+              </p>
+              <div className="source-prose" lang="en">
+                {passage?.[1] ||
+                  L("Documento indisponível", "Document unavailable")}
+              </div>
+            </>
+          )}
         </article>
       </div>
       <section>
-        <h3>{L("Configuração enviada", "Submitted configuration")}</h3>
+        <h3>
+          {L(
+            "Configuração do projeto enviada",
+            "Submitted project configuration",
+          )}
+        </h3>
+        <p className="provenance-note">
+          {L(
+            "Origem: configuração definida pelo projeto/benchmark. Estes valores não foram extraídos dos PDFs nem gerados pelo modelo. O campo de origem abaixo é o que foi preservado no pedido.",
+            "Origin: configuration defined by the project/benchmark. These values were not extracted from PDFs or generated by the model. The origin field below is preserved from the request.",
+          )}
+        </p>
         <dl className="inspector-properties">
           {Object.entries(d.input?.system_config || {}).map(([k, v]) => (
             <div key={k}>
@@ -547,7 +620,7 @@ export function TruthView({ detail: d, scenario, onScenario }) {
     </section>
   );
 }
-export function MetricsView({ detail: d }) {
+export function MetricsView({ detail: d, onInspect }) {
   const m = d.result?.metrics;
   if (!m)
     return (
@@ -589,8 +662,81 @@ export function MetricsView({ detail: d }) {
                 <dl>
                   {["precision", "recall", "f1"].map((n) => (
                     <div key={n}>
-                      <dt>{metricLabel(`${k}_${n}`)}</dt>
-                      <dd>
+                      <dt>
+                        <details>
+                          <summary>{metricLabel(`${k}_${n}`)}</summary>
+                          <p>
+                            {n === "precision"
+                              ? L(
+                                  "Itens corretos ÷ itens previstos.",
+                                  "Correct items ÷ predicted items.",
+                                )
+                              : n === "recall"
+                                ? L(
+                                    "Itens corretos ÷ itens esperados.",
+                                    "Correct items ÷ expected items.",
+                                  )
+                                : L(
+                                    "2 × acertos ÷ (2 × acertos + extras + ausentes).",
+                                    "2 × correct ÷ (2 × correct + extra + missing).",
+                                  )}
+                          </p>
+                          <p>
+                            {L(
+                              "Amostra: esta resposta avaliada. Interrupções e falhas técnicas são excluídas.",
+                              "Sample: this evaluated response. Interruptions and technical failures are excluded.",
+                            )}
+                          </p>
+                          {["correct", "false_positives", "missing"].map(
+                            (group) => (
+                              <div
+                                key={group}
+                                className={
+                                  group === "correct"
+                                    ? "answer-good"
+                                    : "answer-bad"
+                                }
+                              >
+                                <b>
+                                  {
+                                    {
+                                      correct: L("Corretos", "Correct"),
+                                      false_positives: L("Extras", "Extra"),
+                                      missing: L("Ausentes", "Missing"),
+                                    }[group]
+                                  }
+                                </b>
+                                <ul>
+                                  {(f[group] || []).map((id, i) => (
+                                    <li key={i}>
+                                      <button onClick={onInspect}>
+                                        {Array.isArray(id)
+                                          ? id.join(" → ")
+                                          : id}
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ),
+                          )}
+                          <button onClick={onInspect}>
+                            {L(
+                              "Inspecionar itens e evidências",
+                              "Inspect items and evidence",
+                            )}
+                          </button>
+                        </details>
+                      </dt>
+                      <dd
+                        className={
+                          f[n] === 1
+                            ? "answer-good"
+                            : f[n] > 0
+                              ? "answer-warn"
+                              : "answer-bad"
+                        }
+                      >
                         {percent(f[n])}
                         <small>
                           {n === "precision"
@@ -638,10 +784,42 @@ export function MetricsView({ detail: d }) {
         ]
           .filter((k) => m[k] != null)
           .map((k) => (
-            <div key={k}>
-              <span>{metricLabel(k)}</span>
-              <strong>{percent(m[k])}</strong>
-            </div>
+            <details key={k}>
+              <summary>
+                {metricLabel(k)}{" "}
+                <strong
+                  className={
+                    (
+                      k.startsWith("unsupported_") ||
+                      k === "critical_impact_miss_rate"
+                        ? m[k] === 0
+                        : m[k] === 1
+                    )
+                      ? "answer-good"
+                      : "answer-warn"
+                  }
+                >
+                  {percent(m[k])}
+                </strong>
+              </summary>
+              <p>
+                {d.metric_explanations?.[k]
+                  ? `${d.metric_explanations[k].numerator} / ${d.metric_explanations[k].denominator}`
+                  : L(
+                      "Contagem detalhada indisponível nesta execução.",
+                      "Detailed count unavailable in this execution.",
+                    )}
+              </p>
+              <p>
+                {L(
+                  "Base: uma resposta avaliada. Interrupções e falhas técnicas são excluídas.",
+                  "Based on one evaluated response. Interruptions and technical errors are excluded.",
+                )}
+              </p>
+              <button onClick={onInspect}>
+                {L("Abrir verificações dos itens", "Open item checks")}
+              </button>
+            </details>
           ))}
       </div>
       <dl className="inspector-properties">

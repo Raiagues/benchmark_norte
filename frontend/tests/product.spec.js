@@ -423,7 +423,7 @@ test("one model explorer groups categories and repetitions and explains a red an
     .getByLabel("Categoria de teste", { exact: true })
     .selectOption("impact_explanation|L1_DIRECT");
   await expect(dialog.locator(".detail-meta .state-pill")).toHaveClass(/bad/);
-  await dialog.getByRole("button", { name: "Comparação", exact: true }).click();
+  await dialog.getByRole("button", { name: "Resposta e avaliação", exact: true }).click();
   await expect(dialog.locator(".evaluation-errors")).toContainText(
     "Recall 100%",
   );
@@ -444,7 +444,7 @@ test("one model explorer groups categories and repetitions and explains a red an
     "P-FAN-CURRENT",
   );
   await expect(dialog.locator(".requirement-verdict-detail")).toContainText(
-    "constrains → FAN",
+    "Tipo da relação",
   );
   await page
     .getByLabel("Repetição do resultado", { exact: true })
@@ -452,11 +452,11 @@ test("one model explorer groups categories and repetitions and explains a red an
   await expect(
     page.getByLabel("Repetição do resultado", { exact: true }),
   ).toHaveValue("3");
-  await dialog.getByRole("button", { name: "Comparação", exact: true }).click();
+  await dialog.getByRole("button", { name: "Resposta e avaliação", exact: true }).click();
   await page
     .getByLabel("Cenário de mudança", { exact: true })
     .selectOption("CHG-008");
-  await expect(dialog.locator(".scenario-totals")).toContainText("0 com erro");
+  await expect(dialog.locator(".scenario-totals")).toContainText("0 Incorreto");
   await page
     .getByLabel("Categoria de teste", { exact: true })
     .selectOption("change_impact|L1_DIRECT");

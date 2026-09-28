@@ -1,0 +1,13 @@
+[
+  {
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "comparison_hash": "d4408d52d1a5ff52d8f3a9f8a97b40f6c849d8f8857e76a20e8452018f1a5cb6",
+    "reason": "Declared invalid by the user; excluded from benchmark comparison. Original responses remain in history.",
+    "run_ids": [
+      "99fd8215b10843ab9c9e1befdd11ed37",
+      "db7eca0513394a4ebf2726298309d8b6",
+      "4bd4f2c742554c2fa096f862493b483a"
+    ]
+  }
+]

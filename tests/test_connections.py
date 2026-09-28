@@ -237,6 +237,48 @@ def test_unexpected_probe_json_does_not_confirm(db, monkeypatch, text):
     assert not c["ready"] and c["status"] == "invalid_response"
 
 
+def test_saved_claude_billing_failure_requires_explicit_recheck_without_benchmark(
+    db, monkeypatch
+):
+    put_keys(monkeypatch)
+    selected = [m for m in models() if m["provider"] == "anthropic"]
+    sent = mock_connection_api(
+        monkeypatch,
+        [
+            (
+                400,
+                {
+                    "error": {
+                        "type": "invalid_request_error",
+                        "message": "Your credit balance is too low to access the API.",
+                    }
+                },
+            ),
+            (
+                200,
+                {
+                    "content": [{"type": "text", "text": '{"ok":true}'}],
+                    "usage": {"input_tokens": 1, "output_tokens": 1},
+                },
+            ),
+        ],
+    )
+    first = connections.verify_connections(selected, db)
+    assert first["checks"][0]["status"] == "billing_error"
+    assert not connections.statuses(selected, db)[0]["ready"]
+    with pytest.raises(ValueError, match="Nenhuma chamada"):
+        connections.require_ready(selected, db)
+    assert len(sent) == 1  # Local reads/start gate do not retry a failed check.
+    second = connections.verify_connections(selected, db)
+    assert second["api_calls"] == 1 and second["checks"][0]["ready"]
+    connections.require_ready(selected, db)
+    assert connections.verify_connections(selected, db)["api_calls"] == 0
+    assert len(sent) == 2 and all("anthropic" in str(r.url) for r in sent)
+    assert not storage.list_runs(db) and not storage.list_executions(db)
+    with storage.connect(db) as con:
+        assert con.execute("SELECT COUNT(*) FROM task_results").fetchone()[0] == 0
+
+
 def test_connection_endpoint_and_batch_gate_use_no_results(monkeypatch):
     from benchmark.api import app
 

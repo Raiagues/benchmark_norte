@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "./ScreenUI";
 import { L } from "./i18n";
-import { taskLabel, statusLabel } from "./liveLabels";
+import { taskLabel, statusLabel, displayState } from "./liveLabels";
 
 export default function ModelResults({
   calls,
@@ -97,7 +97,7 @@ export default function ModelResults({
                 );
                 return (
                   <option key={r} value={r}>
-                    {r} · {statusLabel(c?.status || "QUEUED")}
+                    {r} · {statusLabel(displayState(c))}
                   </option>
                 );
               })}

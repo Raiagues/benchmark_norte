@@ -1,3 +1,6 @@
+import ResultExport from "./ResultExport";
+import RetryControl from "./RetryControl";
+import ResultWorkbench from "./ResultWorkbench";
 import React, { useEffect, useState } from "react";
 import { L, t } from "./i18n";
 import { Modal, Tabs } from "./ScreenUI";
@@ -14,6 +17,7 @@ import {
   TechnicalView,
 } from "./InspectionViews";
 import {
+  displayState,
   issueLabel,
   taskPurpose,
   taskLabel,
@@ -34,10 +38,17 @@ export function State({ value }) {
     <span className={`state-pill ${tone(value)}`}>{statusLabel(value)}</span>
   );
 }
-function Stat({ label, value, detail, bad = false }) {
+function Stat({
+  label,
+  value,
+  detail,
+  bad = false,
+  partial = false,
+  good = false,
+}) {
   return (
     <div
-      className={`live-stat ${bad ? "answer-error-stat" : ""}`}
+      className={`live-stat ${bad ? "answer-error-stat" : partial ? "answer-partial-stat" : good ? "answer-good-stat" : ""}`}
       title={detail}
     >
       <span>{label}</span>
@@ -48,9 +59,11 @@ function Stat({ label, value, detail, bad = false }) {
 const answerErrors = (ops) =>
   ops.answer_errors ?? (ops.partial || 0) + (ops.incorrect || 0);
 const runStatus = (run) =>
-  run.status === "COMPLETED" && answerErrors(run.operations)
-    ? "COMPLETED_WITH_ANSWER_ERRORS"
-    : run.status;
+  displayState(run) === "COMPLETED_WITH_PARTIALS"
+    ? "COMPLETED_WITH_PARTIALS"
+    : run.status === "COMPLETED" && answerErrors(run.operations)
+      ? "COMPLETED_WITH_ANSWER_ERRORS"
+      : run.status;
 function Metric({ name, value, onClick }) {
   return (
     <button
@@ -157,7 +170,13 @@ export function RunHistory({ api, onOpen }) {
                     <small>n={r.operations.evaluated}</small>
                   </td>
                   <td
-                    className={answerErrors(r.operations) ? "answer-bad" : ""}
+                    className={
+                      r.operations.incorrect
+                        ? "answer-bad"
+                        : r.operations.partial
+                          ? "answer-warn"
+                          : "answer-good"
+                    }
                   >
                     {answerErrors(r.operations)}
                   </td>
@@ -208,6 +227,7 @@ function EmptyLive() {
 export default function LiveExecution({ api, renderGraph }) {
   const [run, setRun] = useState(null),
     [id, setId] = useState(location.hash.split("/")[1] || ""),
+    [historical, setHistorical] = useState(location.hash.endsWith("/history")),
     [events, setEvents] = useState([]),
     [error, setError] = useState(""),
     [connected, setConnected] = useState(false),
@@ -229,7 +249,10 @@ export default function LiveExecution({ api, renderGraph }) {
     });
   const now = useClock(!!run && activeStates.includes(run.status));
   useEffect(() => {
-    const nav = () => setId(location.hash.split("/")[1] || "");
+    const nav = () => {
+      setId(location.hash.split("/")[1] || "");
+      setHistorical(location.hash.endsWith("/history"));
+    };
     window.addEventListener("hashchange", nav);
     return () => window.removeEventListener("hashchange", nav);
   }, []);
@@ -255,11 +278,11 @@ export default function LiveExecution({ api, renderGraph }) {
     const loadEvents = (v) => {
       if (v <= eventVersion) return;
       eventVersion = v;
-      api(`/live/${id}/events`)
+      api(`/live/${id}/events?study=${!historical}`)
         .then((e) => mounted && v === eventVersion && setEvents(e))
         .catch((e) => mounted && setError(e.message));
     };
-    api(`/live/${id}`)
+    api(`/live/${id}?study=${!historical}`)
       .then((data) => {
         if (mounted) {
           setRun((old) =>
@@ -271,7 +294,9 @@ export default function LiveExecution({ api, renderGraph }) {
         }
       })
       .catch((e) => mounted && setError(e.message));
-    const stream = new EventSource(`/api/live/${id}/stream`);
+    const stream = new EventSource(
+      `/api/live/${id}/stream?study=${!historical}`,
+    );
     stream.addEventListener("snapshot", (e) => {
       if (!mounted) return;
       const data = JSON.parse(e.data);
@@ -292,7 +317,7 @@ export default function LiveExecution({ api, renderGraph }) {
       mounted = false;
       stream.close();
     };
-  }, [id]);
+  }, [id, historical]);
   function inspect(cid, scenario = "") {
     const call = run.calls.find((c) => c.id === cid);
     if (call) {
@@ -392,8 +417,53 @@ export default function LiveExecution({ api, renderGraph }) {
           </a>
         )}
         {!activeStates.includes(run.status) && (
-          <ResumeControl key={run.id} api={api} run={run} />
+          <div className="inline-actions">
+            <ResumeControl key={run.id} api={api} run={run} />
+            <RetryControl api={api} run={run} />
+          </div>
         )}
+        {run.study_batches?.length > 1 && (
+          <details className="study-notice">
+            <summary>
+              {L(
+                "Estudo único · todas as continuações",
+                "One study · all continuations",
+              )}{" "}
+              · {run.study_batches.length} {L("etapas", "stages")} ·{" "}
+              {run.attempt_count}{" "}
+              {L("tentativas preservadas", "preserved attempts")}
+            </summary>
+            <p>
+              {L(
+                "Os cartões mostram a tentativa mais recente de cada teste. Notas de protocolos diferentes não são somadas. Abrir uma etapa histórica mantém seus resultados originais.",
+                "Cards show the latest attempt for each test. Scores from different protocols are not combined. Opening a historical stage keeps its original results.",
+              )}
+            </p>
+            {run.attempt_operations && (
+              <p>
+                {L(
+                  "Uso informado de todas as tentativas históricas",
+                  "Reported usage across all historical attempts",
+                )}
+                : {number(run.attempt_operations.input_tokens.reported)} in ·{" "}
+                {number(run.attempt_operations.output_tokens.reported)} out ·{" "}
+                {money(run.attempt_operations.cost_usd)} ·{" "}
+                {run.attempt_operations.technical_errors}{" "}
+                {L("erros técnicos históricos", "historical technical errors")}.{" "}
+                {L(
+                  "Os demais contadores abaixo se referem à tentativa mais recente de cada teste.",
+                  "Other counters below refer to each test’s latest attempt.",
+                )}
+              </p>
+            )}
+            {run.study_batches.map((b) => (
+              <a className="button" key={b.id} href={`#live/${b.id}/history`}>
+                {b.id.slice(0, 8)} · {statusLabel(b.status)}
+              </a>
+            ))}
+          </details>
+        )}
+        <ResultExport api={api} run={run} />
         <div className="run-context">
           <span>
             {run.models.length} {L("modelos", "models")}
@@ -434,7 +504,8 @@ export default function LiveExecution({ api, renderGraph }) {
           <Stat
             label={L("Respostas com erros", "Answers with errors")}
             value={answerErrors(ops)}
-            bad={answerErrors(ops) > 0}
+            bad={ops.incorrect > 0}
+            partial={ops.partial > 0 && !ops.incorrect}
           />
 
           <Stat
@@ -533,6 +604,16 @@ export default function LiveExecution({ api, renderGraph }) {
               key={groupKey(m)}
               data-testid="model-lane"
             >
+              {!!m.protocols?.length && (
+                <small className="protocol-label">
+                  {L("Versão dos dados", "Dataset version")}:{" "}
+                  {m.protocols.join(" · ")} ·{" "}
+                  {L(
+                    "Métricas: protocolo mais recente por tarefa",
+                    "Metrics: latest protocol per task",
+                  )}
+                </small>
+              )}
               <header>
                 <span className="provider-wordmark">
                   {m.provider === "gemini"
@@ -541,7 +622,7 @@ export default function LiveExecution({ api, renderGraph }) {
                       ? "Anthropic"
                       : "OpenAI"}
                 </span>
-                <State value={m.status} />
+                <State value={displayState(m)} />
               </header>
               <h3>
                 <button
@@ -609,11 +690,13 @@ export default function LiveExecution({ api, renderGraph }) {
                         ? "running"
                         : r.interrupted
                           ? "interrupted"
-                          : r.technical_errors || r.partial || r.incorrect
+                          : r.technical_errors || r.incorrect
                             ? "error"
-                            : !r.remaining
-                              ? "complete"
-                              : ""
+                            : r.partial
+                              ? "partial"
+                              : !r.remaining
+                                ? "complete"
+                                : ""
                     }
                   >
                     {r.running
@@ -627,14 +710,20 @@ export default function LiveExecution({ api, renderGraph }) {
                             : "○"}{" "}
                     {L("Rep.", "Rep.")} {r.repetition}
                     <small>
-                      {r.evaluated}/{r.planned}
+                      {r.evaluated}/{r.planned}{" "}
+                      {L("testes avaliados", "tests evaluated")}
+                    </small>
+                    <small className="rep-outcomes">
+                      <span className="answer-good">{r.correct} ✓</span> ·{" "}
+                      <span className="answer-warn">{r.partial} ≈</span> ·{" "}
+                      <span className="answer-bad">{r.incorrect} ×</span>
                     </small>
                   </button>
                 ))}
               </div>
               {answerErrors(o) > 0 && (
                 <button
-                  className="model-answer-errors"
+                  className={`model-answer-errors ${o.incorrect ? "" : "partial"}`}
                   onClick={() => {
                     const first = run.calls.find(
                       (c) =>
@@ -645,24 +734,37 @@ export default function LiveExecution({ api, renderGraph }) {
                   }}
                 >
                   <strong>
-                    ! {answerErrors(o)}{" "}
-                    {L("respostas com erros", "answers with errors")}
+                    {o.partial} {L("parciais", "partial")} · {o.incorrect}{" "}
+                    {L("incorretas", "incorrect")}
                   </strong>
                   <span>
                     {L(
-                      "Inclui respostas parcialmente corretas · ver motivos",
-                      "Includes partially correct answers · inspect reasons",
+                      "Ver acertos e divergências",
+                      "Inspect matches and differences",
                     )}{" "}
                     →
                   </span>
                 </button>
               )}
+              {o.excluded_from_comparison > 0 && (
+                <p className="answer-warn">
+                  {o.excluded_from_comparison}{" "}
+                  {L(
+                    "respostas históricas excluídas da comparação. As contagens registram o que foi executado; as métricas de qualidade não usam essas respostas.",
+                    "historical responses excluded from comparison. Counts record what was executed; quality metrics do not use these responses.",
+                  )}
+                </p>
+              )}
               <div className="lane-counts">
-                <Stat label={L("Corretas", "Correct")} value={o.correct} />
+                <Stat
+                  label={L("Corretas", "Correct")}
+                  value={o.correct}
+                  good={o.correct > 0}
+                />
                 <Stat
                   label={L("Parciais · com erros", "Partial · with errors")}
                   value={o.partial}
-                  bad={o.partial > 0}
+                  partial={o.partial > 0}
                 />
                 <Stat
                   label={L("Incorretas", "Incorrect")}
@@ -680,6 +782,15 @@ export default function LiveExecution({ api, renderGraph }) {
                 />
                 <Stat label={L("Restantes", "Remaining")} value={o.remaining} />
               </div>
+              {quality?.excluded_other_protocol > 0 && (
+                <p className="protocol-label">
+                  {quality.excluded_other_protocol}{" "}
+                  {L(
+                    "respostas de outro protocolo fora desta média. Consulte as etapas históricas para inspecioná-las.",
+                    "responses from another protocol excluded from this mean. Open historical stages to inspect them.",
+                  )}
+                </p>
+              )}
               <div className="lane-quality">
                 {primary.map((name) => (
                   <Metric
@@ -717,7 +828,7 @@ export default function LiveExecution({ api, renderGraph }) {
                       {L("Última resposta", "Latest response")} ·{" "}
                       {taskLabel(latest.task)} · Rep. {latest.repetition}
                     </small>
-                    <State value={latest.status} />
+                    <State value={displayState(latest)} />
                     {Object.entries(latest.failure_counts || {}).map(
                       ([k, n]) => (
                         <small className="answer-bad" key={k}>
@@ -1064,7 +1175,7 @@ export default function LiveExecution({ api, renderGraph }) {
                       return (
                         <td key={groupKey(m)}>
                           <button
-                            className={`matrix-cell ${wrong || err ? "has-errors" : ""}`}
+                            className={`matrix-cell ${err || cell.some((c) => c.quality === "incorrect") ? "has-errors" : wrong ? "has-partials" : done ? "all-good" : ""}`}
                             onClick={() =>
                               cell[0] && inspect(cell[0].id, sid || "")
                             }
@@ -1231,9 +1342,13 @@ export default function LiveExecution({ api, renderGraph }) {
               onClick={async () => {
                 setStopping(true);
                 try {
-                  const stopped = await api(`/live/${id}/stop`, "POST", {
-                    confirmed: true,
-                  });
+                  const stopped = await api(
+                    `/live/${id}/stop?study=true`,
+                    "POST",
+                    {
+                      confirmed: true,
+                    },
+                  );
                   setRun((old) =>
                     old?.last_event_id > stopped.last_event_id ? old : stopped,
                   );
@@ -1398,7 +1513,7 @@ export function ExecutionDetail({
   scenario = "",
   onScenario = () => {},
 }) {
-  const [tab, setTab] = useState("story");
+  const [tab, setTab] = useState("output");
   const result = d.result;
   const output = result?.parsed_output;
   const Wrapper = embedded ? React.Fragment : Modal;
@@ -1412,8 +1527,24 @@ export function ExecutionDetail({
           })}
     >
       <div className="execution-detail">
+        {d.comparison_eligible === false && (
+          <aside className="notice">
+            <strong>
+              {L(
+                "Versão invalidada · somente histórico",
+                "Invalidated version · history only",
+              )}
+            </strong>
+            <p>
+              {L(
+                "Esta resposta foi excluída da comparação por decisão da usuária. Resposta, nota e prompt originais permanecem registrados, sem participar das médias de qualidade.",
+                "This response was excluded from comparison by user decision. Its original response, score and prompt remain recorded and do not contribute to quality averages.",
+              )}
+            </p>
+          </aside>
+        )}
         <div className="detail-meta">
-          <State value={d.status} />
+          <State value={displayState(d)} />
           {!["COMPLETED_CORRECT", "COMPLETED_INCORRECT"].includes(d.status) && (
             <span>{stageLabel(d.stage)}</span>
           )}
@@ -1430,11 +1561,13 @@ export function ExecutionDetail({
             {number(result?.latency_seconds || d.call?.latency_seconds)} s
           </span>
         </div>
-        {tab !== "story" && (
+        {tab !== "output" && (
           <p className="task-purpose">{taskPurpose(d.task)}</p>
         )}
         {tab !== "story" && Object.keys(d.failure_counts || {}).length > 0 && (
-          <aside className="evaluation-errors">
+          <aside
+            className={`evaluation-errors ${d.quality === "partial" ? "partial" : ""}`}
+          >
             <strong>
               {L("O que falhou nesta resposta", "What failed in this answer")}
             </strong>
@@ -1485,12 +1618,17 @@ export function ExecutionDetail({
                 )}
             </p>
             <p>
-              {t(d.diagnostic?.action) ||
-                d.diagnostic?.next_step ||
-                L(
-                  "Verifique a conexão e tente uma nova avaliação. Resultados anteriores permanecem disponíveis.",
-                  "Check the connection before a new run. Earlier results remain available.",
-                )}
+              {d.error === "invalid_structured_output"
+                ? L(
+                    "A resposta original foi preservada, mas não atende ao contrato do benchmark. Consulte o detalhe em Resposta e avaliação; ela não recebe nota de qualidade.",
+                    "The original response was preserved but does not meet the benchmark contract. See Output and evaluation for details; it receives no quality score.",
+                  )
+                : t(d.diagnostic?.action) ||
+                  d.diagnostic?.next_step ||
+                  L(
+                    "Verifique a conexão e tente uma nova avaliação. Resultados anteriores permanecem disponíveis.",
+                    "Check the connection before a new run. Earlier results remain available.",
+                  )}
             </p>
           </div>
         )}
@@ -1498,11 +1636,9 @@ export function ExecutionDetail({
           value={tab}
           onChange={setTab}
           items={[
-            ["story", L("Visão da execução", "Execution overview")],
+            ["output", L("Resposta e avaliação", "Output and evaluation")],
             ["input", L("Entrada", "Input")],
             ["prompt", L("Prompt", "Prompt")],
-            ["output", L("Resposta", "Output")],
-            ["comparison", L("Comparação", "Comparison")],
             ["truth", L("Gabarito", "Ground truth")],
             ["metrics", L("Métricas", "Metrics")],
             ["raw", L("Downloads técnicos", "Technical downloads")],
@@ -1512,12 +1648,20 @@ export function ExecutionDetail({
         {tab === "input" && <InputView detail={d} />}
         {tab === "prompt" && <PromptView detail={d} />}
         {tab === "output" && (
-          <OutputView detail={d} scenario={scenario} onScenario={onScenario} />
+          <ResultWorkbench
+            detail={d}
+            scenario={scenario}
+            onScenario={onScenario}
+            renderGraph={renderGraph}
+            onPrompt={() => setTab("prompt")}
+          />
         )}
         {tab === "truth" && (
           <TruthView detail={d} scenario={scenario} onScenario={onScenario} />
         )}
-        {tab === "metrics" && <MetricsView detail={d} />}
+        {tab === "metrics" && (
+          <MetricsView detail={d} onInspect={() => setTab("output")} />
+        )}
         {tab === "raw" && <TechnicalView detail={d} />}
         {tab === "comparison" &&
           (!result ? (
